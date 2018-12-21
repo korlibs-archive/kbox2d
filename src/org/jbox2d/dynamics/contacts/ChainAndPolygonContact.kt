@@ -38,14 +38,14 @@ class ChainAndPolygonContact(argPool: IWorldPool) : Contact(argPool) {
 
     override fun init(fA: Fixture, indexA: Int, fB: Fixture, indexB: Int) {
         super.init(fA, indexA, fB, indexB)
-        assert(m_fixtureA.type === ShapeType.CHAIN)
-        assert(m_fixtureB.type === ShapeType.POLYGON)
+        assert(m_fixtureA!!.type === ShapeType.CHAIN)
+        assert(m_fixtureB!!.type === ShapeType.POLYGON)
     }
 
     override fun evaluate(manifold: Manifold, xfA: Transform, xfB: Transform) {
-        val chain = m_fixtureA.shape as ChainShape
+        val chain = m_fixtureA!!.shape as ChainShape
         chain.getChildEdge(edge, m_indexA)
         pool.collision.collideEdgeAndPolygon(manifold, edge, xfA,
-                m_fixtureB.shape as PolygonShape, xfB)
+                m_fixtureB!!.shape as PolygonShape, xfB)
     }
 }

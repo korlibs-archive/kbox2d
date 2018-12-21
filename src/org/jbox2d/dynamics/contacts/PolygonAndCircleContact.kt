@@ -35,12 +35,12 @@ class PolygonAndCircleContact(argPool: IWorldPool) : Contact(argPool) {
 
     fun init(fixtureA: Fixture, fixtureB: Fixture) {
         super.init(fixtureA, 0, fixtureB, 0)
-        assert(m_fixtureA.type === ShapeType.POLYGON)
-        assert(m_fixtureB.type === ShapeType.CIRCLE)
+        assert(m_fixtureA!!.type === ShapeType.POLYGON)
+        assert(m_fixtureB!!.type === ShapeType.CIRCLE)
     }
 
     override fun evaluate(manifold: Manifold, xfA: Transform, xfB: Transform) {
-        pool.collision.collidePolygonAndCircle(manifold, m_fixtureA.shape as PolygonShape,
-                xfA, m_fixtureB.shape as CircleShape, xfB)
+        pool.collision.collidePolygonAndCircle(manifold, m_fixtureA!!.shape as PolygonShape,
+                xfA, m_fixtureB!!.shape as CircleShape, xfB)
     }
 }

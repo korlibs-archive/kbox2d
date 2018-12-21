@@ -35,12 +35,12 @@ class EdgeAndPolygonContact(argPool: IWorldPool) : Contact(argPool) {
 
     override fun init(fA: Fixture, indexA: Int, fB: Fixture, indexB: Int) {
         super.init(fA, indexA, fB, indexB)
-        assert(m_fixtureA.type === ShapeType.EDGE)
-        assert(m_fixtureB.type === ShapeType.POLYGON)
+        assert(m_fixtureA!!.type === ShapeType.EDGE)
+        assert(m_fixtureB!!.type === ShapeType.POLYGON)
     }
 
     override fun evaluate(manifold: Manifold, xfA: Transform, xfB: Transform) {
-        pool.collision.collideEdgeAndPolygon(manifold, m_fixtureA.shape as EdgeShape, xfA,
-                m_fixtureB.shape as PolygonShape, xfB)
+        pool.collision.collideEdgeAndPolygon(manifold, m_fixtureA!!.shape as EdgeShape, xfA,
+                m_fixtureB!!.shape as PolygonShape, xfB)
     }
 }
