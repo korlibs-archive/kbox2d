@@ -55,13 +55,16 @@ import org.jbox2d.pooling.IWorldPool
  * @author Daniel Murphy
  */
 class DefaultWorldPool(argSize: Int, argContainerSize: Int) : IWorldPool {
+    class LambdaOrderedStack<T>(argSize: Int, argContainerSize: Int, val newInstanceLambda: () -> T) : OrderedStack<T>(argSize, argContainerSize) {
+        override fun newInstance(): T = newInstanceLambda()
+    }
 
-    private val vecs: OrderedStack<Vec2>
-    private val vec3s: OrderedStack<Vec3>
-    private val mats: OrderedStack<Mat22>
-    private val mat33s: OrderedStack<Mat33>
-    private val aabbs: OrderedStack<AABB>
-    private val rots: OrderedStack<Rot>
+    private val vecs: OrderedStack<Vec2> = LambdaOrderedStack(argSize, argContainerSize) { Vec2() }
+    private val vec3s: OrderedStack<Vec3> = LambdaOrderedStack(argSize, argContainerSize) { Vec3() }
+    private val mats: OrderedStack<Mat22>  = LambdaOrderedStack(argSize, argContainerSize) { Mat22() }
+    private val mat33s: OrderedStack<Mat33> = LambdaOrderedStack(argSize, argContainerSize) { Mat33() }
+    private val aabbs: OrderedStack<AABB> = LambdaOrderedStack(argSize, argContainerSize) { AABB() }
+    private val rots: OrderedStack<Rot> = LambdaOrderedStack(argSize, argContainerSize) { Rot() }
 
     private val afloats = HashMap<Int, FloatArray>()
     private val aints = HashMap<Int, IntArray>()
@@ -69,137 +72,30 @@ class DefaultWorldPool(argSize: Int, argContainerSize: Int) : IWorldPool {
 
     private val world = this
 
-    private val pcstack = object : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
-        override fun newInstance(): Contact {
-            return PolygonContact(world)
-        }
-
-        override fun newArray(size: Int): Array<Contact> {
-            return arrayOfNulls<PolygonContact>(size) as Array<Contact>
-        }
+    class ContactMutableStack(private val newInstanceLambda: () -> Contact, val newArrayLambda: (Int) -> Array<out Contact?>) : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
+        override fun newInstance(): Contact = newInstanceLambda()
+        override fun newArray(size: Int): Array<Contact> = newArrayLambda(size) as Array<Contact>
     }
 
-    private val ccstack = object : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
-        override fun newInstance(): Contact {
-            return CircleContact(world)
-        }
+    private val pcstack = ContactMutableStack({ PolygonContact(world) }, { arrayOfNulls<PolygonContact>(it) })
+    private val ccstack = ContactMutableStack({ CircleContact(world) }, { arrayOfNulls<CircleContact>(it) })
+    private val cpstack = ContactMutableStack({ PolygonAndCircleContact(world) }, { arrayOfNulls<PolygonAndCircleContact>(it) })
+    private val ecstack = ContactMutableStack({ EdgeAndCircleContact(world) }, { arrayOfNulls<EdgeAndCircleContact>(it) })
+    private val epstack = ContactMutableStack({ EdgeAndPolygonContact(world) }, { arrayOfNulls<EdgeAndPolygonContact>(it) })
+    private val chcstack = ContactMutableStack({ ChainAndCircleContact(world) }, { arrayOfNulls<ChainAndCircleContact>(it) })
+    private val chpstack = ContactMutableStack({ ChainAndPolygonContact(world) }, { arrayOfNulls<ChainAndPolygonContact>(it) })
 
-        override fun newArray(size: Int): Array<Contact> {
-            return arrayOfNulls<CircleContact>(size) as Array<Contact>
-        }
-    }
+    override val collision: Collision = Collision(this)
+    override val timeOfImpact: TimeOfImpact = TimeOfImpact(this)
+    override val distance: Distance = Distance()
 
-    private val cpstack = object : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
-        override fun newInstance(): Contact {
-            return PolygonAndCircleContact(world)
-        }
-
-        override fun newArray(size: Int): Array<Contact> {
-            return arrayOfNulls<PolygonAndCircleContact>(size) as Array<Contact>
-        }
-    }
-
-    private val ecstack = object : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
-        override fun newInstance(): Contact {
-            return EdgeAndCircleContact(world)
-        }
-
-        override fun newArray(size: Int): Array<Contact> {
-            return arrayOfNulls<EdgeAndCircleContact>(size) as Array<Contact>
-        }
-    }
-
-    private val epstack = object : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
-        override fun newInstance(): Contact {
-            return EdgeAndPolygonContact(world)
-        }
-
-        override fun newArray(size: Int): Array<Contact> {
-            return arrayOfNulls<EdgeAndPolygonContact>(size) as Array<Contact>
-        }
-    }
-
-    private val chcstack = object : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
-        override fun newInstance(): Contact {
-            return ChainAndCircleContact(world)
-        }
-
-        override fun newArray(size: Int): Array<Contact> {
-            return arrayOfNulls<ChainAndCircleContact>(size) as Array<Contact>
-        }
-    }
-
-    private val chpstack = object : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
-        override fun newInstance(): Contact {
-            return ChainAndPolygonContact(world)
-        }
-
-        override fun newArray(size: Int): Array<Contact> {
-            return arrayOfNulls<ChainAndPolygonContact>(size) as Array<Contact>
-        }
-    }
-
-    override val collision: Collision
-    override val timeOfImpact: TimeOfImpact
-    override val distance: Distance
-
-    override val polyContactStack: IDynamicStack<Contact>
-        get() = pcstack
-
-    override val circleContactStack: IDynamicStack<Contact>
-        get() = ccstack
-
-    override val polyCircleContactStack: IDynamicStack<Contact>
-        get() = cpstack
-
-    override val edgeCircleContactStack: IDynamicStack<Contact>
-        get() = ecstack
-
-    override val edgePolyContactStack: IDynamicStack<Contact>
-        get() = epstack
-
-    override val chainCircleContactStack: IDynamicStack<Contact>
-        get() = chcstack
-
-    override val chainPolyContactStack: IDynamicStack<Contact>
-        get() = chpstack
-
-    init {
-        vecs = object : OrderedStack<Vec2>(argSize, argContainerSize) {
-            override fun newInstance(): Vec2 {
-                return Vec2()
-            }
-        }
-        vec3s = object : OrderedStack<Vec3>(argSize, argContainerSize) {
-            override fun newInstance(): Vec3 {
-                return Vec3()
-            }
-        }
-        mats = object : OrderedStack<Mat22>(argSize, argContainerSize) {
-            override fun newInstance(): Mat22 {
-                return Mat22()
-            }
-        }
-        aabbs = object : OrderedStack<AABB>(argSize, argContainerSize) {
-            override fun newInstance(): AABB {
-                return AABB()
-            }
-        }
-        rots = object : OrderedStack<Rot>(argSize, argContainerSize) {
-            override fun newInstance(): Rot {
-                return Rot()
-            }
-        }
-        mat33s = object : OrderedStack<Mat33>(argSize, argContainerSize) {
-            override fun newInstance(): Mat33 {
-                return Mat33()
-            }
-        }
-
-        distance = Distance()
-        collision = Collision(this)
-        timeOfImpact = TimeOfImpact(this)
-    }
+    override val polyContactStack: IDynamicStack<Contact> get() = pcstack
+    override val circleContactStack: IDynamicStack<Contact> get() = ccstack
+    override val polyCircleContactStack: IDynamicStack<Contact> get() = cpstack
+    override val edgeCircleContactStack: IDynamicStack<Contact> get() = ecstack
+    override val edgePolyContactStack: IDynamicStack<Contact> get() = epstack
+    override val chainCircleContactStack: IDynamicStack<Contact> get() = chcstack
+    override val chainPolyContactStack: IDynamicStack<Contact> get() = chpstack
 
     override fun popVec2(): Vec2 {
         return vecs.pop()
