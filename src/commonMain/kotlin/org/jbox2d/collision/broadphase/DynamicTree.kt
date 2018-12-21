@@ -32,6 +32,7 @@ import org.jbox2d.common.Color3f
 import org.jbox2d.common.MathUtils
 import org.jbox2d.common.Settings
 import org.jbox2d.common.Vec2
+import org.jbox2d.internal.*
 
 /**
  * A dynamic tree arranges data in a binary tree to accelerate queries such as volume queries and
@@ -214,7 +215,7 @@ class DynamicTree : BroadPhaseStrategy {
                 } else {
                     if (nodeStack.size - nodeStackIndex - 2 <= 0) {
                         val newBuffer = arrayOfNulls<DynamicTreeNode>(nodeStack.size * 2)
-                        System.arraycopy(nodeStack, 0, newBuffer, 0, nodeStack.size)
+                        arraycopy(nodeStack, 0, newBuffer, 0, nodeStack.size)
                         nodeStack = newBuffer
                     }
                     nodeStack[nodeStackIndex++] = node.child1
@@ -331,7 +332,7 @@ class DynamicTree : BroadPhaseStrategy {
             } else {
                 if (nodeStack.size - nodeStackIndex - 2 <= 0) {
                     val newBuffer = arrayOfNulls<DynamicTreeNode>(nodeStack.size * 2)
-                    System.arraycopy(nodeStack, 0, newBuffer, 0, nodeStack.size)
+                    arraycopy(nodeStack, 0, newBuffer, 0, nodeStack.size)
                     nodeStack = newBuffer
                 }
                 nodeStack[nodeStackIndex++] = node.child1
@@ -452,7 +453,7 @@ class DynamicTree : BroadPhaseStrategy {
             val old = m_nodes
             m_nodeCapacity *= 2
             m_nodes = arrayOfNulls<DynamicTreeNode>(m_nodeCapacity) as Array<DynamicTreeNode>
-            System.arraycopy(old!!, 0, m_nodes!!, 0, old.size)
+            arraycopy(old!!, 0, m_nodes!!, 0, old.size)
 
             // Build a linked list for the free list.
             for (i in m_nodeCapacity - 1 downTo m_nodeCount) {

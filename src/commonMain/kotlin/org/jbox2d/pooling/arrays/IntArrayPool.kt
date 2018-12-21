@@ -26,7 +26,7 @@
  */
 package org.jbox2d.pooling.arrays
 
-import java.util.HashMap
+import org.jbox2d.internal.*
 
 /**
  * Not thread safe int[] pooling

@@ -35,14 +35,14 @@ open class PlatformMathUtils {
 
         fun fastPow(a: Float, b: Float): Float {
             var b = b
-            var x = Float.floatToRawIntBits(a).toFloat()
+            var x = a.toRawBits().toFloat()
             x *= INV_SHIFT23
             x -= 127f
             var y = x - if (x >= 0) x.toInt() else x.toInt() - 1
             b *= x + (y - y * y) * 0.346607f
             y = b - if (b >= 0) b.toInt() else b.toInt() - 1
             y = (y - y * y) * 0.33971f
-            return Float.intBitsToFloat(((b + 127 - y) * SHIFT23).toInt())
+            return Float.fromBits(((b + 127 - y) * SHIFT23).toInt())
         }
     }
 }

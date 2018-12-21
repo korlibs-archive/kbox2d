@@ -28,6 +28,7 @@ import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.collision.shapes.ShapeType
 import org.jbox2d.common.Transform
 import org.jbox2d.dynamics.Fixture
+import org.jbox2d.internal.*
 import org.jbox2d.pooling.IWorldPool
 
 class CircleContact(argPool: IWorldPool) : Contact(argPool) {

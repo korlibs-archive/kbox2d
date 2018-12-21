@@ -80,7 +80,7 @@ class Profile {
         }
 
         override fun toString(): String {
-            return String.format("%.2f (%.2f) [%.2f,%.2f]", shortAvg, longAvg, min, max)
+            return "$shortAvg ($longAvg) [$min,$max]"
         }
     }
 

@@ -24,5 +24,8 @@ internal inline fun arraycopy(src: FloatArray, srcPos: Int, dst: FloatArray, dst
 internal inline fun arraycopy(src: DoubleArray, srcPos: Int, dst: DoubleArray, dstPos: Int, size: Int): Unit =
     run { src.copyInto(dst, dstPos, srcPos, srcPos + size) }
 
-inline fun assert(boolean: Boolean) = check(boolean)
-inline fun assert(boolean: Boolean, message: () -> String) = check(boolean)
+internal inline fun assert(boolean: Boolean) = check(boolean)
+internal inline fun assert(boolean: Boolean, message: () -> String) = check(boolean)
+
+internal fun System_nanoTime(): Long = TODO()
+internal fun <T> Arrays_sort(array: Array<T>, fromIndex: Int, toIndex: Int): Unit = TODO()

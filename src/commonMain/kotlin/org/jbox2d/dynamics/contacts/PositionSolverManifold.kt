@@ -4,6 +4,7 @@ import org.jbox2d.collision.*
 import org.jbox2d.common.Rot
 import org.jbox2d.common.Transform
 import org.jbox2d.common.Vec2
+import org.jbox2d.internal.*
 
 internal class PositionSolverManifold {
 

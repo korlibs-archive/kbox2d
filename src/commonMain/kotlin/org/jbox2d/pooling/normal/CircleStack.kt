@@ -23,6 +23,7 @@
  */
 package org.jbox2d.pooling.normal
 
+import org.jbox2d.internal.*
 import org.jbox2d.pooling.IOrderedStack
 
 abstract class CircleStack<E>(private val size: Int, argContainerSize: Int) : IOrderedStack<E> {
@@ -42,12 +43,12 @@ abstract class CircleStack<E>(private val size: Int, argContainerSize: Int) : IO
     override fun pop(argNum: Int): Array<E> {
         assert(argNum <= container.size) { "Container array is too small" }
         if (index + argNum < size) {
-            System.arraycopy(pool, index, container, 0, argNum)
+            arraycopy(pool, index, container, 0, argNum)
             index += argNum
         } else {
             val overlap = index + argNum - size
-            System.arraycopy(pool, index, container, 0, argNum - overlap)
-            System.arraycopy(pool, 0, container, argNum - overlap, overlap)
+            arraycopy(pool, index, container, 0, argNum - overlap)
+            arraycopy(pool, 0, container, argNum - overlap, overlap)
             index = overlap
         }
         return container as Array<E>

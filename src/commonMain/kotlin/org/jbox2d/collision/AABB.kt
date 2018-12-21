@@ -193,7 +193,7 @@ class AABB {
      * @param output
      * @param input
      */
-    @JvmOverloads
+
     fun raycast(output: RayCastOutput, input: RayCastInput,
                 argPool: IWorldPool = DefaultWorldPool(4, 4)): Boolean {
         var tmin = -Float.MAX_VALUE

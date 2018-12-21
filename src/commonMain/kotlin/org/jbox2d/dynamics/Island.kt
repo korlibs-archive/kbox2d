@@ -37,6 +37,7 @@ import org.jbox2d.dynamics.contacts.ContactVelocityConstraint
 import org.jbox2d.dynamics.contacts.Position
 import org.jbox2d.dynamics.contacts.Velocity
 import org.jbox2d.dynamics.joints.Joint
+import org.jbox2d.internal.*
 
 /*
  Position Correction Notes
@@ -225,9 +226,9 @@ class Island {
 
         // dynamic array
         if (m_velocities == null || m_bodyCapacity > m_velocities!!.size) {
-            val old = if (m_velocities == null) arrayOfNulls<Velocity>(0) else m_velocities
+            val old = if (m_velocities == null) emptyArray<Velocity>() else m_velocities
             m_velocities = arrayOfNulls<Velocity>(m_bodyCapacity) as Array<Velocity>
-            System.arraycopy(old, 0, m_velocities!!, 0, old!!.size)
+            arraycopy(old!!, 0, m_velocities!!, 0, old!!.size)
             for (i in old!!.size until m_velocities!!.size) {
                 m_velocities!![i] = Velocity()
             }
@@ -235,10 +236,10 @@ class Island {
 
         // dynamic array
         if (m_positions == null || m_bodyCapacity > m_positions!!.size) {
-            val old = if (m_positions == null) arrayOfNulls<Position>(0) else m_positions
+            val old = if (m_positions == null) emptyArray<Position>() else m_positions
             m_positions = arrayOfNulls<Position>(m_bodyCapacity) as Array<Position>
-            System.arraycopy(old, 0, m_positions!!, 0, old!!.size)
-            for (i in old.size until m_positions!!.size) {
+            arraycopy(old!!, 0, m_positions!!, 0, old!!.size)
+            for (i in old!!.size until m_positions!!.size) {
                 m_positions!![i] = Position()
             }
         }

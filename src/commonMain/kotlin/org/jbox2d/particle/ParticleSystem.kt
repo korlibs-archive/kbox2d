@@ -1,7 +1,5 @@
 package org.jbox2d.particle
 
-import java.util.Arrays
-
 import org.jbox2d.callbacks.ParticleDestructionListener
 import org.jbox2d.callbacks.ParticleQueryCallback
 import org.jbox2d.callbacks.ParticleRaycastCallback
@@ -20,7 +18,9 @@ import org.jbox2d.dynamics.Body
 import org.jbox2d.dynamics.Fixture
 import org.jbox2d.dynamics.TimeStep
 import org.jbox2d.dynamics.World
+import org.jbox2d.internal.*
 import org.jbox2d.particle.VoronoiDiagram.VoronoiDiagramCallback
+import kotlin.reflect.*
 
 class ParticleSystem(internal var m_world: World) {
 
@@ -39,16 +39,16 @@ class ParticleSystem(internal var m_world: World) {
     internal var m_internalAllocatedCapacity: Int = 0
     internal var m_maxCount: Int = 0
     internal var m_flagsBuffer: ParticleBufferInt = ParticleBufferInt()
-    internal var m_positionBuffer: ParticleBuffer<Vec2> = ParticleBuffer(Vec2::class.java)
-    internal var m_velocityBuffer: ParticleBuffer<Vec2> = ParticleBuffer(Vec2::class.java)
+    internal var m_positionBuffer: ParticleBuffer<Vec2> = ParticleBuffer { Vec2() }
+    internal var m_velocityBuffer: ParticleBuffer<Vec2> = ParticleBuffer { Vec2() }
     internal var m_accumulationBuffer: FloatArray = FloatArray(0) // temporary values
     internal var m_accumulation2Buffer: Array<Vec2> = emptyArray() // temporary vector values
     internal var m_depthBuffer: FloatArray? = null // distance from the surface
 
-    var m_colorBuffer: ParticleBuffer<ParticleColor> = ParticleBuffer(ParticleColor::class.java)
+    var m_colorBuffer: ParticleBuffer<ParticleColor> = ParticleBuffer { ParticleColor() }
     var particleGroupBuffer: Array<ParticleGroup?> = emptyArray()
         internal set
-    internal var m_userDataBuffer: ParticleBuffer<Any> = ParticleBuffer(Any::class.java)
+    internal var m_userDataBuffer: ParticleBuffer<Any> = ParticleBuffer { Any() }
 
     internal var m_proxyCount: Int = 0
     internal var m_proxyCapacity: Int = 0
@@ -144,13 +144,13 @@ class ParticleSystem(internal var m_world: World) {
 
     val particleColorBuffer: Array<ParticleColor>?
         get() {
-            m_colorBuffer.data = requestParticleBuffer(ParticleColor::class.java, m_colorBuffer.data)
+            m_colorBuffer.data = requestParticleBuffer({ ParticleColor() }, m_colorBuffer.data)
             return m_colorBuffer.data
         }
 
     val particleUserDataBuffer: Array<Any>?
         get() {
-            m_userDataBuffer.data = requestParticleBuffer(Any::class.java, m_userDataBuffer.data)
+            m_userDataBuffer.data = requestParticleBuffer({ Any() }, m_userDataBuffer.data)
             return m_userDataBuffer.data
         }
 
@@ -185,10 +185,10 @@ class ParticleSystem(internal var m_world: World) {
                 m_positionBuffer.data = reallocateBuffer(m_positionBuffer, m_internalAllocatedCapacity, capacity, false)
                 m_velocityBuffer.data = reallocateBuffer(m_velocityBuffer, m_internalAllocatedCapacity, capacity, false)
                 m_accumulationBuffer = BufferUtils.reallocateBuffer(m_accumulationBuffer, 0, m_internalAllocatedCapacity, capacity, false)
-                m_accumulation2Buffer = BufferUtils.reallocateBuffer(Vec2::class.java, m_accumulation2Buffer, 0, m_internalAllocatedCapacity, capacity, true)
+                m_accumulation2Buffer = BufferUtils.reallocateBuffer({ Vec2() }, m_accumulation2Buffer, 0, m_internalAllocatedCapacity, capacity, true)
                 m_depthBuffer = BufferUtils.reallocateBuffer(m_depthBuffer, 0, m_internalAllocatedCapacity, capacity, true)
                 m_colorBuffer.data = reallocateBuffer(m_colorBuffer, m_internalAllocatedCapacity, capacity, true)
-                particleGroupBuffer = BufferUtils.reallocateBuffer<ParticleGroup>(ParticleGroup::class.java, particleGroupBuffer as Array<ParticleGroup>, 0, m_internalAllocatedCapacity, capacity, false) as Array<ParticleGroup?>
+                particleGroupBuffer = BufferUtils.reallocateBuffer<ParticleGroup>({ ParticleGroup() }, particleGroupBuffer as Array<ParticleGroup>, 0, m_internalAllocatedCapacity, capacity, false) as Array<ParticleGroup?>
                 m_userDataBuffer.data = reallocateBuffer(m_userDataBuffer, m_internalAllocatedCapacity, capacity, true)
                 m_internalAllocatedCapacity = capacity
             }
@@ -216,7 +216,7 @@ class ParticleSystem(internal var m_world: World) {
         if (m_proxyCount >= m_proxyCapacity) {
             val oldCapacity = m_proxyCapacity
             val newCapacity = if (m_proxyCount != 0) 2 * m_proxyCount else Settings.minParticleBufferCapacity
-            m_proxyBuffer = BufferUtils.reallocateBuffer(Proxy::class.java, m_proxyBuffer, oldCapacity, newCapacity)
+            m_proxyBuffer = BufferUtils.reallocateBuffer({ Proxy() }, m_proxyBuffer, oldCapacity, newCapacity)
             m_proxyCapacity = newCapacity
         }
         m_proxyBuffer[m_proxyCount++].index = index
@@ -329,7 +329,7 @@ class ParticleSystem(internal var m_world: World) {
                     if (m_pairCount >= m_pairCapacity) {
                         val oldCapacity = m_pairCapacity
                         val newCapacity = if (m_pairCount != 0) 2 * m_pairCount else Settings.minParticleBufferCapacity
-                        m_pairBuffer = BufferUtils.reallocateBuffer(Pair::class.java, m_pairBuffer, oldCapacity, newCapacity)
+                        m_pairBuffer = BufferUtils.reallocateBuffer({ Pair() }, m_pairBuffer, oldCapacity, newCapacity)
                         m_pairCapacity = newCapacity
                     }
                     val pair = m_pairBuffer[m_pairCount]
@@ -388,7 +388,7 @@ class ParticleSystem(internal var m_world: World) {
                     if (m_pairCount >= m_pairCapacity) {
                         val oldCapacity = m_pairCapacity
                         val newCapacity = if (m_pairCount != 0) 2 * m_pairCount else Settings.minParticleBufferCapacity
-                        m_pairBuffer = BufferUtils.reallocateBuffer(Pair::class.java, m_pairBuffer, oldCapacity, newCapacity)
+                        m_pairBuffer = BufferUtils.reallocateBuffer({ Pair() }, m_pairBuffer, oldCapacity, newCapacity)
                         m_pairCapacity = newCapacity
                     }
                     val pair = m_pairBuffer[m_pairCount]
@@ -526,7 +526,7 @@ class ParticleSystem(internal var m_world: World) {
             if (m_contactCount >= m_contactCapacity) {
                 val oldCapacity = m_contactCapacity
                 val newCapacity = if (m_contactCount != 0) 2 * m_contactCount else Settings.minParticleBufferCapacity
-                m_contactBuffer = BufferUtils.reallocateBuffer(ParticleContact::class.java, m_contactBuffer, oldCapacity,
+                m_contactBuffer = BufferUtils.reallocateBuffer({ ParticleContact() }, m_contactBuffer, oldCapacity,
                         newCapacity)
                 m_contactCapacity = newCapacity
             }
@@ -549,7 +549,7 @@ class ParticleSystem(internal var m_world: World) {
             val pos = m_positionBuffer.data!![i]
             proxy.tag = computeTag(m_inverseDiameter * pos.x, m_inverseDiameter * pos.y)
         }
-        Arrays.sort(m_proxyBuffer, 0, m_proxyCount)
+        Arrays_sort(m_proxyBuffer, 0, m_proxyCount)
         m_contactCount = 0
         var c_index = 0
         for (i in 0 until m_proxyCount) {
@@ -957,7 +957,7 @@ class ParticleSystem(internal var m_world: World) {
     }
 
     internal fun solveTensile(step: TimeStep) {
-        m_accumulation2Buffer = requestParticleBuffer(Vec2::class.java, m_accumulation2Buffer)
+        m_accumulation2Buffer = requestParticleBuffer({ Vec2() }, m_accumulation2Buffer)
         for (i in 0 until particleCount) {
             m_accumulationBuffer[i] = 0f
             m_accumulation2Buffer!![i].setZero()
@@ -1127,7 +1127,7 @@ class ParticleSystem(internal var m_world: World) {
 
     internal fun solveColorMixing(step: TimeStep) {
         // mixes color between contacting particles
-        m_colorBuffer.data = requestParticleBuffer(ParticleColor::class.java, m_colorBuffer.data)
+        m_colorBuffer.data = requestParticleBuffer({ ParticleColor() }, m_colorBuffer.data)
         val colorMixing256 = (256 * m_colorMixingStrength).toInt()
         for (k in 0 until m_contactCount) {
             val contact = m_contactBuffer[k]
@@ -1471,7 +1471,7 @@ class ParticleSystem(internal var m_world: World) {
         buffer.userSuppliedCapacity = newCapacity
     }
 
-    internal fun <T> setParticleBuffer(buffer: ParticleBuffer<T>, newData: Array<T>?, newCapacity: Int) {
+    internal fun <T : Any> setParticleBuffer(buffer: ParticleBuffer<T>, newData: Array<T>?, newCapacity: Int) {
         assert(newData != null && newCapacity != 0 || newData == null && newCapacity == 0)
         if (buffer.userSuppliedCapacity != 0) {
             // m_world.m_blockAllocator.Free(buffer.data, sizeof(T) * m_internalAllocatedCapacity);
@@ -1609,18 +1609,10 @@ class ParticleSystem(internal var m_world: World) {
         return 0.5f * particleMass * sum_v2
     }
 
-    internal fun <T> requestParticleBuffer(klass: Class<T>, buffer: Array<T>?): Array<T> {
+    internal fun <T : Any> requestParticleBuffer(newInstance: () -> T, buffer: Array<T>?): Array<T> {
         var buffer = buffer
         if (buffer == null) {
-            buffer = java.lang.reflect.Array.newInstance(klass, m_internalAllocatedCapacity) as Array<T>
-            for (i in 0 until m_internalAllocatedCapacity) {
-                try {
-                    buffer[i] = klass.newInstance()
-                } catch (e: Exception) {
-                    throw RuntimeException(e)
-                }
-
-            }
+            buffer = Array<Any>(m_internalAllocatedCapacity) { newInstance() } as Array<T>
         }
         return buffer
     }
@@ -1633,7 +1625,7 @@ class ParticleSystem(internal var m_world: World) {
         return buffer
     }
 
-    class ParticleBuffer<T>(internal val dataClass: Class<T>) {
+    class ParticleBuffer<T : Any>(internal val dataClass: () -> T) {
         var data: Array<T>? = null
         internal var userSuppliedCapacity: Int = 0
     }
@@ -1655,7 +1647,7 @@ class ParticleSystem(internal var m_world: World) {
         override fun equals(obj: Any?): Boolean {
             if (this === obj) return true
             if (obj == null) return false
-            if (javaClass != obj.javaClass) return false
+            if (this::class != obj::class) return false
             val other = obj as Proxy?
             return if (tag != other!!.tag) false else true
         }
@@ -1712,7 +1704,7 @@ class ParticleSystem(internal var m_world: World) {
                         2 * system!!.m_triadCount
                     else
                         Settings.minParticleBufferCapacity
-                    system!!.m_triadBuffer = BufferUtils.reallocateBuffer(Triad::class.java, system!!.m_triadBuffer, oldCapacity,
+                    system!!.m_triadBuffer = BufferUtils.reallocateBuffer({ Triad() }, system!!.m_triadBuffer, oldCapacity,
                             newCapacity)
                     system!!.m_triadCapacity = newCapacity
                 }
@@ -1774,7 +1766,7 @@ class ParticleSystem(internal var m_world: World) {
                                 2 * system!!.m_triadCount
                             else
                                 Settings.minParticleBufferCapacity
-                            system!!.m_triadBuffer = BufferUtils.reallocateBuffer(Triad::class.java, system!!.m_triadBuffer, oldCapacity,
+                            system!!.m_triadBuffer = BufferUtils.reallocateBuffer({ Triad() }, system!!.m_triadBuffer, oldCapacity,
                                     newCapacity)
                             system!!.m_triadCapacity = newCapacity
                         }
@@ -1883,7 +1875,7 @@ class ParticleSystem(internal var m_world: World) {
                                     2 * system!!.m_bodyContactCount
                                 else
                                     Settings.minParticleBufferCapacity
-                                system!!.m_bodyContactBuffer = BufferUtils.reallocateBuffer(ParticleBodyContact::class.java,
+                                system!!.m_bodyContactBuffer = BufferUtils.reallocateBuffer({ ParticleBodyContact() },
                                         system!!.m_bodyContactBuffer, oldCapacity, newCapacity)
                                 system!!.m_bodyContactCapacity = newCapacity
                             }
@@ -2064,7 +2056,7 @@ class ParticleSystem(internal var m_world: World) {
         }
 
         // reallocate a buffer
-        internal fun <T> reallocateBuffer(buffer: ParticleBuffer<T>, oldCapacity: Int, newCapacity: Int,
+        internal fun <T : Any> reallocateBuffer(buffer: ParticleBuffer<T>, oldCapacity: Int, newCapacity: Int,
                                           deferred: Boolean): Array<T>? {
             assert(newCapacity > oldCapacity)
             return BufferUtils.reallocateBuffer(buffer.dataClass, buffer.data, buffer.userSuppliedCapacity,

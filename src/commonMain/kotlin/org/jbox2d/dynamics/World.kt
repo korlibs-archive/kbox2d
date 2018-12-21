@@ -60,6 +60,7 @@ import org.jbox2d.common.Vec2
 import org.jbox2d.dynamics.contacts.Contact
 import org.jbox2d.dynamics.contacts.ContactRegister
 import org.jbox2d.dynamics.joints.*
+import org.jbox2d.internal.*
 import org.jbox2d.particle.ParticleBodyContact
 import org.jbox2d.particle.ParticleColor
 import org.jbox2d.particle.ParticleContact
@@ -472,7 +473,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
     val particleBodyContactCount: Int
         get() = m_particleSystem.m_bodyContactCount
 
-    @JvmOverloads
+
     constructor(gravity: Vec2, pool: IWorldPool = DefaultWorldPool(WORLD_POOL_SIZE, WORLD_POOL_CONTAINER_SIZE), strategy: BroadPhaseStrategy = DynamicTree()) : this(gravity, pool, DefaultBroadPhaseBuffer(strategy)) {
     }
 
@@ -1755,7 +1756,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
      * @param Index of the particle to destroy.
      * @param Whether to call the destruction listener just before the particle is destroyed.
      */
-    @JvmOverloads
+
     fun destroyParticle(index: Int, callDestructionListener: Boolean = false) {
         m_particleSystem.destroyParticle(index, callDestructionListener)
     }
@@ -1771,7 +1772,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
      * @warning This function is locked during callbacks.
      * @return Number of particles destroyed.
      */
-    @JvmOverloads
+
     fun destroyParticlesInShape(shape: Shape, xf: Transform, callDestructionListener: Boolean = false): Int {
         assert(isLocked == false)
         return if (isLocked) {
@@ -1816,7 +1817,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
      * @param Whether to call the world b2DestructionListener for each particle is destroyed.
      * @warning This function is locked during callbacks.
      */
-    @JvmOverloads
+
     fun destroyParticlesInGroup(group: ParticleGroup, callDestructionListener: Boolean = false) {
         assert(isLocked == false)
         if (isLocked) {

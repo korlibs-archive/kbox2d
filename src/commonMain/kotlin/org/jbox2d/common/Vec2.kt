@@ -29,7 +29,7 @@ import kotlin.jvm.*
 /**
  * A 2D column vector
  */
-data class Vec2 @JvmOverloads constructor(
+data class Vec2  constructor(
          var x: Float = 0f,
          var y: Float = 0f
 ) {

@@ -23,6 +23,8 @@
  */
 package org.jbox2d.pooling.stacks
 
+import org.jbox2d.internal.*
+
 class DynamicIntStack(private var size: Int) {
 
     private var stack: IntArray? = null
@@ -48,7 +50,7 @@ class DynamicIntStack(private var size: Int) {
             val old = stack
             stack = IntArray(size * 2)
             size = stack!!.size
-            System.arraycopy(old!!, 0, stack!!, 0, old.size)
+            arraycopy(old!!, 0, stack!!, 0, old.size)
         }
         stack!![count++] = i
     }

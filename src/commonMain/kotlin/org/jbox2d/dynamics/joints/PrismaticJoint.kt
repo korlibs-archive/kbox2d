@@ -30,6 +30,7 @@ import org.jbox2d.common.Settings
 import org.jbox2d.common.Vec2
 import org.jbox2d.common.Vec3
 import org.jbox2d.dynamics.SolverData
+import org.jbox2d.internal.*
 import org.jbox2d.pooling.IWorldPool
 
 //Linear constraint (point-to-line)

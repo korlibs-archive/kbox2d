@@ -32,6 +32,7 @@ import org.jbox2d.common.Transform
 import org.jbox2d.common.Vec2
 import org.jbox2d.dynamics.contacts.ContactEdge
 import org.jbox2d.dynamics.joints.JointEdge
+import org.jbox2d.internal.*
 
 /**
  * A rigid body. These are created via World.createBody.

@@ -23,8 +23,6 @@
  */
 package org.jbox2d.collision.broadphase
 
-import java.util.Arrays
-
 import org.jbox2d.callbacks.DebugDraw
 import org.jbox2d.callbacks.PairCallback
 import org.jbox2d.callbacks.TreeCallback
@@ -32,6 +30,7 @@ import org.jbox2d.callbacks.TreeRayCastCallback
 import org.jbox2d.collision.AABB
 import org.jbox2d.collision.RayCastInput
 import org.jbox2d.common.Vec2
+import org.jbox2d.internal.*
 
 /**
  * The broad-phase is used for computing pairs and performing volume queries and ray casts. This
@@ -155,7 +154,7 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
         m_moveCount = 0
 
         // Sort the pair buffer to expose duplicates.
-        Arrays.sort(m_pairBuffer!!, 0, m_pairCount)
+        Arrays_sort(m_pairBuffer!!, 0, m_pairCount)
 
         // Send the pairs back to the client.
         var i = 0
@@ -192,7 +191,7 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
             val old = m_moveBuffer
             m_moveCapacity *= 2
             m_moveBuffer = IntArray(m_moveCapacity)
-            System.arraycopy(old!!, 0, m_moveBuffer!!, 0, old.size)
+            arraycopy(old!!, 0, m_moveBuffer!!, 0, old.size)
         }
 
         m_moveBuffer!![m_moveCount] = proxyId
@@ -221,7 +220,7 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
             val oldBuffer = m_pairBuffer
             m_pairCapacity *= 2
             m_pairBuffer = arrayOfNulls<Pair>(m_pairCapacity) as Array<Pair>
-            System.arraycopy(oldBuffer!!, 0, m_pairBuffer!!, 0, oldBuffer.size)
+            arraycopy(oldBuffer!!, 0, m_pairBuffer!!, 0, oldBuffer.size)
             for (i in oldBuffer.size until m_pairCapacity) {
                 m_pairBuffer!![i] = Pair()
             }

@@ -26,8 +26,6 @@
  */
 package org.jbox2d.pooling.normal
 
-import java.util.HashMap
-
 import org.jbox2d.collision.AABB
 import org.jbox2d.collision.Collision
 import org.jbox2d.collision.Distance
@@ -46,6 +44,7 @@ import org.jbox2d.dynamics.contacts.EdgeAndCircleContact
 import org.jbox2d.dynamics.contacts.EdgeAndPolygonContact
 import org.jbox2d.dynamics.contacts.PolygonAndCircleContact
 import org.jbox2d.dynamics.contacts.PolygonContact
+import org.jbox2d.internal.*
 import org.jbox2d.pooling.IDynamicStack
 import org.jbox2d.pooling.IWorldPool
 

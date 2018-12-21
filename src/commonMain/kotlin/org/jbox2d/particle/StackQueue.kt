@@ -1,5 +1,7 @@
 package org.jbox2d.particle
 
+import org.jbox2d.internal.*
+
 
 class StackQueue<T> {
 
@@ -17,7 +19,7 @@ class StackQueue<T> {
 
     fun push(task: T) {
         if (m_back >= m_end) {
-            System.arraycopy(m_buffer!!, m_front, m_buffer!!, 0, m_back - m_front)
+            arraycopy(m_buffer!!, m_front, m_buffer!!, 0, m_back - m_front)
             m_back -= m_front
             m_front = 0
             if (m_back >= m_end) {

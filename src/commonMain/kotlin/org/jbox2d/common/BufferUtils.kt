@@ -1,24 +1,16 @@
 package org.jbox2d.common
 
+import org.jbox2d.internal.*
+
 object BufferUtils {
     /** Reallocate a buffer.  */
 
-    fun <T> reallocateBuffer(klass: Class<T>, oldBuffer: Array<*>?, oldCapacity: Int,
-                             newCapacity: Int): Array<T> {
+    fun <T : Any> reallocateBuffer(
+        klass: () -> T, oldBuffer: Array<T>?, oldCapacity: Int,
+        newCapacity: Int
+    ): Array<T> {
         assert(newCapacity > oldCapacity)
-        val newBuffer = java.lang.reflect.Array.newInstance(klass, newCapacity) as Array<T>
-        if (oldBuffer != null) {
-            System.arraycopy(oldBuffer!!, 0, newBuffer, 0, oldCapacity)
-        }
-        for (i in oldCapacity until newCapacity) {
-            try {
-                newBuffer[i] = klass.newInstance()
-            } catch (e: Exception) {
-                throw RuntimeException(e)
-            }
-
-        }
-        return newBuffer
+        return Array<Any>(newCapacity) { if (oldBuffer != null && it < oldCapacity) oldBuffer[it] else klass() } as Array<T>
     }
 
     /** Reallocate a buffer.  */
@@ -27,7 +19,7 @@ object BufferUtils {
         assert(newCapacity > oldCapacity)
         val newBuffer = IntArray(newCapacity)
         if (oldBuffer != null) {
-            System.arraycopy(oldBuffer, 0, newBuffer, 0, oldCapacity)
+            arraycopy(oldBuffer, 0, newBuffer, 0, oldCapacity)
         }
         return newBuffer
     }
@@ -38,7 +30,7 @@ object BufferUtils {
         assert(newCapacity > oldCapacity)
         val newBuffer = FloatArray(newCapacity)
         if (oldBuffer != null) {
-            System.arraycopy(oldBuffer, 0, newBuffer, 0, oldCapacity)
+            arraycopy(oldBuffer, 0, newBuffer, 0, oldCapacity)
         }
         return newBuffer
     }
@@ -48,8 +40,10 @@ object BufferUtils {
      * 'userSuppliedCapacity' is not zero, buffer is user supplied and must be kept.
      */
 
-    fun <T> reallocateBuffer(klass: Class<T>, buffer: Array<T>?, userSuppliedCapacity: Int,
-                             oldCapacity: Int, newCapacity: Int, deferred: Boolean): Array<T> {
+    fun <T : Any> reallocateBuffer(
+        klass: () -> T, buffer: Array<T>?, userSuppliedCapacity: Int,
+        oldCapacity: Int, newCapacity: Int, deferred: Boolean
+    ): Array<T> {
         var buffer = buffer
         assert(newCapacity > oldCapacity)
         assert(userSuppliedCapacity == 0 || newCapacity <= userSuppliedCapacity)
@@ -64,8 +58,10 @@ object BufferUtils {
      * 'userSuppliedCapacity' is not zero, buffer is user supplied and must be kept.
      */
 
-    fun reallocateBuffer(buffer: IntArray?, userSuppliedCapacity: Int, oldCapacity: Int,
-                         newCapacity: Int, deferred: Boolean): IntArray {
+    fun reallocateBuffer(
+        buffer: IntArray?, userSuppliedCapacity: Int, oldCapacity: Int,
+        newCapacity: Int, deferred: Boolean
+    ): IntArray {
         var buffer = buffer
         assert(newCapacity > oldCapacity)
         assert(userSuppliedCapacity == 0 || newCapacity <= userSuppliedCapacity)
@@ -80,8 +76,10 @@ object BufferUtils {
      * 'userSuppliedCapacity' is not zero, buffer is user supplied and must be kept.
      */
 
-    fun reallocateBuffer(buffer: FloatArray?, userSuppliedCapacity: Int, oldCapacity: Int,
-                         newCapacity: Int, deferred: Boolean): FloatArray {
+    fun reallocateBuffer(
+        buffer: FloatArray?, userSuppliedCapacity: Int, oldCapacity: Int,
+        newCapacity: Int, deferred: Boolean
+    ): FloatArray {
         var buffer = buffer
         assert(newCapacity > oldCapacity)
         assert(userSuppliedCapacity == 0 || newCapacity <= userSuppliedCapacity)

@@ -30,6 +30,7 @@ import org.jbox2d.common.Transform
 import org.jbox2d.common.Vec2
 import org.jbox2d.dynamics.TimeStep
 import org.jbox2d.dynamics.contacts.ContactVelocityConstraint.VelocityConstraintPoint
+import org.jbox2d.internal.*
 
 
 /**
@@ -100,7 +101,7 @@ class ContactSolver {
         if (m_positionConstraints.size < m_count) {
             val old = m_positionConstraints
             m_positionConstraints = arrayOfNulls<ContactPositionConstraint>(MathUtils.max(old.size * 2, m_count)) as Array<ContactPositionConstraint>
-            System.arraycopy(old, 0, m_positionConstraints, 0, old.size)
+            arraycopy(old, 0, m_positionConstraints, 0, old.size)
             for (i in old.size until m_positionConstraints.size) {
                 m_positionConstraints[i] = ContactPositionConstraint()
             }
@@ -109,7 +110,7 @@ class ContactSolver {
         if (m_velocityConstraints.size < m_count) {
             val old = m_velocityConstraints
             m_velocityConstraints = arrayOfNulls<ContactVelocityConstraint>(MathUtils.max(old.size * 2, m_count)) as Array<ContactVelocityConstraint>
-            System.arraycopy(old, 0, m_velocityConstraints, 0, old.size)
+            arraycopy(old, 0, m_velocityConstraints, 0, old.size)
             for (i in old.size until m_velocityConstraints.size) {
                 m_velocityConstraints[i] = ContactVelocityConstraint()
             }

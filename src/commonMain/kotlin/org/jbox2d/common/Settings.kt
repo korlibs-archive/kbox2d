@@ -35,7 +35,7 @@ object Settings {
 
     /** Pi.  */
 
-    val PI = Math.PI.toFloat()
+    val PI = kotlin.math.PI.toFloat()
 
     // JBox2D specific settings
 
@@ -81,7 +81,7 @@ object Settings {
 
     val SINCOS_LUT_PRECISION = .00011f
 
-    val SINCOS_LUT_LENGTH = Math.ceil(Math.PI * 2 / SINCOS_LUT_PRECISION).toInt()
+    val SINCOS_LUT_LENGTH = kotlin.math.ceil(kotlin.math.PI * 2 / SINCOS_LUT_PRECISION).toInt()
     /**
      * Use if the table's precision is large (eg .006 or greater). Although it is more expensive, it
      * greatly increases accuracy. Look in the MathUtils source for some test results on the accuracy

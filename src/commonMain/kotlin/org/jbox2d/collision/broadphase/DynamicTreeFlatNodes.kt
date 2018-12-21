@@ -33,6 +33,8 @@ import org.jbox2d.common.Color3f
 import org.jbox2d.common.MathUtils
 import org.jbox2d.common.Settings
 import org.jbox2d.common.Vec2
+import org.jbox2d.internal.*
+import kotlin.reflect.*
 
 class DynamicTreeFlatNodes : BroadPhaseStrategy {
 
@@ -115,8 +117,8 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
     }
 
     private fun expandBuffers(oldSize: Int, newSize: Int) {
-        m_aabb = BufferUtils.reallocateBuffer(AABB::class.java, m_aabb, oldSize, newSize)
-        m_userData = BufferUtils.reallocateBuffer<Any?>(Any::class.java as Class<Any?>, m_userData as Array<Any>, oldSize, newSize)
+        m_aabb = BufferUtils.reallocateBuffer({ AABB() }, m_aabb, oldSize, newSize)
+        m_userData = BufferUtils.reallocateBuffer<Any>({ Any() }, m_userData as Array<Any>, oldSize, newSize) as Array<Any?>
         m_parent = BufferUtils.reallocateBuffer(m_parent, oldSize, newSize)
         m_child1 = BufferUtils.reallocateBuffer(m_child1, oldSize, newSize)
         m_child2 = BufferUtils.reallocateBuffer(m_child2, oldSize, newSize)

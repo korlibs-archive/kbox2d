@@ -23,6 +23,8 @@
  */
 package org.jbox2d.common
 
+import org.jbox2d.internal.*
+
 /**
  * Timer for profiling
  *
@@ -33,13 +35,13 @@ class Timer {
     private var resetNanos: Long = 0
 
     val milliseconds: Float
-        get() = (System.nanoTime() - resetNanos) / 1000 * 1f / 1000
+        get() = (System_nanoTime() - resetNanos) / 1000 * 1f / 1000
 
     init {
         reset()
     }
 
     fun reset() {
-        resetNanos = System.nanoTime()
+        resetNanos = System_nanoTime()
     }
 }

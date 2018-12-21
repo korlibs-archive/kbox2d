@@ -33,6 +33,7 @@ import org.jbox2d.collision.shapes.ShapeType
 import org.jbox2d.common.MathUtils
 import org.jbox2d.common.Transform
 import org.jbox2d.common.Vec2
+import org.jbox2d.internal.*
 
 /**
  * A fixture is used to attach a shape to a body for collision detection. A fixture inherits its
@@ -299,7 +300,7 @@ class Fixture {
             val old = m_proxies
             val newLen = MathUtils.max(old!!.size * 2, childCount)
             m_proxies = arrayOfNulls<FixtureProxy>(newLen) as Array<FixtureProxy>
-            System.arraycopy(old, 0, m_proxies!!, 0, old.size)
+            arraycopy(old, 0, m_proxies!!, 0, old.size)
             for (i in 0 until newLen) {
                 if (i >= old.size) {
                     m_proxies!![i] = FixtureProxy()

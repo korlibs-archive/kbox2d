@@ -46,7 +46,8 @@
 
 package org.jbox2d.common
 
-import java.util.Random
+import kotlin.math.*
+import kotlin.random.*
 
 /**
  * A few math methods that don't fit very well anywhere else.
@@ -54,9 +55,9 @@ import java.util.Random
 class MathUtils : PlatformMathUtils() {
     companion object {
 
-        val PI = Math.PI.toFloat()
+        val PI = kotlin.math.PI.toFloat()
 
-        val TWOPI = (Math.PI * 2).toFloat()
+        val TWOPI = (kotlin.math.PI * 2).toFloat()
 
         val INV_PI = 1f / PI
 
@@ -83,7 +84,7 @@ class MathUtils : PlatformMathUtils() {
 
         init {
             for (i in 0 until Settings.SINCOS_LUT_LENGTH) {
-                sinLUT[i] = Math.sin((i * Settings.SINCOS_LUT_PRECISION).toDouble()).toFloat()
+                sinLUT[i] = kotlin.math.sin((i * Settings.SINCOS_LUT_PRECISION).toDouble()).toFloat()
             }
         }
 
@@ -92,7 +93,7 @@ class MathUtils : PlatformMathUtils() {
             return if (Settings.SINCOS_LUT_ENABLED) {
                 sinLUT(x)
             } else {
-                StrictMath.sin(x.toDouble()).toFloat()
+                kotlin.math.sin(x.toDouble()).toFloat()
             }
         }
 
@@ -132,7 +133,7 @@ class MathUtils : PlatformMathUtils() {
             return if (Settings.SINCOS_LUT_ENABLED) {
                 sinLUT(HALF_PI - x)
             } else {
-                StrictMath.cos(x.toDouble()).toFloat()
+                kotlin.math.cos(x.toDouble()).toFloat()
             }
         }
 
@@ -141,7 +142,7 @@ class MathUtils : PlatformMathUtils() {
             return if (Settings.FAST_ABS) {
                 if (x > 0) x else -x
             } else {
-                StrictMath.abs(x)
+                kotlin.math.abs(x)
             }
         }
 
@@ -161,7 +162,7 @@ class MathUtils : PlatformMathUtils() {
             return if (Settings.FAST_FLOOR) {
                 fastFloor(x)
             } else {
-                StrictMath.floor(x.toDouble()).toInt()
+                kotlin.math.floor(x.toDouble()).toInt()
             }
         }
 
@@ -178,7 +179,7 @@ class MathUtils : PlatformMathUtils() {
             return if (Settings.FAST_CEIL) {
                 fastCeil(x)
             } else {
-                StrictMath.ceil(x.toDouble()).toInt()
+                kotlin.math.ceil(x.toDouble()).toInt()
             }
         }
 
@@ -195,7 +196,7 @@ class MathUtils : PlatformMathUtils() {
             return if (Settings.FAST_ROUND) {
                 floor(x + .5f)
             } else {
-                StrictMath.round(x)
+                x.roundToInt()
             }
         }
 
@@ -293,7 +294,7 @@ class MathUtils : PlatformMathUtils() {
             return if (Settings.FAST_POW) {
                 PlatformMathUtils.fastPow(a, b)
             } else {
-                StrictMath.pow(a.toDouble(), b.toDouble()).toFloat()
+                a.toDouble().pow(b.toDouble()).toFloat()
             }
         }
 
@@ -302,7 +303,7 @@ class MathUtils : PlatformMathUtils() {
             return if (Settings.FAST_ATAN2) {
                 fastAtan2(y, x)
             } else {
-                StrictMath.atan2(y.toDouble(), x.toDouble()).toFloat()
+                kotlin.math.atan2(y.toDouble(), x.toDouble()).toFloat()
             }
         }
 
@@ -341,7 +342,8 @@ class MathUtils : PlatformMathUtils() {
 
 
         fun randomFloat(argLow: Float, argHigh: Float): Float {
-            return Math.random().toFloat() * (argHigh - argLow) + argLow
+
+            return kotlin.random.Random.nextFloat() * (argHigh - argLow) + argLow
         }
 
 
@@ -351,7 +353,7 @@ class MathUtils : PlatformMathUtils() {
 
 
         fun sqrt(x: Float): Float {
-            return StrictMath.sqrt(x.toDouble()).toFloat()
+            return kotlin.math.sqrt(x.toDouble()).toFloat()
         }
 
 

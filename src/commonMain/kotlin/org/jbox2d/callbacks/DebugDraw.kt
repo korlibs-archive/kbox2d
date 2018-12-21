@@ -38,7 +38,7 @@ import org.jbox2d.particle.ParticleColor
  *
  * @author Daniel Murphy
  */
-abstract class DebugDraw @JvmOverloads constructor(viewport: IViewportTransform? = null) {
+abstract class DebugDraw  constructor(viewport: IViewportTransform? = null) {
 
 
     var flags: Int = 0

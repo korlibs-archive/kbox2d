@@ -26,53 +26,48 @@
  */
 package org.jbox2d.utests
 
-import java.util.Random
-
-import org.jbox2d.common.Mat22
-import org.jbox2d.common.Mat33
-import org.jbox2d.common.MathUtils
-import org.jbox2d.common.Vec2
-import org.jbox2d.common.Vec3
-
-import junit.framework.TestCase
+import org.jbox2d.common.*
+import kotlin.math.*
+import kotlin.random.*
+import kotlin.test.*
 
 /**
  * @author Daniel Murphy
  */
-class MathTest : TestCase() {
-
+class MathTest {
+    @Test
     fun testFastMath() {
-        val r = Random()
+        val r = Random(0)
         for (i in 0 until RAND_ITERS) {
             val a = r.nextFloat() * MAX - MAX / 2
-            TestCase.assertEquals(Math.floor(a.toDouble()).toInt(), MathUtils.floor(a))
+            assertEquals(floor(a.toDouble()).toInt(), MathUtils.floor(a))
         }
 
         for (i in 0 until RAND_ITERS) {
             val a = r.nextFloat() * MAX - MAX / 2
-            TestCase.assertEquals(Math.ceil(a.toDouble()).toInt(), MathUtils.ceil(a))
-        }
-
-        for (i in 0 until RAND_ITERS) {
-            val a = r.nextFloat() * MAX - MAX / 2
-            val b = r.nextFloat() * MAX - MAX / 2
-            TestCase.assertEquals(Math.max(a, b), MathUtils.max(a, b))
+            assertEquals(ceil(a.toDouble()).toInt(), MathUtils.ceil(a))
         }
 
         for (i in 0 until RAND_ITERS) {
             val a = r.nextFloat() * MAX - MAX / 2
             val b = r.nextFloat() * MAX - MAX / 2
-            TestCase.assertEquals(Math.min(a, b), MathUtils.min(a, b))
+            assertEquals(max(a, b), MathUtils.max(a, b))
         }
 
         for (i in 0 until RAND_ITERS) {
             val a = r.nextFloat() * MAX - MAX / 2
-            TestCase.assertEquals(Math.round(a), MathUtils.round(a))
+            val b = r.nextFloat() * MAX - MAX / 2
+            assertEquals(min(a, b), MathUtils.min(a, b))
         }
 
         for (i in 0 until RAND_ITERS) {
             val a = r.nextFloat() * MAX - MAX / 2
-            TestCase.assertEquals(Math.abs(a), MathUtils.abs(a))
+            assertEquals(round(a).toInt(), MathUtils.round(a))
+        }
+
+        for (i in 0 until RAND_ITERS) {
+            val a = r.nextFloat() * MAX - MAX / 2
+            assertEquals(abs(a), MathUtils.abs(a))
         }
     }
 
@@ -81,13 +76,13 @@ class MathTest : TestCase() {
         v.x = 0f
         v.y = 1f
         v.subLocal(Vec2(10f, 10f))
-        TestCase.assertEquals(-10f, v.x)
-        TestCase.assertEquals(-9f, v.y)
+        assertEquals(-10f, v.x)
+        assertEquals(-9f, v.y)
 
         val v2 = v.add(Vec2(1f, 1f))
-        TestCase.assertEquals(-9f, v2.x)
-        TestCase.assertEquals(-8f, v2.y)
-        TestCase.assertFalse(v == v2)
+        assertEquals(-9f, v2.x)
+        assertEquals(-8f, v2.y)
+        assertFalse(v == v2)
     }
 
     fun testMat22Unsafes() {
@@ -98,16 +93,16 @@ class MathTest : TestCase() {
         val mo = Mat22()
 
         Mat22.mulToOutUnsafe(m1, m2, mo)
-        TestCase.assertEquals(Mat22.mul(m1, m2), mo)
+        assertEquals(Mat22.mul(m1, m2), mo)
 
         Mat22.mulToOutUnsafe(m1, v1, vo)
-        TestCase.assertEquals(Mat22.mul(m1, v1), vo)
+        assertEquals(Mat22.mul(m1, v1), vo)
 
         Mat22.mulTransToOutUnsafe(m1, m2, mo)
-        TestCase.assertEquals(Mat22.mulTrans(m1, m2), mo)
+        assertEquals(Mat22.mulTrans(m1, m2), mo)
 
         Mat22.mulTransToOutUnsafe(m1, v1, vo)
-        TestCase.assertEquals(Mat22.mulTrans(m1, v1), vo)
+        assertEquals(Mat22.mulTrans(m1, v1), vo)
     }
 
     fun testMat33() {
@@ -118,22 +113,22 @@ class MathTest : TestCase() {
         mat.ez.set(-10f, 4f, 4f)
 
         val b = Vec3(4f, 1f, 2f)
-        TestCase.assertEquals(Vec3(0.096f, 1.1013334f, -.48133332f), mat.solve33(b))
+        assertEquals(Vec3(0.096f, 1.1013334f, -.48133332f), mat.solve33(b))
 
         val b2 = Vec2(4f, 1f)
-        TestCase.assertEquals(Vec2(0.22727273f, -3.318182f), mat.solve22(b2))
+        assertEquals(Vec2(0.22727273f, -3.318182f), mat.solve22(b2))
     }
 
     fun testVec3() {
         val v1 = Vec3()
         val v2 = Vec3()
 
-        TestCase.assertEquals(Vec3(1f, -15f, 36f), Vec3.cross(v1.set(9f, 3f, 1f), v2.set(3f, 5f, 2f)))
+        assertEquals(Vec3(1f, -15f, 36f), Vec3.cross(v1.set(9f, 3f, 1f), v2.set(3f, 5f, 2f)))
     }
 
     companion object {
 
-        private val MAX = (java.lang.Float.MAX_VALUE / 1000).toInt()
+        private val MAX = (Float.MAX_VALUE / 1000).toInt()
         private val RAND_ITERS = 100
     }
 }

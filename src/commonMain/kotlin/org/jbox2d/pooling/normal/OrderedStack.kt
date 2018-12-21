@@ -26,6 +26,8 @@
  */
 package org.jbox2d.pooling.normal
 
+import org.jbox2d.internal.*
+
 /**
  * @author Daniel Murphy
  */
@@ -43,7 +45,7 @@ abstract class OrderedStack<E>(private val size: Int, argContainerSize: Int) {
     fun pop(argNum: Int): Array<E> {
         assert(index + argNum < size) { "End of stack reached, there is probably a leak somewhere" }
         assert(argNum <= container.size) { "Container array is too small" }
-        System.arraycopy(pool, index, container, 0, argNum)
+        arraycopy(pool, index, container, 0, argNum)
         index += argNum
         return container as Array<E>
     }

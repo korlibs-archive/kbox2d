@@ -27,6 +27,7 @@ import org.jbox2d.common.Vec2
 import org.jbox2d.dynamics.Body
 import org.jbox2d.dynamics.SolverData
 import org.jbox2d.dynamics.World
+import org.jbox2d.internal.*
 import org.jbox2d.pooling.IWorldPool
 
 // updated to rev 100

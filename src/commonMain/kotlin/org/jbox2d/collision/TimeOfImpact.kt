@@ -31,6 +31,7 @@ import org.jbox2d.common.Settings
 import org.jbox2d.common.Sweep
 import org.jbox2d.common.Transform
 import org.jbox2d.common.Vec2
+import org.jbox2d.internal.*
 import org.jbox2d.pooling.IWorldPool
 
 /**

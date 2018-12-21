@@ -23,6 +23,7 @@
  */
 package org.jbox2d.pooling.normal
 
+import org.jbox2d.internal.*
 import org.jbox2d.pooling.IDynamicStack
 
 abstract class MutableStack<E>(argInitSize: Int) : IDynamicStack<E> {
@@ -38,7 +39,7 @@ abstract class MutableStack<E>(argInitSize: Int) : IDynamicStack<E> {
     private fun extendStack(argSize: Int) {
         val newStack = newArray(argSize)
         if (stack != null) {
-            System.arraycopy(stack!!, 0, newStack, 0, size)
+            arraycopy(stack!!, 0, newStack, 0, size)
         }
         for (i in newStack.indices) {
             newStack[i] = newInstance()
