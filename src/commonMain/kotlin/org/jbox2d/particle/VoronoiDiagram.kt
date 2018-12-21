@@ -16,15 +16,30 @@ class VoronoiDiagram(generatorCapacity: Int) {
 
     private val lower = Vec2()
     private val upper = Vec2()
-    private val taskPool = object : MutableStack<VoronoiDiagram.VoronoiDiagramTask>(50) {
-        override fun newInstance(): VoronoiDiagramTask {
-            return VoronoiDiagramTask()
-        }
+    /*
+    e: java.lang.IllegalStateException: Cannot get FQ name of local class: class <no name provided> : org.jbox2d.pooling.normal.MutableStack<org.jbox2d.particle.VoronoiDiagram.VoronoiDiagramTask> defined in private final val taskPool: <no name provided> defined in org.jbox2d.particle.VoronoiDiagram
+        at org.jetbrains.kotlin.serialization.DescriptorAwareStringTable$DefaultImpls.getFqNameIndex(DescriptorAwareStringTable.kt:23)
+        at org.jetbrains.kotlin.serialization.StringTableImpl.getFqNameIndex(StringTableImpl.kt:25)
+        at org.jetbrains.kotlin.serialization.DescriptorSerializer.getClassifierId(DescriptorSerializer.kt:718)
+        at org.jetbrains.kotlin.serialization.DescriptorSerializer.fillFromPossiblyInnerType(DescriptorSerializer.kt:590)
+        at org.jetbrains.kotlin.serialization.DescriptorSerializer.type$serialization(DescriptorSerializer.kt:555)
+        at org.jetbrains.kotlin.serialization.DescriptorSerializer.typeId$serialization(DescriptorSerializer.kt:520)
+        at org.jetbrains.kotlin.serialization.DescriptorSerializer.propertyProto(DescriptorSerializer.kt:242)
+     */
+    //private val taskPool = object : MutableStack<VoronoiDiagram.VoronoiDiagramTask>(50) {
+    //    override fun newInstance(): VoronoiDiagramTask = VoronoiDiagramTask()
+    //    override fun newArray(size: Int): Array<VoronoiDiagramTask> =
+    //        arrayOfNulls<VoronoiDiagramTask>(size) as Array<VoronoiDiagramTask>
+    //}
 
-        override fun newArray(size: Int): Array<VoronoiDiagramTask> {
-            return arrayOfNulls<VoronoiDiagramTask>(size) as Array<VoronoiDiagramTask>
-        }
+    val taskPool: VoronoiDiagramTaskMutableStack = VoronoiDiagramTaskMutableStack()
+
+    class VoronoiDiagramTaskMutableStack : MutableStack<VoronoiDiagram.VoronoiDiagramTask>(50) {
+        override fun newInstance(): VoronoiDiagramTask = VoronoiDiagramTask()
+        override fun newArray(size: Int): Array<VoronoiDiagramTask> =
+            arrayOfNulls<VoronoiDiagramTask>(size) as Array<VoronoiDiagramTask>
     }
+
     private val queue = StackQueue<VoronoiDiagramTask>()
 
     class Generator {
