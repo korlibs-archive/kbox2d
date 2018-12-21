@@ -81,7 +81,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
     private val poolt1 = Transform()
 
     init {
-        radius = Settings.polygonRadius
+        m_radius = Settings.polygonRadius
         m_centroid.setZero()
     }
 
@@ -92,7 +92,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
             shape.m_normals[i].set(m_normals[i])
             shape.m_vertices[i].set(m_vertices[i])
         }
-        shape.radius = this.radius
+        shape.m_radius = this.m_radius
         shape.m_count = this.m_count
         return shape
     }
