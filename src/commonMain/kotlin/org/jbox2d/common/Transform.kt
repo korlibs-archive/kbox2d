@@ -161,10 +161,7 @@ class Transform {
             out.p.addLocal(A.p)
         }
 
-        private val pool = Vec2()
-
-
-        fun mulTrans(A: Transform, B: Transform): Transform {
+        fun mulTrans(A: Transform, B: Transform, pool: Vec2 = Vec2()): Transform {
             val C = Transform()
             Rot.mulTransUnsafe(A.q, B.q, C.q)
             pool.set(B.p).subLocal(A.p)
@@ -173,7 +170,7 @@ class Transform {
         }
 
 
-        fun mulTransToOut(A: Transform, B: Transform, out: Transform) {
+        fun mulTransToOut(A: Transform, B: Transform, out: Transform, pool: Vec2 = Vec2()) {
             assert(out !== A)
             Rot.mulTrans(A.q, B.q, out.q)
             pool.set(B.p).subLocal(A.p)
@@ -181,8 +178,7 @@ class Transform {
         }
 
 
-        fun mulTransToOutUnsafe(A: Transform, B: Transform,
-                                out: Transform) {
+        fun mulTransToOutUnsafe(A: Transform, B: Transform, out: Transform, pool: Vec2 = Vec2()) {
             assert(out !== A)
             assert(out !== B)
             Rot.mulTransUnsafe(A.q, B.q, out.q)

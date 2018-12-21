@@ -303,8 +303,6 @@ class AABB {
     }
 
     companion object {
-
-
         fun testOverlap(a: AABB, b: AABB): Boolean {
             if (b.lowerBound.x - a.upperBound.x > 0.0f || b.lowerBound.y - a.upperBound.y > 0.0f) {
                 return false

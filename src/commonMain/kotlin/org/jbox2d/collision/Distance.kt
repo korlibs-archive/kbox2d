@@ -38,7 +38,7 @@ import org.jbox2d.internal.*
  *
  * @author Daniel Murphy
  */
-class Distance {
+class Distance(val stats: Stats = Stats()) {
 
     private val simplex = Simplex()
     private val saveA = IntArray(3)
@@ -606,7 +606,7 @@ class Distance {
      */
     fun distance(output: DistanceOutput, cache: SimplexCache,
                  input: DistanceInput) {
-        GJK_CALLS++
+        stats.GJK_CALLS++
 
         val proxyA = input.proxyA
         val proxyB = input.proxyB
@@ -698,7 +698,7 @@ class Distance {
 
             // Iteration count is equated to the number of support point calls.
             ++iter
-            ++GJK_ITERS
+            ++stats.GJK_ITERS
 
             // Check for duplicate support points. This is the main termination criteria.
             var duplicate = false
@@ -718,7 +718,7 @@ class Distance {
             ++simplex.m_count
         }
 
-        GJK_MAX_ITERS = MathUtils.max(GJK_MAX_ITERS, iter)
+        stats.GJK_MAX_ITERS = MathUtils.max(stats.GJK_MAX_ITERS, iter)
 
         // Prepare output.
         simplex.getWitnessPoints(output.pointA, output.pointB)
@@ -758,7 +758,9 @@ class Distance {
 
         val MAX_ITERS = 20
 
+    }
 
+    class Stats {
         var GJK_CALLS = 0
 
         var GJK_ITERS = 0

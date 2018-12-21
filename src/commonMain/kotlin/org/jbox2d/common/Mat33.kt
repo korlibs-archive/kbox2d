@@ -255,8 +255,8 @@ class Mat33 {
 
     companion object {
 
-        val IDENTITY = Mat33(Vec3(1f, 0f, 0f), Vec3(0f, 1f, 0f), Vec3(0f,
-                0f, 1f))
+        //@NativeThreadLocal
+        val IDENTITY = Mat33(Vec3(1f, 0f, 0f), Vec3(0f, 1f, 0f), Vec3(0f, 0f, 1f))
 
         // / Multiply a matrix times a vector.
 

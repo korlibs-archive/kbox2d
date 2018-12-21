@@ -23,6 +23,8 @@
  */
 package org.jbox2d.common
 
+import org.jbox2d.internal.*
+
 /**
  * Global tuning constants based on MKS units and various integer maximums (vertices per shape,
  * pairs, etc.).
@@ -39,20 +41,28 @@ object Settings {
 
     // JBox2D specific settings
 
+    @NativeThreadLocal
     var FAST_ABS = true
 
+    @NativeThreadLocal
     var FAST_FLOOR = true
 
+    @NativeThreadLocal
     var FAST_CEIL = true
 
+    @NativeThreadLocal
     var FAST_ROUND = true
 
+    @NativeThreadLocal
     var FAST_ATAN2 = true
 
+    @NativeThreadLocal
     var FAST_POW = true
 
+    @NativeThreadLocal
     var CONTACT_STACK_INIT_SIZE = 10
 
+    @NativeThreadLocal
     var SINCOS_LUT_ENABLED = true
     /**
      * smaller the precision, the larger the table. If a small table is used (eg, precision is .006 or
@@ -88,6 +98,7 @@ object Settings {
      * and speed of lerp vs non lerp. Or, run the tests yourself in [SinCosTest].
      */
 
+    @NativeThreadLocal
     var SINCOS_LUT_LERP = false
 
 
@@ -97,12 +108,14 @@ object Settings {
      * The maximum number of contact points between two convex shapes.
      */
 
+    @NativeThreadLocal
     var maxManifoldPoints = 2
 
     /**
      * The maximum number of vertices on a convex polygon.
      */
 
+    @NativeThreadLocal
     var maxPolygonVertices = 8
 
     /**
@@ -110,6 +123,7 @@ object Settings {
      * without triggering a tree adjustment. This is in meters.
      */
 
+    @NativeThreadLocal
     var aabbExtension = 0.1f
 
     /**
@@ -117,6 +131,7 @@ object Settings {
      * based on the current displacement. This is a dimensionless multiplier.
      */
 
+    @NativeThreadLocal
     var aabbMultiplier = 2.0f
 
     /**
@@ -124,6 +139,7 @@ object Settings {
      * numerically significant, but visually insignificant.
      */
 
+    @NativeThreadLocal
     var linearSlop = 0.005f
 
     /**
@@ -131,6 +147,7 @@ object Settings {
      * numerically significant, but visually insignificant.
      */
 
+    @NativeThreadLocal
     var angularSlop = 2.0f / 180.0f * PI
 
     /**
@@ -139,10 +156,12 @@ object Settings {
      * artifacts for vertex collision.
      */
 
+    @NativeThreadLocal
     var polygonRadius = 2.0f * linearSlop
 
     /** Maximum number of sub-steps per contact in continuous physics simulation.  */
 
+    @NativeThreadLocal
     var maxSubSteps = 8
 
     // Dynamics
@@ -151,6 +170,7 @@ object Settings {
      * Maximum number of contacts to be handled to solve a TOI island.
      */
 
+    @NativeThreadLocal
     var maxTOIContacts = 32
 
     /**
@@ -158,6 +178,7 @@ object Settings {
      * below this threshold will be treated as inelastic.
      */
 
+    @NativeThreadLocal
     var velocityThreshold = 1.0f
 
     /**
@@ -165,6 +186,7 @@ object Settings {
      * overshoot.
      */
 
+    @NativeThreadLocal
     var maxLinearCorrection = 0.2f
 
     /**
@@ -172,6 +194,7 @@ object Settings {
      * overshoot.
      */
 
+    @NativeThreadLocal
     var maxAngularCorrection = 8.0f / 180.0f * PI
 
     /**
@@ -179,8 +202,10 @@ object Settings {
      * numerical problems. You shouldn't need to adjust this.
      */
 
+    @NativeThreadLocal
     var maxTranslation = 2.0f
 
+    @NativeThreadLocal
     var maxTranslationSquared = maxTranslation * maxTranslation
 
     /**
@@ -188,8 +213,10 @@ object Settings {
      * numerical problems. You shouldn't need to adjust this.
      */
 
+    @NativeThreadLocal
     var maxRotation = 0.5f * PI
 
+    @NativeThreadLocal
     var maxRotationSquared = maxRotation * maxRotation
 
     /**
@@ -197,8 +224,10 @@ object Settings {
      * overlap is removed in one time step. However using values close to 1 often lead to overshoot.
      */
 
+    @NativeThreadLocal
     var baumgarte = 0.2f
 
+    @NativeThreadLocal
     var toiBaugarte = 0.75f
 
 
@@ -208,18 +237,21 @@ object Settings {
      * The time that a body must be still before it will go to sleep.
      */
 
+    @NativeThreadLocal
     var timeToSleep = 0.5f
 
     /**
      * A body cannot sleep if its linear velocity is above this tolerance.
      */
 
+    @NativeThreadLocal
     var linearSleepTolerance = 0.01f
 
     /**
      * A body cannot sleep if its angular velocity is above this tolerance.
      */
 
+    @NativeThreadLocal
     var angularSleepTolerance = 2.0f / 180.0f * PI
 
     // Particle

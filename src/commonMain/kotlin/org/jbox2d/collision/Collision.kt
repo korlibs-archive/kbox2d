@@ -335,6 +335,8 @@ class Collision(private val pool: IWorldPool) {
         }
     }
 
+    private val poolVec2 = Vec2()
+
     /**
      * Find the max separation between poly1 and poly2 using edge normals from poly1.
      *
@@ -353,7 +355,7 @@ class Collision(private val pool: IWorldPool) {
         val v1s = poly1.m_vertices
         val v2s = poly2.m_vertices
 
-        Transform.mulTransToOutUnsafe(xf2, xf1, xf)
+        Transform.mulTransToOutUnsafe(xf2, xf1, xf, poolVec2)
         val xfq = xf.q
 
         var bestIndex = 0
@@ -872,10 +874,12 @@ class Collision(private val pool: IWorldPool) {
             ISOLATED, CONCAVE, CONVEX
         }
 
+        private val poolVec2 = Vec2()
+
         fun collide(manifold: Manifold, edgeA: EdgeShape, xfA: Transform,
                     polygonB: PolygonShape, xfB: Transform) {
 
-            Transform.mulTransToOutUnsafe(xfA, xfB, m_xf)
+            Transform.mulTransToOutUnsafe(xfA, xfB, m_xf, poolVec2)
             Transform.mulToOutUnsafe(m_xf, polygonB.m_centroid, m_centroidB)
 
             m_v0 = edgeA.m_vertex0
@@ -1312,6 +1316,11 @@ class Collision(private val pool: IWorldPool) {
         }
     }
 
+    // #### COLLISION STUFF (not from collision.h or collision.cpp) ####
+
+    // djm pooling
+    private val d = Vec2()
+
     companion object {
 
         val NULL_FEATURE = Int.MAX_VALUE
@@ -1416,10 +1425,5 @@ class Collision(private val pool: IWorldPool) {
 
             return numOut
         }
-
-        // #### COLLISION STUFF (not from collision.h or collision.cpp) ####
-
-        // djm pooling
-        private val d = Vec2()
     }
 }

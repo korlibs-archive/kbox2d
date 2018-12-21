@@ -40,7 +40,7 @@ import org.jbox2d.pooling.IWorldPool
  *
  * @author daniel
  */
-class TimeOfImpact(private val pool: IWorldPool) {
+class TimeOfImpact(private val pool: IWorldPool, private val stats: TimeOfImpact.Stats = TimeOfImpact.Stats()) {
 
 
     // djm pooling
@@ -104,7 +104,7 @@ class TimeOfImpact(private val pool: IWorldPool) {
         // CCD via the local separating axis method. This seeks progression
         // by computing the largest time at which separation is maintained.
 
-        ++toiCalls
+        ++stats.toiCalls
 
         output.state = TOIOutputState.UNKNOWN
         output.t = input.tMax
@@ -238,7 +238,7 @@ class TimeOfImpact(private val pool: IWorldPool) {
                     }
 
                     ++rootIterCount
-                    ++toiRootIters
+                    ++stats.toiRootIters
 
                     val s = fcn.evaluate(indexes[0], indexes[1], t)
 
@@ -262,7 +262,7 @@ class TimeOfImpact(private val pool: IWorldPool) {
                     }
                 }
 
-                toiMaxRootIters = MathUtils.max(toiMaxRootIters, rootIterCount)
+                stats.toiMaxRootIters = MathUtils.max(stats.toiMaxRootIters, rootIterCount)
 
                 ++pushBackIter
 
@@ -272,7 +272,7 @@ class TimeOfImpact(private val pool: IWorldPool) {
             }
 
             ++iter
-            ++toiIters
+            ++stats.toiIters
 
             if (done) {
                 // System.out.println("done");
@@ -289,13 +289,15 @@ class TimeOfImpact(private val pool: IWorldPool) {
         }
 
         // System.out.printf("final sweeps: %f, %f, %f; %f, %f, %f", input.s)
-        toiMaxIters = MathUtils.max(toiMaxIters, iter)
+        stats.toiMaxIters = MathUtils.max(stats.toiMaxIters, iter)
     }
 
     companion object {
         val MAX_ITERATIONS = 20
         val MAX_ROOT_ITERATIONS = 50
+    }
 
+    class Stats {
         var toiCalls = 0
         var toiIters = 0
         var toiMaxIters = 0

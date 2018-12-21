@@ -55,13 +55,11 @@ import org.jbox2d.pooling.IWorldPool
  * @author Daniel Murphy
  */
 class DefaultWorldPool(argSize: Int, argContainerSize: Int) : IWorldPool {
-    class LambdaOrderedStack<T>(argSize: Int, argContainerSize: Int, val newInstanceLambda: () -> T) : OrderedStack<T>(argSize, argContainerSize) {
-        override fun newInstance(): T = newInstanceLambda()
-    }
+    private val world = this
 
     private val vecs: OrderedStack<Vec2> = LambdaOrderedStack(argSize, argContainerSize) { Vec2() }
     private val vec3s: OrderedStack<Vec3> = LambdaOrderedStack(argSize, argContainerSize) { Vec3() }
-    private val mats: OrderedStack<Mat22>  = LambdaOrderedStack(argSize, argContainerSize) { Mat22() }
+    private val mats: OrderedStack<Mat22> = LambdaOrderedStack(argSize, argContainerSize) { Mat22() }
     private val mat33s: OrderedStack<Mat33> = LambdaOrderedStack(argSize, argContainerSize) { Mat33() }
     private val aabbs: OrderedStack<AABB> = LambdaOrderedStack(argSize, argContainerSize) { AABB() }
     private val rots: OrderedStack<Rot> = LambdaOrderedStack(argSize, argContainerSize) { Rot() }
@@ -70,18 +68,11 @@ class DefaultWorldPool(argSize: Int, argContainerSize: Int) : IWorldPool {
     private val aints = HashMap<Int, IntArray>()
     private val avecs = HashMap<Int, Array<Vec2>>()
 
-    private val world = this
-
-    class ContactMutableStack(private val newInstanceLambda: () -> Contact, val newArrayLambda: (Int) -> Array<out Contact?>) : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
-        override fun newInstance(): Contact = newInstanceLambda()
-        override fun newArray(size: Int): Array<Contact> = newArrayLambda(size) as Array<Contact>
-    }
-
-    private val pcstack = ContactMutableStack({ PolygonContact(world) }, { arrayOfNulls<PolygonContact>(it) })
-    private val ccstack = ContactMutableStack({ CircleContact(world) }, { arrayOfNulls<CircleContact>(it) })
-    private val cpstack = ContactMutableStack({ PolygonAndCircleContact(world) }, { arrayOfNulls<PolygonAndCircleContact>(it) })
-    private val ecstack = ContactMutableStack({ EdgeAndCircleContact(world) }, { arrayOfNulls<EdgeAndCircleContact>(it) })
-    private val epstack = ContactMutableStack({ EdgeAndPolygonContact(world) }, { arrayOfNulls<EdgeAndPolygonContact>(it) })
+    private val pcstack  = ContactMutableStack({ PolygonContact(world) }, { arrayOfNulls<PolygonContact>(it) })
+    private val ccstack  = ContactMutableStack({ CircleContact(world) }, { arrayOfNulls<CircleContact>(it) })
+    private val cpstack  = ContactMutableStack({ PolygonAndCircleContact(world) }, { arrayOfNulls<PolygonAndCircleContact>(it) })
+    private val ecstack  = ContactMutableStack({ EdgeAndCircleContact(world) }, { arrayOfNulls<EdgeAndCircleContact>(it) })
+    private val epstack  = ContactMutableStack({ EdgeAndPolygonContact(world) }, { arrayOfNulls<EdgeAndPolygonContact>(it) })
     private val chcstack = ContactMutableStack({ ChainAndCircleContact(world) }, { arrayOfNulls<ChainAndCircleContact>(it) })
     private val chpstack = ContactMutableStack({ ChainAndPolygonContact(world) }, { arrayOfNulls<ChainAndPolygonContact>(it) })
 
@@ -188,3 +179,19 @@ class DefaultWorldPool(argSize: Int, argContainerSize: Int) : IWorldPool {
         return avecs[argLength]!!
     }
 }
+
+class LambdaOrderedStack<T>(argSize: Int, argContainerSize: Int, val newInstanceLambda: () -> T) : OrderedStack<T>(argSize, argContainerSize) {
+    override fun newInstance(): T {
+        //println("newInstanceLambda:$newInstanceLambda")
+        return newInstanceLambda()
+    }
+}
+
+class ContactMutableStack(private val newInstanceLambda: () -> Contact, val newArrayLambda: (Int) -> Array<out Contact?>) : MutableStack<Contact>(Settings.CONTACT_STACK_INIT_SIZE) {
+    override fun newInstance(): Contact = newInstanceLambda()
+    override fun newArray(size: Int): Array<Contact> {
+        //println("ContactMutableStack.newArray: $this, $newInstanceLambda, $newArrayLambda")
+        return newArrayLambda(size) as Array<Contact>
+    }
+}
+

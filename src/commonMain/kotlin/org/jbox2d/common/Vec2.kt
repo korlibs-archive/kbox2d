@@ -184,8 +184,8 @@ data class Vec2  constructor(
     }
 
     companion object {
+        @NativeThreadLocal
         internal val dummy = Vec2()
-
 
         fun abs(a: Vec2): Vec2 {
             return Vec2(MathUtils.abs(a.x), MathUtils.abs(a.y))

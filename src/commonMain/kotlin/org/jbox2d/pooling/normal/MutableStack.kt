@@ -26,14 +26,15 @@ package org.jbox2d.pooling.normal
 import org.jbox2d.internal.*
 import org.jbox2d.pooling.IDynamicStack
 
-abstract class MutableStack<E>(argInitSize: Int) : IDynamicStack<E> {
-
+abstract class MutableStack<E>(private val argInitSize: Int) : IDynamicStack<E> {
     private var stack: Array<E>? = null
     private var index: Int = 0
     private var size: Int = 0
 
-    init {
-        extendStack(argInitSize)
+    private fun ensureInit() {
+        if (stack == null) {
+            extendStack(argInitSize)
+        }
     }
 
     private fun extendStack(argSize: Int) {
@@ -49,6 +50,7 @@ abstract class MutableStack<E>(argInitSize: Int) : IDynamicStack<E> {
     }
 
     override fun pop(): E {
+        ensureInit()
         if (index >= size) {
             extendStack(size * 2)
         }
@@ -56,6 +58,7 @@ abstract class MutableStack<E>(argInitSize: Int) : IDynamicStack<E> {
     }
 
     override fun push(argObject: E) {
+        ensureInit()
         assert(index > 0)
         stack!![--index] = argObject
     }

@@ -33,3 +33,5 @@ internal fun <T : Comparable<T>> Arrays_sort(array: Array<T>, fromIndex: Int, to
 }
 
 expect fun System_nanoTime(): Long
+
+expect annotation class NativeThreadLocal()

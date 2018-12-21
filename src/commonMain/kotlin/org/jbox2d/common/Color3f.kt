@@ -46,6 +46,8 @@
 
 package org.jbox2d.common
 
+import org.jbox2d.internal.*
+
 // updated to rev 100
 /**
  * Similar to javax.vecmath.Color3f holder
@@ -87,15 +89,19 @@ class Color3f {
 
     companion object {
 
-
+        @NativeThreadLocal
         val WHITE = Color3f(1f, 1f, 1f)
 
+        @NativeThreadLocal
         val BLACK = Color3f(0f, 0f, 0f)
 
+        @NativeThreadLocal
         val BLUE = Color3f(0f, 0f, 1f)
 
+        @NativeThreadLocal
         val GREEN = Color3f(0f, 1f, 0f)
 
+        @NativeThreadLocal
         val RED = Color3f(1f, 0f, 0f)
     }
 }

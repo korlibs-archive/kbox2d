@@ -32,8 +32,7 @@ import org.jbox2d.internal.*
  * @author Daniel Murphy
  */
 abstract class OrderedStack<E>(private val size: Int, argContainerSize: Int) {
-
-    private val pool: Array<Any> = Array(size) { newInstance() as Any }
+    private val pool: Array<Any> by lazy { Array(size) { newInstance() as Any } }
     private var index: Int = 0
     private val container: Array<Any> = Array(argContainerSize) { Unit }
 

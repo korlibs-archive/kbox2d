@@ -80,14 +80,9 @@ class MathUtils : PlatformMathUtils() {
         val RAD2DEG = 180 / PI
 
 
-        val sinLUT = FloatArray(Settings.SINCOS_LUT_LENGTH)
-
-        init {
-            for (i in 0 until Settings.SINCOS_LUT_LENGTH) {
-                sinLUT[i] = kotlin.math.sin((i * Settings.SINCOS_LUT_PRECISION).toDouble()).toFloat()
-            }
+        val sinLUT = FloatArray(Settings.SINCOS_LUT_LENGTH) {
+            kotlin.math.sin((it * Settings.SINCOS_LUT_PRECISION).toDouble()).toFloat()
         }
-
 
         fun sin(x: Float): Float {
             return if (Settings.SINCOS_LUT_ENABLED) {

@@ -32,7 +32,6 @@ open class PlatformMathUtils {
         private val SHIFT23 = (1 shl 23).toFloat()
         private val INV_SHIFT23 = 1.0f / SHIFT23
 
-
         fun fastPow(a: Float, b: Float): Float {
             var b = b
             var x = a.toRawBits().toFloat()
