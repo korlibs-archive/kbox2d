@@ -1,15 +1,15 @@
 /*******************************************************************************
  * Copyright (c) 2013, Daniel Murphy
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 	* Redistributions of source code must retain the above copyright notice,
- * 	  this list of conditions and the following disclaimer.
- * 	* Redistributions in binary form must reproduce the above copyright notice,
- * 	  this list of conditions and the following disclaimer in the documentation
- * 	  and/or other materials provided with the distribution.
- * 
+ * * Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -20,11 +20,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- ******************************************************************************/
-package org.jbox2d.collision;
+ */
+package org.jbox2d.collision
 
-import org.jbox2d.collision.Distance.DistanceProxy;
-import org.jbox2d.common.Transform;
+import org.jbox2d.collision.Distance.DistanceProxy
+import org.jbox2d.common.Transform
 
 /**
  * Input for Distance.
@@ -32,10 +32,15 @@ import org.jbox2d.common.Transform;
  * in the computation.
  *
  */
-public class DistanceInput {
-	public DistanceProxy proxyA = new DistanceProxy();
-	public DistanceProxy proxyB = new DistanceProxy();
-	public Transform transformA = new Transform();
-	public Transform transformB = new Transform();
-	public boolean useRadii;
+class DistanceInput {
+    @JvmField
+    var proxyA = DistanceProxy()
+    @JvmField
+    var proxyB = DistanceProxy()
+    @JvmField
+    var transformA = Transform()
+    @JvmField
+    var transformB = Transform()
+    @JvmField
+    var useRadii: Boolean = false
 }
