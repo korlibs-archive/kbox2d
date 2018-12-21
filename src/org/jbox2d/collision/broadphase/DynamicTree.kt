@@ -76,7 +76,7 @@ class DynamicTree : BroadPhaseStrategy {
 
                 val child1 = node.child1
                 val child2 = node.child2
-                val balance = MathUtils.abs(child2.height - child1.height)
+                val balance = MathUtils.abs(child2!!.height - child1!!.height)
                 maxBalance = MathUtils.max(maxBalance, balance)
             }
 
@@ -197,7 +197,7 @@ class DynamicTree : BroadPhaseStrategy {
         return true
     }
 
-    override fun getUserData(proxyId: Int): Any {
+    override fun getUserData(proxyId: Int): Any? {
         assert(0 <= proxyId && proxyId < m_nodeCapacity)
         return m_nodes!![proxyId].userData
     }
@@ -360,8 +360,8 @@ class DynamicTree : BroadPhaseStrategy {
         if (node.child1 == null) {
             return 0
         }
-        val height1 = computeHeight(node.child1)
-        val height2 = computeHeight(node.child2)
+        val height1 = computeHeight(node.child1!!)
+        val height2 = computeHeight(node.child2!!)
         return 1 + MathUtils.max(height1, height2)
     }
 
@@ -474,7 +474,7 @@ class DynamicTree : BroadPhaseStrategy {
         }
         val nodeId = m_freeList
         val treeNode = m_nodes!![nodeId]
-        m_freeList = if (treeNode.parent != null) treeNode.parent.id else NULL_NODE
+        m_freeList = if (treeNode.parent != null) treeNode.parent!!.id else NULL_NODE
 
         treeNode.parent = null
         treeNode.child1 = null
@@ -526,7 +526,7 @@ class DynamicTree : BroadPhaseStrategy {
 
             // Cost of descending into child1
             val cost1: Float
-            if (child1.child1 == null) {
+            if (child1!!.child1 == null) {
                 combinedAABB.combine(leafAABB, child1.aabb)
                 cost1 = combinedAABB.perimeter + inheritanceCost
             } else {
@@ -538,7 +538,7 @@ class DynamicTree : BroadPhaseStrategy {
 
             // Cost of descending into child2
             val cost2: Float
-            if (child2.child1 == null) {
+            if (child2!!.child1 == null) {
                 combinedAABB.combine(leafAABB, child2.aabb)
                 cost2 = combinedAABB.perimeter + inheritanceCost
             } else {
@@ -616,12 +616,12 @@ class DynamicTree : BroadPhaseStrategy {
         }
 
         val parent = leaf.parent
-        val grandParent = parent.parent
+        val grandParent = parent?.parent
         val sibling: DynamicTreeNode
-        if (parent.child1 === leaf) {
-            sibling = parent.child2
+        if (parent!!.child1 === leaf) {
+            sibling = parent!!.child2!!
         } else {
-            sibling = parent.child1
+            sibling = parent!!.child1!!
         }
 
         if (grandParent != null) {
@@ -642,7 +642,7 @@ class DynamicTree : BroadPhaseStrategy {
                 val child1 = index.child1
                 val child2 = index.child2
 
-                index.aabb.combine(child1.aabb, child2.aabb)
+                index.aabb.combine(child1!!.aabb, child2!!.aabb)
                 index.height = 1 + MathUtils.max(child1.height, child2.height)
 
                 index = index.parent
@@ -668,8 +668,8 @@ class DynamicTree : BroadPhaseStrategy {
 
         val iB = A.child1
         val iC = A.child2
-        assert(0 <= iB.id && iB.id < m_nodeCapacity)
-        assert(0 <= iC.id && iC.id < m_nodeCapacity)
+        assert(0 <= iB!!.id && iB.id < m_nodeCapacity)
+        assert(0 <= iC!!.id && iC.id < m_nodeCapacity)
 
         val B = iB
         val C = iC
@@ -694,11 +694,11 @@ class DynamicTree : BroadPhaseStrategy {
 
             // A's old parent should point to C
             if (C.parent != null) {
-                if (C.parent.child1 === iA) {
-                    C.parent.child1 = iC
+                if (C.parent!!.child1 === iA) {
+                    C.parent!!.child1 = iC
                 } else {
-                    assert(C.parent.child2 === iA)
-                    C.parent.child2 = iC
+                    assert(C.parent!!.child2 === iA)
+                    C.parent!!.child2 = iC
                 }
             } else {
                 m_root = iC
@@ -734,8 +734,8 @@ class DynamicTree : BroadPhaseStrategy {
             val iE = B.child2
             val D = iD
             val E = iE
-            assert(0 <= iD.id && iD.id < m_nodeCapacity)
-            assert(0 <= iE.id && iE.id < m_nodeCapacity)
+            assert(0 <= iD!!.id && iD.id < m_nodeCapacity)
+            assert(0 <= iE!!.id && iE.id < m_nodeCapacity)
 
             // Swap A and B
             B.child1 = iA
@@ -744,18 +744,18 @@ class DynamicTree : BroadPhaseStrategy {
 
             // A's old parent should point to B
             if (B.parent != null) {
-                if (B.parent.child1 === iA) {
-                    B.parent.child1 = iB
+                if (B.parent!!.child1 === iA) {
+                    B.parent!!.child1 = iB
                 } else {
-                    assert(B.parent.child2 === iA)
-                    B.parent.child2 = iB
+                    assert(B.parent!!.child2 === iA)
+                    B.parent!!.child2 = iB
                 }
             } else {
                 m_root = iB
             }
 
             // Rotate
-            if (D.height > E.height) {
+            if (D!!.height > E!!.height) {
                 B.child2 = iD
                 A.child1 = iE
                 E.parent = iA
@@ -863,10 +863,10 @@ class DynamicTree : BroadPhaseStrategy {
         argDraw.drawString(textVec.x, textVec.y, node.id.toString() + "-" + (spot + 1) + "/" + height, color)
 
         if (node.child1 != null) {
-            drawTree(argDraw, node.child1, spot + 1, height)
+            drawTree(argDraw, node.child1!!, spot + 1, height)
         }
         if (node.child2 != null) {
-            drawTree(argDraw, node.child2, spot + 1, height)
+            drawTree(argDraw, node.child2!!, spot + 1, height)
         }
     }
 

@@ -53,7 +53,7 @@ interface BroadPhase {
 
     fun touchProxy(proxyId: Int)
 
-    fun getUserData(proxyId: Int): Any
+    fun getUserData(proxyId: Int): Any?
 
     fun getFatAABB(proxyId: Int): AABB
 

@@ -55,7 +55,7 @@ interface BroadPhaseStrategy {
      */
     fun moveProxy(proxyId: Int, aabb: AABB, displacement: Vec2): Boolean
 
-    fun getUserData(proxyId: Int): Any
+    fun getUserData(proxyId: Int): Any?
 
     fun getFatAABB(proxyId: Int): AABB
 

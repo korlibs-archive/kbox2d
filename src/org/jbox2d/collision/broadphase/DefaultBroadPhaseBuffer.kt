@@ -103,7 +103,7 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
         bufferMove(proxyId)
     }
 
-    override fun getUserData(proxyId: Int): Any {
+    override fun getUserData(proxyId: Int): Any? {
         return m_tree.getUserData(proxyId)
     }
 
