@@ -294,7 +294,7 @@ class Body(bd: BodyDef,
             while (ce != null) {
                 val ce0 = ce
                 ce = ce.next
-                world.m_contactManager.destroy(ce0.contact)
+                world.m_contactManager.destroy(ce0.contact!!)
             }
             m_contactList = null
             val broadPhase = world.m_contactManager.m_broadPhase
@@ -416,7 +416,7 @@ class Body(bd: BodyDef,
                 while (ce != null) {
                     val ce0 = ce
                     ce = ce.next
-                    world.m_contactManager.destroy(ce0.contact)
+                    world.m_contactManager.destroy(ce0.contact!!)
                 }
                 m_contactList = null
             }

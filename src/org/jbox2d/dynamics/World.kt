@@ -225,7 +225,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
      * to avoid missing contacts.
      */
     val contactList: Contact
-        get() = m_contactManager.m_contactList
+        get() = m_contactManager!!.m_contactList!!
 
 
     /**
@@ -657,7 +657,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
         while (ce != null) {
             val ce0 = ce
             ce = ce.next
-            m_contactManager.destroy(ce0.contact)
+            m_contactManager.destroy(ce0.contact!!)
         }
         body.m_contactList = null
 
@@ -1147,7 +1147,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
 
         // Size the island for the worst case.
         island.init(bodyCount, m_contactManager.m_contactCount, jointCount,
-                m_contactManager.m_contactListener)
+                m_contactManager.m_contactListener!!)
 
         // Clear all the island flags.
         run {
@@ -1330,7 +1330,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
 
         val island = toiIsland
         island.init(2 * Settings.maxTOIContacts, Settings.maxTOIContacts, 0,
-                m_contactManager.m_contactListener)
+                m_contactManager.m_contactListener!!)
         if (m_stepComplete) {
             var b = bodyList
             while (b != null) {
