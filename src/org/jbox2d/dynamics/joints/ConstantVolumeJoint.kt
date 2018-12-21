@@ -32,7 +32,10 @@ import org.jbox2d.dynamics.World
 import org.jbox2d.dynamics.contacts.Position
 import org.jbox2d.dynamics.contacts.Velocity
 
-class ConstantVolumeJoint(private val world: World, def: ConstantVolumeJointDef) : Joint(world.pool, def) {
+class ConstantVolumeJoint(
+        @JvmField private val world: World,
+        def: ConstantVolumeJointDef
+) : Joint(world.pool, def) {
     @JvmField
     val bodies: Array<Body>
     private val targetLengths: FloatArray
