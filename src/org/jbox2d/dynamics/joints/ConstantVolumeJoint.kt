@@ -73,7 +73,7 @@ class ConstantVolumeJoint(private val world: World, def: ConstantVolumeJointDef)
         }
         targetVolume = bodyArea
 
-        if (def.joints != null && def.joints.size != def.bodies.size) {
+        if (def.joints != null && def.joints!!.size != def.bodies.size) {
             throw IllegalArgumentException(
                     "Incorrect joint definition.  Joints have to correspond to the bodies")
         }
@@ -90,7 +90,7 @@ class ConstantVolumeJoint(private val world: World, def: ConstantVolumeJointDef)
                 joints[i] = world.createJoint(djd) as DistanceJoint
             }
         } else {
-            joints = def.joints.toTypedArray()
+            joints = def.joints!!.toTypedArray()
         }
 
         normals = Array(bodies.size) { Vec2() }
