@@ -21,22 +21,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
+/**
+ * Created at 4:14:34 AM Jul 17, 2010
+ */
 package org.jbox2d.pooling.arrays;
 
 import java.util.HashMap;
 
-import org.jbox2d.common.Vec2;
-
 /**
- * not thread safe Vec2[] pool
- * @author dmurph
- *
+ * Not thread safe int[] pooling
+ * @author Daniel Murphy
  */
-public class Vec2Array {
-
-	private final HashMap<Integer, Vec2[]> map = new HashMap<Integer, Vec2[]>();
+public class IntArrayPool {
 	
-	public Vec2[] get( int argLength){
+	private final HashMap<Integer, int[]> map = new HashMap<Integer, int[]>();
+	
+	public int[] get( int argLength){
 		assert(argLength > 0);
 		
 		if(!map.containsKey(argLength)){
@@ -47,11 +47,7 @@ public class Vec2Array {
 		return map.get(argLength);
 	}
 	
-	protected Vec2[] getInitializedArray(int argLength){
-		final Vec2[] ray = new Vec2[argLength];
-		for (int i = 0; i < ray.length; i++) {
-			ray[i] = new Vec2();
-		}
-		return ray;
+	protected int[] getInitializedArray(int argLength){
+		return new int[argLength];
 	}
 }

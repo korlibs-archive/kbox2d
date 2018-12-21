@@ -31,8 +31,8 @@ import org.jbox2d.common.Rot;
 import org.jbox2d.common.Settings;
 import org.jbox2d.common.Transform;
 import org.jbox2d.common.Vec2;
-import org.jbox2d.pooling.arrays.IntArray;
-import org.jbox2d.pooling.arrays.Vec2Array;
+import org.jbox2d.pooling.arrays.IntArrayPool;
+import org.jbox2d.pooling.arrays.Vec2ArrayPool;
 
 /**
  * A convex polygon shape. Polygons have a maximum number of vertices equal to _maxPolygonVertices.
@@ -117,8 +117,8 @@ public class PolygonShape extends Shape {
    * @warning the points may be re-ordered, even if they form a convex polygon.
    * @warning collinear points are removed.
    */
-  public final void set(final Vec2[] verts, final int num, final Vec2Array vecPool,
-      final IntArray intPool) {
+  public final void set(final Vec2[] verts, final int num, final Vec2ArrayPool vecPool,
+      final IntArrayPool intPool) {
     assert (3 <= num && num <= Settings.maxPolygonVertices);
     if (num < 3) {
       setAsBox(1.0f, 1.0f);

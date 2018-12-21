@@ -73,7 +73,7 @@ import org.jbox2d.particle.ParticleGroupDef;
 import org.jbox2d.particle.ParticleSystem;
 import org.jbox2d.pooling.IDynamicStack;
 import org.jbox2d.pooling.IWorldPool;
-import org.jbox2d.pooling.arrays.Vec2Array;
+import org.jbox2d.pooling.arrays.Vec2ArrayPool;
 import org.jbox2d.pooling.normal.DefaultWorldPool;
 
 /**
@@ -675,7 +675,7 @@ public class World {
   private final Transform xf = new Transform();
   private final Vec2 cA = new Vec2();
   private final Vec2 cB = new Vec2();
-  private final Vec2Array avs = new Vec2Array();
+  private final Vec2ArrayPool avs = new Vec2ArrayPool();
 
   /**
    * Call this to draw shapes and other debug draw data.
@@ -1566,7 +1566,7 @@ public class World {
   private final Vec2 axis = new Vec2();
   private final Vec2 v1 = new Vec2();
   private final Vec2 v2 = new Vec2();
-  private final Vec2Array tlvertices = new Vec2Array();
+  private final Vec2ArrayPool tlvertices = new Vec2ArrayPool();
 
   private void drawShape(Fixture fixture, Transform xf, Color3f color, boolean wireframe) {
     switch (fixture.getType()) {
