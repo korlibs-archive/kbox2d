@@ -176,13 +176,13 @@ abstract class Contact protected constructor(@JvmField protected val pool: IWorl
      * Get the world manifold.
      */
     fun getWorldManifold(worldManifold: WorldManifold) {
-        val bodyA = m_fixtureA!!.body
-        val bodyB = m_fixtureB!!.body
-        val shapeA = m_fixtureA!!.shape
-        val shapeB = m_fixtureB!!.shape
+        val bodyA = m_fixtureA!!.m_body
+        val bodyB = m_fixtureB!!.m_body
+        val shapeA = m_fixtureA!!.m_shape
+        val shapeB = m_fixtureB!!.m_shape
 
-        worldManifold.initialize(m_manifold, bodyA.m_xf, shapeA.m_radius,
-                bodyB.m_xf, shapeB.m_radius)
+        worldManifold.initialize(m_manifold, bodyA!!.m_xf, shapeA!!.m_radius,
+                bodyB!!.m_xf, shapeB!!.m_radius)
     }
 
     fun resetFriction() {
@@ -216,16 +216,16 @@ abstract class Contact protected constructor(@JvmField protected val pool: IWorl
         val sensorB = m_fixtureB!!.isSensor
         val sensor = sensorA || sensorB
 
-        val bodyA = m_fixtureA!!.body
-        val bodyB = m_fixtureB!!.body
+        val bodyA = m_fixtureA!!.m_body!!
+        val bodyB = m_fixtureB!!.m_body!!
         val xfA = bodyA.m_xf
         val xfB = bodyB.m_xf
         // log.debug("TransformA: "+xfA);
         // log.debug("TransformB: "+xfB);
 
         if (sensor) {
-            val shapeA = m_fixtureA!!.shape
-            val shapeB = m_fixtureB!!.shape
+            val shapeA = m_fixtureA!!.m_shape!!
+            val shapeB = m_fixtureB!!.m_shape!!
             touching = pool.collision.testOverlap(shapeA, m_indexA, shapeB, m_indexB, xfA, xfB)
 
             // Sensors don't generate manifolds.
@@ -254,8 +254,8 @@ abstract class Contact protected constructor(@JvmField protected val pool: IWorl
             }
 
             if (touching != wasTouching) {
-                bodyA.isAwake = true
-                bodyB.isAwake = true
+                bodyA!!.isAwake = true
+                bodyB!!.isAwake = true
             }
         }
 

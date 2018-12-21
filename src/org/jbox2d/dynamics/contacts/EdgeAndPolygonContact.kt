@@ -40,7 +40,7 @@ class EdgeAndPolygonContact(argPool: IWorldPool) : Contact(argPool) {
     }
 
     override fun evaluate(manifold: Manifold, xfA: Transform, xfB: Transform) {
-        pool.collision.collideEdgeAndPolygon(manifold, m_fixtureA!!.shape as EdgeShape, xfA,
-                m_fixtureB!!.shape as PolygonShape, xfB)
+        pool.collision.collideEdgeAndPolygon(manifold, m_fixtureA!!.m_shape as EdgeShape, xfA,
+                m_fixtureB!!.m_shape as PolygonShape, xfB)
     }
 }

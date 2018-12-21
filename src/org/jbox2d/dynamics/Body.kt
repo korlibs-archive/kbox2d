@@ -302,7 +302,7 @@ class Body(bd: BodyDef,
             while (f != null) {
                 val proxyCount = f.m_proxyCount
                 for (i in 0 until proxyCount) {
-                    broadPhase.touchProxy(f.m_proxies[i].proxyId)
+                    broadPhase.touchProxy(f.m_proxies!![i].proxyId)
                 }
                 f = f.m_next
             }

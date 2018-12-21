@@ -43,9 +43,9 @@ class ChainAndCircleContact(argPool: IWorldPool) : Contact(argPool) {
     }
 
     override fun evaluate(manifold: Manifold, xfA: Transform, xfB: Transform) {
-        val chain = m_fixtureA!!.shape as ChainShape
+        val chain = m_fixtureA!!.m_shape as ChainShape
         chain.getChildEdge(edge, m_indexA)
         pool.collision.collideEdgeAndCircle(manifold, edge, xfA,
-                m_fixtureB!!.shape as CircleShape, xfB)
+                m_fixtureB!!.m_shape as CircleShape, xfB)
     }
 }
