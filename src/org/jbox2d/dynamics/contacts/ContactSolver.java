@@ -501,78 +501,76 @@ public class ContactSolver {
 
         // final float k_errorTol = 1e-3f;
         // B2_NOT_USED(k_errorTol);
-        for (;;) {
-          //
-          // Case 1: vn = 0
-          //
-          // 0 = A * x' + b'
-          //
-          // Solve for x':
-          //
-          // x' = - inv(A) * b'
-          //
-          // Vec2 x = - Mul(c.normalMass, b);
-          Mat22 R1 = vc.normalMass;
-          float xx = R1.ex.x * bx + R1.ey.x * by;
-          float xy = R1.ex.y * bx + R1.ey.y * by;
-          xx *= -1;
-          xy *= -1;
+        //
+        // Case 1: vn = 0
+        //
+        // 0 = A * x' + b'
+        //
+        // Solve for x':
+        //
+        // x' = - inv(A) * b'
+        //
+        // Vec2 x = - Mul(c.normalMass, b);
+        Mat22 R1 = vc.normalMass;
+        float xx = R1.ex.x * bx + R1.ey.x * by;
+        float xy = R1.ex.y * bx + R1.ey.y * by;
+        xx *= -1;
+        xy *= -1;
 
-          if (xx >= 0.0f && xy >= 0.0f) {
-            // Get the incremental impulse
-            // Vec2 d = x - a;
-            float dx = xx - ax;
-            float dy = xy - ay;
+        if (xx >= 0.0f && xy >= 0.0f) {
+          // Get the incremental impulse
+          // Vec2 d = x - a;
+          float dx = xx - ax;
+          float dy = xy - ay;
 
-            // Apply incremental impulse
-            // Vec2 P1 = d.x * normal;
-            // Vec2 P2 = d.y * normal;
-            float P1x = dx * normalx;
-            float P1y = dx * normaly;
-            float P2x = dy * normalx;
-            float P2y = dy * normaly;
+          // Apply incremental impulse
+          // Vec2 P1 = d.x * normal;
+          // Vec2 P2 = d.y * normal;
+          float P1x = dx * normalx;
+          float P1y = dx * normaly;
+          float P2x = dy * normalx;
+          float P2y = dy * normaly;
 
-            /*
-             * vA -= invMassA * (P1 + P2); wA -= invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
-             * 
-             * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
-             */
+          /*
+           * vA -= invMassA * (P1 + P2); wA -= invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
+           *
+           * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
+           */
 
-            vA.x -= mA * (P1x + P2x);
-            vA.y -= mA * (P1y + P2y);
-            vB.x += mB * (P1x + P2x);
-            vB.y += mB * (P1y + P2y);
+          vA.x -= mA * (P1x + P2x);
+          vA.y -= mA * (P1y + P2y);
+          vB.x += mB * (P1x + P2x);
+          vB.y += mB * (P1y + P2y);
 
-            wA -= iA * (cp1rA.x * P1y - cp1rA.y * P1x + (cp2rA.x * P2y - cp2rA.y * P2x));
-            wB += iB * (cp1rB.x * P1y - cp1rB.y * P1x + (cp2rB.x * P2y - cp2rB.y * P2x));
+          wA -= iA * (cp1rA.x * P1y - cp1rA.y * P1x + (cp2rA.x * P2y - cp2rA.y * P2x));
+          wB += iB * (cp1rB.x * P1y - cp1rB.y * P1x + (cp2rB.x * P2y - cp2rB.y * P2x));
 
-            // Accumulate
-            cp1.normalImpulse = xx;
-            cp2.normalImpulse = xy;
+          // Accumulate
+          cp1.normalImpulse = xx;
+          cp2.normalImpulse = xy;
 
-            /*
-             * #if B2_DEBUG_SOLVER == 1 // Postconditions dv1 = vB + Cross(wB, cp1.rB) - vA -
-             * Cross(wA, cp1.rA); dv2 = vB + Cross(wB, cp2.rB) - vA - Cross(wA, cp2.rA);
-             * 
-             * // Compute normal velocity vn1 = Dot(dv1, normal); vn2 = Dot(dv2, normal);
-             * 
-             * assert(Abs(vn1 - cp1.velocityBias) < k_errorTol); assert(Abs(vn2 - cp2.velocityBias)
-             * < k_errorTol); #endif
-             */
-            if (DEBUG_SOLVER) {
-              // Postconditions
-              Vec2 dv1 = vB.add(Vec2.cross(wB, cp1rB).subLocal(vA).subLocal(Vec2.cross(wA, cp1rA)));
-              Vec2 dv2 = vB.add(Vec2.cross(wB, cp2rB).subLocal(vA).subLocal(Vec2.cross(wA, cp2rA)));
-              // Compute normal velocity
-              vn1 = Vec2.dot(dv1, normal);
-              vn2 = Vec2.dot(dv2, normal);
+          /*
+           * #if B2_DEBUG_SOLVER == 1 // Postconditions dv1 = vB + Cross(wB, cp1.rB) - vA -
+           * Cross(wA, cp1.rA); dv2 = vB + Cross(wB, cp2.rB) - vA - Cross(wA, cp2.rA);
+           *
+           * // Compute normal velocity vn1 = Dot(dv1, normal); vn2 = Dot(dv2, normal);
+           *
+           * assert(Abs(vn1 - cp1.velocityBias) < k_errorTol); assert(Abs(vn2 - cp2.velocityBias)
+           * < k_errorTol); #endif
+           */
+          if (DEBUG_SOLVER) {
+            // Postconditions
+            Vec2 dv1 = vB.add(Vec2.cross(wB, cp1rB).subLocal(vA).subLocal(Vec2.cross(wA, cp1rA)));
+            Vec2 dv2 = vB.add(Vec2.cross(wB, cp2rB).subLocal(vA).subLocal(Vec2.cross(wA, cp2rA)));
+            // Compute normal velocity
+            vn1 = Vec2.dot(dv1, normal);
+            vn2 = Vec2.dot(dv2, normal);
 
-              assert (MathUtils.abs(vn1 - cp1.velocityBias) < k_errorTol);
-              assert (MathUtils.abs(vn2 - cp2.velocityBias) < k_errorTol);
-            }
-            break;
+            assert (MathUtils.abs(vn1 - cp1.velocityBias) < k_errorTol);
+            assert (MathUtils.abs(vn2 - cp2.velocityBias) < k_errorTol);
           }
-
+        }
+        else {
           //
           // Case 2: vn1 = 0 and x2 = 0
           //
@@ -600,7 +598,7 @@ public class ContactSolver {
             /*
              * Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
              * invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
-             * 
+             *
              * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
              */
 
@@ -619,9 +617,9 @@ public class ContactSolver {
             /*
              * #if B2_DEBUG_SOLVER == 1 // Postconditions dv1 = vB + Cross(wB, cp1.rB) - vA -
              * Cross(wA, cp1.rA);
-             * 
+             *
              * // Compute normal velocity vn1 = Dot(dv1, normal);
-             * 
+             *
              * assert(Abs(vn1 - cp1.velocityBias) < k_errorTol); #endif
              */
             if (DEBUG_SOLVER) {
@@ -632,114 +630,111 @@ public class ContactSolver {
 
               assert (MathUtils.abs(vn1 - cp1.velocityBias) < k_errorTol);
             }
-            break;
-          }
+          } else {
 
-          //
-          // Case 3: wB = 0 and x1 = 0
-          //
-          // vn1 = a11 * 0 + a12 * x2' + b1'
-          // 0 = a21 * 0 + a22 * x2' + '
-          //
-          xx = 0.0f;
-          xy = -cp2.normalMass * by;
-          vn1 = vc.K.ey.x * xy + bx;
-          vn2 = 0.0f;
+            //
+            // Case 3: wB = 0 and x1 = 0
+            //
+            // vn1 = a11 * 0 + a12 * x2' + b1'
+            // 0 = a21 * 0 + a22 * x2' + '
+            //
+            xx = 0.0f;
+            xy = -cp2.normalMass * by;
+            vn1 = vc.K.ey.x * xy + bx;
+            vn2 = 0.0f;
 
-          if (xy >= 0.0f && vn1 >= 0.0f) {
-            // Resubstitute for the incremental impulse
-            float dx = xx - ax;
-            float dy = xy - ay;
+            if (xy >= 0.0f && vn1 >= 0.0f) {
+              // Resubstitute for the incremental impulse
+              float dx = xx - ax;
+              float dy = xy - ay;
 
-            // Apply incremental impulse
-            /*
-             * Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
-             * invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
-             * 
-             * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
-             */
+              // Apply incremental impulse
+              /*
+               * Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
+               * invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
+               *
+               * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
+               */
 
-            float P1x = normalx * dx;
-            float P1y = normaly * dx;
-            float P2x = normalx * dy;
-            float P2y = normaly * dy;
+              float P1x = normalx * dx;
+              float P1y = normaly * dx;
+              float P2x = normalx * dy;
+              float P2y = normaly * dy;
 
-            vA.x -= mA * (P1x + P2x);
-            vA.y -= mA * (P1y + P2y);
-            vB.x += mB * (P1x + P2x);
-            vB.y += mB * (P1y + P2y);
+              vA.x -= mA * (P1x + P2x);
+              vA.y -= mA * (P1y + P2y);
+              vB.x += mB * (P1x + P2x);
+              vB.y += mB * (P1y + P2y);
 
-            wA -= iA * (cp1rA.x * P1y - cp1rA.y * P1x + (cp2rA.x * P2y - cp2rA.y * P2x));
-            wB += iB * (cp1rB.x * P1y - cp1rB.y * P1x + (cp2rB.x * P2y - cp2rB.y * P2x));
+              wA -= iA * (cp1rA.x * P1y - cp1rA.y * P1x + (cp2rA.x * P2y - cp2rA.y * P2x));
+              wB += iB * (cp1rB.x * P1y - cp1rB.y * P1x + (cp2rB.x * P2y - cp2rB.y * P2x));
 
-            // Accumulate
-            cp1.normalImpulse = xx;
-            cp2.normalImpulse = xy;
+              // Accumulate
+              cp1.normalImpulse = xx;
+              cp2.normalImpulse = xy;
 
-            /*
-             * #if B2_DEBUG_SOLVER == 1 // Postconditions dv2 = vB + Cross(wB, cp2.rB) - vA -
-             * Cross(wA, cp2.rA);
-             * 
-             * // Compute normal velocity vn2 = Dot(dv2, normal);
-             * 
-             * assert(Abs(vn2 - cp2.velocityBias) < k_errorTol); #endif
-             */
-            if (DEBUG_SOLVER) {
-              // Postconditions
-              Vec2 dv2 = vB.add(Vec2.cross(wB, cp2rB).subLocal(vA).subLocal(Vec2.cross(wA, cp2rA)));
-              // Compute normal velocity
-              vn2 = Vec2.dot(dv2, normal);
+              /*
+               * #if B2_DEBUG_SOLVER == 1 // Postconditions dv2 = vB + Cross(wB, cp2.rB) - vA -
+               * Cross(wA, cp2.rA);
+               *
+               * // Compute normal velocity vn2 = Dot(dv2, normal);
+               *
+               * assert(Abs(vn2 - cp2.velocityBias) < k_errorTol); #endif
+               */
+              if (DEBUG_SOLVER) {
+                // Postconditions
+                Vec2 dv2 = vB.add(Vec2.cross(wB, cp2rB).subLocal(vA).subLocal(Vec2.cross(wA, cp2rA)));
+                // Compute normal velocity
+                vn2 = Vec2.dot(dv2, normal);
 
-              assert (MathUtils.abs(vn2 - cp2.velocityBias) < k_errorTol);
+                assert (MathUtils.abs(vn2 - cp2.velocityBias) < k_errorTol);
+              }
+            } else {
+
+              //
+              // Case 4: x1 = 0 and x2 = 0
+              //
+              // vn1 = b1
+              // vn2 = ;
+              xx = 0.0f;
+              xy = 0.0f;
+              vn1 = bx;
+              vn2 = by;
+
+              if (vn1 >= 0.0f && vn2 >= 0.0f) {
+                // Resubstitute for the incremental impulse
+                float dx = xx - ax;
+                float dy = xy - ay;
+
+                // Apply incremental impulse
+                /*
+                 * Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
+                 * invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
+                 *
+                 * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
+                 */
+
+                float P1x = normalx * dx;
+                float P1y = normaly * dx;
+                float P2x = normalx * dy;
+                float P2y = normaly * dy;
+
+                vA.x -= mA * (P1x + P2x);
+                vA.y -= mA * (P1y + P2y);
+                vB.x += mB * (P1x + P2x);
+                vB.y += mB * (P1y + P2y);
+
+                wA -= iA * (cp1rA.x * P1y - cp1rA.y * P1x + (cp2rA.x * P2y - cp2rA.y * P2x));
+                wB += iB * (cp1rB.x * P1y - cp1rB.y * P1x + (cp2rB.x * P2y - cp2rB.y * P2x));
+
+                // Accumulate
+                cp1.normalImpulse = xx;
+                cp2.normalImpulse = xy;
+              } else {
+                // No solution, give up. This is hit sometimes, but it doesn't seem to matter.
+              }
             }
-            break;
           }
-
-          //
-          // Case 4: x1 = 0 and x2 = 0
-          //
-          // vn1 = b1
-          // vn2 = ;
-          xx = 0.0f;
-          xy = 0.0f;
-          vn1 = bx;
-          vn2 = by;
-
-          if (vn1 >= 0.0f && vn2 >= 0.0f) {
-            // Resubstitute for the incremental impulse
-            float dx = xx - ax;
-            float dy = xy - ay;
-
-            // Apply incremental impulse
-            /*
-             * Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
-             * invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
-             * 
-             * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
-             */
-
-            float P1x = normalx * dx;
-            float P1y = normaly * dx;
-            float P2x = normalx * dy;
-            float P2y = normaly * dy;
-
-            vA.x -= mA * (P1x + P2x);
-            vA.y -= mA * (P1y + P2y);
-            vB.x += mB * (P1x + P2x);
-            vB.y += mB * (P1y + P2y);
-
-            wA -= iA * (cp1rA.x * P1y - cp1rA.y * P1x + (cp2rA.x * P2y - cp2rA.y * P2x));
-            wB += iB * (cp1rB.x * P1y - cp1rB.y * P1x + (cp2rB.x * P2y - cp2rB.y * P2x));
-
-            // Accumulate
-            cp1.normalImpulse = xx;
-            cp2.normalImpulse = xy;
-
-            break;
-          }
-
-          // No solution, give up. This is hit sometimes, but it doesn't seem to matter.
-          break;
         }
       }
 
