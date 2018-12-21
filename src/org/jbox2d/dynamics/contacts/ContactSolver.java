@@ -115,7 +115,7 @@ public class ContactSolver {
       final Manifold manifold = contact.getManifold();
 
       int pointCount = manifold.pointCount;
-      assert (pointCount > 0);
+      //assert (pointCount > 0);
 
       ContactVelocityConstraint vc = m_velocityConstraints[i];
       vc.friction = contact.m_friction;
@@ -249,7 +249,7 @@ public class ContactSolver {
       Vec2 vB = m_velocities[indexB].v;
       float wB = m_velocities[indexB].w;
 
-      assert (manifold.pointCount > 0);
+      //assert (manifold.pointCount > 0);
 
       final Rot xfAq = xfA.q;
       final Rot xfBq = xfB.q;
@@ -362,7 +362,7 @@ public class ContactSolver {
       float tangenty = -1.0f * vc.normal.x;
       final float friction = vc.friction;
 
-      assert (pointCount == 1 || pointCount == 2);
+      //assert (pointCount == 1 || pointCount == 2);
       solveVelocityConstraints0(vc, mA, mB, iA, iB, pointCount, tangentx, tangenty, friction);
 
       // Solve normal constraints
@@ -429,7 +429,7 @@ public class ContactSolver {
     float ax = cp1.normalImpulse;
     float ay = cp2.normalImpulse;
 
-    assert (ax >= 0.0f && ay >= 0.0f);
+    //assert (ax >= 0.0f && ay >= 0.0f);
     // Relative velocity at contact
     // Vec2 dv1 = vB + Cross(wB, cp1.rB) - vA - Cross(wA, cp1.rA);
     float dv1x = -wB * cp1rB.y + vB.x - vA.x + wA * cp1rA.y;
@@ -598,7 +598,7 @@ public class ContactSolver {
       // Compute normal velocity
       vn2 = Vec2.dot(dv2, normal);
 
-      assert (MathUtils.abs(vn2 - cp2.velocityBias) < k_errorTol);
+      //assert (MathUtils.abs(vn2 - cp2.velocityBias) < k_errorTol);
     }
   }
 
@@ -648,7 +648,7 @@ public class ContactSolver {
       // Compute normal velocity
       vn1 = Vec2.dot(dv1, normal);
 
-      assert (MathUtils.abs(vn1 - cp1.velocityBias) < k_errorTol);
+      //assert (MathUtils.abs(vn1 - cp1.velocityBias) < k_errorTol);
     }
   }
 
@@ -702,8 +702,8 @@ public class ContactSolver {
       vn1 = Vec2.dot(dv1, normal);
       vn2 = Vec2.dot(dv2, normal);
 
-      assert (MathUtils.abs(vn1 - cp1.velocityBias) < k_errorTol);
-      assert (MathUtils.abs(vn2 - cp2.velocityBias) < k_errorTol);
+      //assert (MathUtils.abs(vn1 - cp1.velocityBias) < k_errorTol);
+      //assert (MathUtils.abs(vn2 - cp2.velocityBias) < k_errorTol);
     }
   }
 
