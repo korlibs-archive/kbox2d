@@ -80,7 +80,7 @@ class MouseJoint constructor(argWorld: IWorldPool, def: MouseJointDef) : Joint(a
         assert(def.dampingRatio >= 0)
 
         target.set(def.target)
-        Transform.mulTransToOutUnsafe(m_bodyB!!.transform, target, m_localAnchorB)
+        Transform.mulTransToOutUnsafe(m_bodyB!!.m_xf, target, m_localAnchorB)
 
         maxForce = def.maxForce
         m_impulse.setZero()
@@ -123,7 +123,7 @@ class MouseJoint constructor(argWorld: IWorldPool, def: MouseJointDef) : Joint(a
 
         qB.set(aB)
 
-        val mass = m_bodyB!!.mass
+        val mass = m_bodyB!!.m_mass
 
         // Frequency
         val omega = 2.0f * MathUtils.PI * frequency

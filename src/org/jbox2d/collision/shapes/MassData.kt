@@ -53,7 +53,6 @@ import org.jbox2d.common.Vec2
 /** This holds the mass data computed for a shape.  */
 class MassData {
     /** The mass of the shape, usually in kilograms.  */
-    @JvmField
     var mass: Float = 0.toFloat()
     /** The position of the shape's centroid relative to the shape's origin.  */
     @JvmField

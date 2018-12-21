@@ -30,7 +30,6 @@ import org.jbox2d.dynamics.Body
 import org.jbox2d.dynamics.SolverData
 import org.jbox2d.dynamics.World
 import org.jbox2d.dynamics.contacts.Position
-import org.jbox2d.dynamics.contacts.Velocity
 
 class ConstantVolumeJoint(
         @JvmField private val world: World,
@@ -203,7 +202,7 @@ class ConstantVolumeJoint(
             val next = if (i == bodies.size - 1) 0 else i + 1
             d[i].set(positions!![bodies[next].m_islandIndex].c)
             d[i].subLocal(positions[bodies[prev].m_islandIndex].c)
-            dotMassSum += d[i].lengthSquared() / bodies[i].mass
+            dotMassSum += d[i].lengthSquared() / bodies[i].m_mass
             crossMassSum += Vec2.cross(velocities!![bodies[i].m_islandIndex].v, d[i])
         }
         val lambda = -2.0f * crossMassSum / dotMassSum
