@@ -85,14 +85,14 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
     var activeContacts = 0
     var contactPoolCount = 0
 
-    var m_flags: Int = 0
+    var m_flags: Int = CLEAR_FORCES
 
     /**
      * Get the contact manager for testing purposes
      *
      * @return
      */
-    var m_contactManager: ContactManager
+    var m_contactManager: ContactManager = ContactManager(this, broadPhase)
         protected set
 
     /**
@@ -141,7 +141,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
         set(gravity) {
             this.gravity.set(gravity)
         }
-    var isSleepingAllowed: Boolean = false
+    var isSleepingAllowed: Boolean = true
 
     // private Body m_groundBody;
 
@@ -157,7 +157,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
     /**
      * This is used to compute the time step ratio to support a variable time step.
      */
-    private var m_inv_dt0: Float = 0.toFloat()
+    private var m_inv_dt0: Float = 0f
 
     // these are for debugging the solver
     /**
@@ -165,20 +165,20 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
      *
      * @param flag
      */
-    var isWarmStarting: Boolean = false
+    var isWarmStarting: Boolean = true
     /**
      * Enable/disable continuous physics. For testing.
      *
      * @param flag
      */
-    var isContinuousPhysics: Boolean = false
+    var isContinuousPhysics: Boolean = true
     var isSubStepping: Boolean = false
 
-    private var m_stepComplete: Boolean = false
+    private var m_stepComplete: Boolean = true
 
-    val profile: Profile
+    val profile: Profile = Profile()
 
-    private val m_particleSystem: ParticleSystem
+    private val m_particleSystem: ParticleSystem = ParticleSystem(this)
 
 
     private val contactStacks = Array<Array<ContactRegister>>(ShapeType.values().size) { arrayOfNulls<ContactRegister>(ShapeType.values().size) as Array<ContactRegister> }
@@ -323,8 +323,8 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
      *
      * @return the head of the world particle group list.
      */
-    val particleGroupList: Array<ParticleGroup>
-        get() = m_particleSystem.particleGroupList
+    val particleGroupList: Array<ParticleGroup?>
+        get() = m_particleSystem.getParticleGroupList()!!
 
     /**
      * Get the number of particle groups.
@@ -433,22 +433,22 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
      * @return
      */
     val particleFlagsBuffer: IntArray
-        get() = m_particleSystem.particleFlagsBuffer
+        get() = m_particleSystem!!.particleFlagsBuffer!!
 
     val particlePositionBuffer: Array<Vec2>
-        get() = m_particleSystem.particlePositionBuffer
+        get() = m_particleSystem!!.particlePositionBuffer!!
 
     val particleVelocityBuffer: Array<Vec2>
-        get() = m_particleSystem.particleVelocityBuffer
+        get() = m_particleSystem.particleVelocityBuffer!!
 
     val particleColorBuffer: Array<ParticleColor>
-        get() = m_particleSystem.particleColorBuffer
+        get() = m_particleSystem.particleColorBuffer!!
 
-    val particleGroupBuffer: Array<ParticleGroup>
-        get() = m_particleSystem.particleGroupBuffer
+    val particleGroupBuffer: Array<ParticleGroup?>
+        get() = m_particleSystem.particleGroupBuffer!!
 
     val particleUserDataBuffer: Array<Any>
-        get() = m_particleSystem.particleUserDataBuffer
+        get() = m_particleSystem.particleUserDataBuffer!!
 
     /**
      * Get contacts between particles
@@ -477,32 +477,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
     }
 
     init {
-        destructionListener = null
-        m_debugDraw = null
-
-        bodyList = null
-        jointList = null
-
-        bodyCount = 0
-        jointCount = 0
-
-        isWarmStarting = true
-        isContinuousPhysics = true
-        isSubStepping = false
-        m_stepComplete = true
-
-        isSleepingAllowed = true
         this.gravity.set(gravity)
-
-        m_flags = CLEAR_FORCES
-
-        m_inv_dt0 = 0f
-
-        m_contactManager = ContactManager(this, broadPhase)
-        profile = Profile()
-
-        m_particleSystem = ParticleSystem(this)
-
         initializeRegisters()
     }
 
@@ -1748,10 +1723,10 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
                 colorBuffer = system.particleColorBuffer
             }
             if (wireframe) {
-                m_debugDraw!!.drawParticlesWireframe(positionBuffer, particleRadius, colorBuffer!!,
+                m_debugDraw!!.drawParticlesWireframe(positionBuffer!!, particleRadius, colorBuffer!!,
                         particleCount)
             } else {
-                m_debugDraw!!.drawParticles(positionBuffer, particleRadius, colorBuffer!!, particleCount)
+                m_debugDraw!!.drawParticles(positionBuffer!!, particleRadius, colorBuffer!!, particleCount)
             }
         }
     }

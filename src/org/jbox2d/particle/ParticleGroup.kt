@@ -112,10 +112,10 @@ class ParticleGroup {
             m_linearVelocity.setZero()
             for (i in m_firstIndex until m_lastIndex) {
                 m_mass += m
-                val pos = m_system!!.m_positionBuffer.data[i]
+                val pos = m_system!!.m_positionBuffer!!.data!![i]
                 m_center.x += m * pos.x
                 m_center.y += m * pos.y
-                val vel = m_system!!.m_velocityBuffer.data[i]
+                val vel = m_system!!.m_velocityBuffer.data!![i]
                 m_linearVelocity.x += m * vel.x
                 m_linearVelocity.y += m * vel.y
             }
@@ -128,8 +128,8 @@ class ParticleGroup {
             m_inertia = 0f
             m_angularVelocity = 0f
             for (i in m_firstIndex until m_lastIndex) {
-                val pos = m_system!!.m_positionBuffer.data[i]
-                val vel = m_system!!.m_velocityBuffer.data[i]
+                val pos = m_system!!.m_positionBuffer.data!![i]
+                val vel = m_system!!.m_velocityBuffer.data!![i]
                 val px = pos.x - m_center.x
                 val py = pos.y - m_center.y
                 val vx = vel.x - m_linearVelocity.x

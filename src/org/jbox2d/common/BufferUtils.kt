@@ -49,14 +49,14 @@ object BufferUtils {
      */
     @JvmStatic
     fun <T> reallocateBuffer(klass: Class<T>, buffer: Array<T>?, userSuppliedCapacity: Int,
-                             oldCapacity: Int, newCapacity: Int, deferred: Boolean): Array<T>? {
+                             oldCapacity: Int, newCapacity: Int, deferred: Boolean): Array<T> {
         var buffer = buffer
         assert(newCapacity > oldCapacity)
         assert(userSuppliedCapacity == 0 || newCapacity <= userSuppliedCapacity)
         if ((!deferred || buffer != null) && userSuppliedCapacity == 0) {
             buffer = reallocateBuffer(klass, buffer, oldCapacity, newCapacity)
         }
-        return buffer
+        return buffer!!
     }
 
     /**
@@ -65,14 +65,14 @@ object BufferUtils {
      */
     @JvmStatic
     fun reallocateBuffer(buffer: IntArray?, userSuppliedCapacity: Int, oldCapacity: Int,
-                         newCapacity: Int, deferred: Boolean): IntArray? {
+                         newCapacity: Int, deferred: Boolean): IntArray {
         var buffer = buffer
         assert(newCapacity > oldCapacity)
         assert(userSuppliedCapacity == 0 || newCapacity <= userSuppliedCapacity)
         if ((!deferred || buffer != null) && userSuppliedCapacity == 0) {
             buffer = reallocateBuffer(buffer, oldCapacity, newCapacity)
         }
-        return buffer
+        return buffer!!
     }
 
     /**
@@ -81,14 +81,14 @@ object BufferUtils {
      */
     @JvmStatic
     fun reallocateBuffer(buffer: FloatArray?, userSuppliedCapacity: Int, oldCapacity: Int,
-                         newCapacity: Int, deferred: Boolean): FloatArray? {
+                         newCapacity: Int, deferred: Boolean): FloatArray {
         var buffer = buffer
         assert(newCapacity > oldCapacity)
         assert(userSuppliedCapacity == 0 || newCapacity <= userSuppliedCapacity)
         if ((!deferred || buffer != null) && userSuppliedCapacity == 0) {
             buffer = reallocateBuffer(buffer, oldCapacity, newCapacity)
         }
-        return buffer
+        return buffer!!
     }
 
     /** Rotate an array, see std::rotate  */
