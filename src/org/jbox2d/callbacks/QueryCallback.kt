@@ -1,15 +1,15 @@
 /*******************************************************************************
  * Copyright (c) 2013, Daniel Murphy
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 	* Redistributions of source code must retain the above copyright notice,
- * 	  this list of conditions and the following disclaimer.
- * 	* Redistributions in binary form must reproduce the above copyright notice,
- * 	  this list of conditions and the following disclaimer in the documentation
- * 	  and/or other materials provided with the distribution.
- * 
+ * * Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -20,23 +20,26 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- ******************************************************************************/
-/**
- * Created at 3:43:53 AM Jul 7, 2010
  */
-package org.jbox2d.callbacks;
+/**
+ * Created at 4:30:03 AM Jul 15, 2010
+ */
+package org.jbox2d.callbacks
 
-import org.jbox2d.common.Settings;
+import org.jbox2d.dynamics.Fixture
+import org.jbox2d.dynamics.World
 
 /**
- * Contact impulses for reporting. Impulses are used instead of forces because sub-step forces may
- * approach infinity for rigid body collisions. These match up one-to-one with the contact points in
- * b2Manifold.
- * 
+ * Callback class for AABB queries.
+ * See [World.queryAABB].
  * @author Daniel Murphy
  */
-public class ContactImpulse {
-  public float[] normalImpulses = new float[Settings.maxManifoldPoints];
-  public float[] tangentImpulses = new float[Settings.maxManifoldPoints];
-  public int count;
+interface QueryCallback {
+
+    /**
+     * Called for each fixture found in the query AABB.
+     * @param fixture
+     * @return false to terminate the query.
+     */
+    fun reportFixture(fixture: Fixture): Boolean
 }

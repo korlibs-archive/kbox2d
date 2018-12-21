@@ -687,9 +687,9 @@ public class World {
 
 
     int flags = m_debugDraw.getFlags();
-    boolean wireframe = (flags & DebugDraw.e_wireframeDrawingBit) != 0;
+    boolean wireframe = (flags & DebugDraw.Companion.getE_wireframeDrawingBit()) != 0;
 
-    if ((flags & DebugDraw.e_shapeBit) != 0) {
+    if ((flags & DebugDraw.Companion.getE_shapeBit()) != 0) {
       for (Body b = m_bodyList; b != null; b = b.getNext()) {
         xf.set(b.getTransform());
         for (Fixture f = b.getFixtureList(); f != null; f = f.getNext()) {
@@ -714,13 +714,13 @@ public class World {
       drawParticleSystem(m_particleSystem);
     }
 
-    if ((flags & DebugDraw.e_jointBit) != 0) {
+    if ((flags & DebugDraw.Companion.getE_jointBit()) != 0) {
       for (Joint j = m_jointList; j != null; j = j.getNext()) {
         drawJoint(j);
       }
     }
 
-    if ((flags & DebugDraw.e_pairBit) != 0) {
+    if ((flags & DebugDraw.Companion.getE_pairBit()) != 0) {
       color.set(0.3f, 0.9f, 0.9f);
       for (Contact c = m_contactManager.m_contactList; c != null; c = c.getNext()) {
         Fixture fixtureA = c.getFixtureA();
@@ -731,7 +731,7 @@ public class World {
       }
     }
 
-    if ((flags & DebugDraw.e_aabbBit) != 0) {
+    if ((flags & DebugDraw.Companion.getE_aabbBit()) != 0) {
       color.set(0.9f, 0.3f, 0.9f);
 
       for (Body b = m_bodyList; b != null; b = b.getNext()) {
@@ -756,7 +756,7 @@ public class World {
       }
     }
 
-    if ((flags & DebugDraw.e_centerOfMassBit) != 0) {
+    if ((flags & DebugDraw.Companion.getE_centerOfMassBit()) != 0) {
       for (Body b = m_bodyList; b != null; b = b.getNext()) {
         xf.set(b.getTransform());
         xf.p.set(b.getWorldCenter());
@@ -764,7 +764,7 @@ public class World {
       }
     }
 
-    if ((flags & DebugDraw.e_dynamicTreeBit) != 0) {
+    if ((flags & DebugDraw.Companion.getE_dynamicTreeBit()) != 0) {
       m_contactManager.m_broadPhase.drawTree(m_debugDraw);
     }
 
@@ -1645,7 +1645,7 @@ public class World {
   }
 
   private void drawParticleSystem(ParticleSystem system) {
-    boolean wireframe = (m_debugDraw.getFlags() & DebugDraw.e_wireframeDrawingBit) != 0;
+    boolean wireframe = (m_debugDraw.getFlags() & DebugDraw.Companion.getE_wireframeDrawingBit()) != 0;
     int particleCount = system.getParticleCount();
     if (particleCount != 0) {
       float particleRadius = system.getParticleRadius();
