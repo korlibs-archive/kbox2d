@@ -206,6 +206,8 @@ class Vec2 @JvmOverloads constructor(
     }
 
     companion object {
+        internal val dummy = Vec2()
+
         private const val serialVersionUID = 1L
 
         @JvmStatic
