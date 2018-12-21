@@ -73,7 +73,7 @@ class Color3f {
         z = b
     }
 
-    operator fun set(r: Float, g: Float, b: Float) {
+    fun set(r: Float, g: Float, b: Float) {
         x = r
         y = g
         z = b

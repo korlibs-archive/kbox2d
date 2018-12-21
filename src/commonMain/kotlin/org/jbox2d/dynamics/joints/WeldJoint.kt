@@ -95,7 +95,7 @@ class WeldJoint(argWorld: IWorldPool, def: WeldJointDef) : Joint(argWorld, def) 
     }
 
     override fun getReactionForce(inv_dt: Float, argOut: Vec2) {
-        argOut[m_impulse.x] = m_impulse.y
+        argOut.set(m_impulse.x, m_impulse.y)
         argOut.mulLocal(inv_dt)
     }
 
@@ -196,7 +196,7 @@ class WeldJoint(argWorld: IWorldPool, def: WeldJointDef) : Joint(argWorld, def) 
             // Scale impulses to support a variable time step.
             m_impulse.mulLocal(data.step!!.dtRatio)
 
-            P[m_impulse.x] = m_impulse.y
+            P.set(m_impulse.x, m_impulse.y)
 
             vA.x -= mA * P.x
             vA.y -= mA * P.y
@@ -268,14 +268,14 @@ class WeldJoint(argWorld: IWorldPool, def: WeldJointDef) : Joint(argWorld, def) 
             val Cdot2 = wB - wA
 
             val Cdot = pool.popVec3()
-            Cdot[Cdot1.x, Cdot1.y] = Cdot2
+            Cdot.set(Cdot1.x, Cdot1.y, Cdot2)
 
             val impulse = pool.popVec3()
             Mat33.mulToOutUnsafe(m_mass, Cdot, impulse)
             impulse.negateLocal()
             m_impulse.addLocal(impulse)
 
-            P[impulse.x] = impulse.y
+            P.set(impulse.x, impulse.y)
 
             vA.x -= mA * P.x
             vA.y -= mA * P.y
@@ -358,11 +358,11 @@ class WeldJoint(argWorld: IWorldPool, def: WeldJointDef) : Joint(argWorld, def) 
 
             val C = pool.popVec3()
             val impulse = pool.popVec3()
-            C[C1.x, C1.y] = C2
+            C.set(C1.x, C1.y, C2)
 
             K.solve33ToOut(C, impulse)
             impulse.negateLocal()
-            P[impulse.x] = impulse.y
+            P.set(impulse.x, impulse.y)
 
             cA.x -= mA * P.x
             cA.y -= mA * P.y

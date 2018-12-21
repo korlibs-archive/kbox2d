@@ -847,7 +847,7 @@ class DynamicTree : BroadPhaseStrategy {
     fun drawTree(argDraw: DebugDraw, node: DynamicTreeNode, spot: Int, height: Int) {
         node.aabb.getVertices(drawVecs!!)
 
-        color[1f, (height - spot) * 1f / height] = (height - spot) * 1f / height
+        color.set(1f, (height - spot) * 1f / height, (height - spot) * 1f / height)
         argDraw.drawPolygon(drawVecs!! as Array<Vec2>, 4, color)
 
         argDraw.viewportTranform!!.getWorldToScreen(node.aabb.upperBound, textVec)

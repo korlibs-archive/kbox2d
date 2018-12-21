@@ -428,8 +428,8 @@ class PrismaticJoint(argWorld: IWorldPool, def: PrismaticJointDef) : Joint(argWo
             val k23 = iA * m_a1 + iB * m_a2
             val k33 = mA + mB + iA * m_a1 * m_a1 + iB * m_a2 * m_a2
 
-            m_K.ex[k11, k12] = k13
-            m_K.ey[k12, k22] = k23
+            m_K.ex.set(k11, k12, k13)
+            m_K.ey.set(k12, k22, k23)
             m_K.ez.set(k13, k23, k33)
         }
 
@@ -549,7 +549,7 @@ class PrismaticJoint(argWorld: IWorldPool, def: PrismaticJointDef) : Joint(argWo
             Cdot2 = Vec2.dot(m_axis, temp) + m_a2 * wB - m_a1 * wA
 
             val Cdot = pool.popVec3()
-            Cdot[Cdot1.x, Cdot1.y] = Cdot2
+            Cdot.set(Cdot1.x, Cdot1.y, Cdot2)
 
             val f1 = pool.popVec3()
             val df = pool.popVec3()
@@ -715,9 +715,9 @@ class PrismaticJoint(argWorld: IWorldPool, def: PrismaticJointDef) : Joint(argWo
             val k33 = mA + mB + iA * a1 * a1 + iB * a2 * a2
 
             val K = pool.popMat33()
-            K.ex[k11, k12] = k13
-            K.ey[k12, k22] = k23
-            K.ez[k13, k23] = k33
+            K.ex.set(k11, k12, k13)
+            K.ey.set(k12, k22, k23)
+            K.ez.set(k13, k23, k33)
 
             val C = pool.popVec3()
             C.x = C1.x
@@ -736,8 +736,8 @@ class PrismaticJoint(argWorld: IWorldPool, def: PrismaticJointDef) : Joint(argWo
             }
 
             val K = pool.popMat22()
-            K.ex[k11] = k12
-            K.ey[k12] = k22
+            K.ex.set(k11, k12)
+            K.ey.set(k12, k22)
 
             // temp is impulse1
             K.solveToOut(C1.negateLocal(), temp)

@@ -76,7 +76,7 @@ class EdgeShape : Shape(ShapeType.EDGE) {
         return 1
     }
 
-    operator fun set(v1: Vec2, v2: Vec2) {
+    fun set(v1: Vec2, v2: Vec2) {
         m_vertex1.set(v1)
         m_vertex2.set(v2)
         m_hasVertex3 = false

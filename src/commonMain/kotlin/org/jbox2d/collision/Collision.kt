@@ -87,8 +87,8 @@ class Collision(private val pool: IWorldPool) {
      */
     fun testOverlap(shapeA: Shape, indexA: Int, shapeB: Shape, indexB: Int,
                     xfA: Transform, xfB: Transform): Boolean {
-        input.proxyA[shapeA] = indexA
-        input.proxyB[shapeB] = indexB
+        input.proxyA.set(shapeA, indexA)
+        input.proxyB.set(shapeB, indexB)
         input.transformA.set(xfA)
         input.transformB.set(xfB)
         input.useRadii = true
@@ -716,7 +716,7 @@ class Collision(private val pool: IWorldPool) {
         n.x = -e.y
         n.y = e.x
         if (Vec2.dot(n, temp.set(Q).subLocal(A)) < 0.0f) {
-            n[-n.x] = -n.y
+            n.set(-n.x, -n.y)
         }
         n.normalize()
 
@@ -888,7 +888,7 @@ class Collision(private val pool: IWorldPool) {
 
             edge1.set(m_v2).subLocal(m_v1)
             edge1.normalize()
-            m_normal1[edge1.y] = -edge1.x
+            m_normal1.set(edge1.y, -edge1.x)
             val offset1 = Vec2.dot(m_normal1, temp.set(m_centroidB).subLocal(m_v1))
             var offset0 = 0.0f
             var offset2 = 0.0f
@@ -899,7 +899,7 @@ class Collision(private val pool: IWorldPool) {
             if (hasVertex0) {
                 edge0.set(m_v1).subLocal(m_v0)
                 edge0.normalize()
-                m_normal0[edge0.y] = -edge0.x
+                m_normal0.set(edge0.y, -edge0.x)
                 convex1 = Vec2.cross(edge0, edge1) >= 0.0f
                 offset0 = Vec2.dot(m_normal0, temp.set(m_centroidB).subLocal(m_v0))
             }
@@ -908,7 +908,7 @@ class Collision(private val pool: IWorldPool) {
             if (hasVertex3) {
                 edge2.set(m_v3).subLocal(m_v2)
                 edge2.normalize()
-                m_normal2[edge2.y] = -edge2.x
+                m_normal2.set(edge2.y, -edge2.x)
                 convex2 = Vec2.cross(edge1, edge2) > 0.0f
                 offset2 = Vec2.dot(m_normal2, temp.set(m_centroidB).subLocal(m_v2))
             }
@@ -1182,7 +1182,7 @@ class Collision(private val pool: IWorldPool) {
                 rf.normal.set(m_polygonB.normals[rf.i1])
             }
 
-            rf.sideNormal1[rf.normal.y] = -rf.normal.x
+            rf.sideNormal1.set(rf.normal.y, -rf.normal.x)
             rf.sideNormal2.set(rf.sideNormal1).negateLocal()
             rf.sideOffset1 = Vec2.dot(rf.sideNormal1, rf.v1)
             rf.sideOffset2 = Vec2.dot(rf.sideNormal2, rf.v2)

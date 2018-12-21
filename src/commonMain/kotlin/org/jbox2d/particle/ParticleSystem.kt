@@ -1,6 +1,5 @@
 package org.jbox2d.particle
 
-import org.jbox2d.callbacks.ParticleDestructionListener
 import org.jbox2d.callbacks.ParticleQueryCallback
 import org.jbox2d.callbacks.ParticleRaycastCallback
 import org.jbox2d.callbacks.QueryCallback
@@ -14,13 +13,11 @@ import org.jbox2d.common.Rot
 import org.jbox2d.common.Settings
 import org.jbox2d.common.Transform
 import org.jbox2d.common.Vec2
-import org.jbox2d.dynamics.Body
 import org.jbox2d.dynamics.Fixture
 import org.jbox2d.dynamics.TimeStep
 import org.jbox2d.dynamics.World
 import org.jbox2d.internal.*
 import org.jbox2d.particle.VoronoiDiagram.VoronoiDiagramCallback
-import kotlin.reflect.*
 
 class ParticleSystem(internal var m_world: World) {
 
@@ -257,7 +254,7 @@ class ParticleSystem(internal var m_world: World) {
             particleDef.color = groupDef.color
             particleDef.userData = groupDef.userData
             val shape = groupDef.shape
-            transform[groupDef.position] = groupDef.angle
+            transform.set(groupDef.position, groupDef.angle)
             val aabb = temp
             val childCount = shape!!.getChildCount()
             for (childIndex in 0 until childCount) {

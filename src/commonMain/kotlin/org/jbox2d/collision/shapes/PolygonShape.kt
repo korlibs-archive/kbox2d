@@ -105,7 +105,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
      * @warning the points may be re-ordered, even if they form a convex polygon.
      * @warning collinear points are removed.
      */
-    operator fun set(vertices: Array<Vec2>, count: Int) {
+    fun set(vertices: Array<Vec2>, count: Int) {
         set(vertices, count, null, null)
     }
 
@@ -116,7 +116,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
      * @warning the points may be re-ordered, even if they form a convex polygon.
      * @warning collinear points are removed.
      */
-    operator fun set(verts: Array<Vec2>, num: Int, vecPool: Vec2ArrayPool?,
+    fun set(verts: Array<Vec2>, num: Int, vecPool: Vec2ArrayPool?,
                      intPool: IntArrayPool?) {
         assert(3 <= num && num <= Settings.maxPolygonVertices)
         if (num < 3) {
@@ -242,14 +242,14 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
      */
     fun setAsBox(hx: Float, hy: Float) {
         m_count = 4
-        m_vertices[0][-hx] = -hy
-        m_vertices[1][hx] = -hy
-        m_vertices[2][hx] = hy
-        m_vertices[3][-hx] = hy
-        m_normals[0][0.0f] = -1.0f
-        m_normals[1][1.0f] = 0.0f
-        m_normals[2][0.0f] = 1.0f
-        m_normals[3][-1.0f] = 0.0f
+        m_vertices[0].set(-hx, -hy)
+        m_vertices[1].set(hx, -hy)
+        m_vertices[2].set(hx, hy)
+        m_vertices[3].set(-hx, hy)
+        m_normals[0].set(0.0f, -1.0f)
+        m_normals[1].set(1.0f, 0.0f)
+        m_normals[2].set(0.0f, 1.0f)
+        m_normals[3].set(-1.0f, 0.0f)
         m_centroid.setZero()
     }
 
@@ -263,14 +263,14 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
      */
     fun setAsBox(hx: Float, hy: Float, center: Vec2, angle: Float) {
         m_count = 4
-        m_vertices[0][-hx] = -hy
-        m_vertices[1][hx] = -hy
-        m_vertices[2][hx] = hy
-        m_vertices[3][-hx] = hy
-        m_normals[0][0.0f] = -1.0f
-        m_normals[1][1.0f] = 0.0f
-        m_normals[2][0.0f] = 1.0f
-        m_normals[3][-1.0f] = 0.0f
+        m_vertices[0].set(-hx, -hy)
+        m_vertices[1].set(hx, -hy)
+        m_vertices[2].set(hx, hy)
+        m_vertices[3].set(-hx, hy)
+        m_normals[0].set(0.0f, -1.0f)
+        m_normals[1].set(1.0f, 0.0f)
+        m_normals[2].set(0.0f, 1.0f)
+        m_normals[3].set(-1.0f, 0.0f)
         m_centroid.set(center)
 
         val xf = poolt1
@@ -498,7 +498,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
     fun computeCentroidToOut(vs: Array<Vec2>, count: Int, out: Vec2) {
         assert(count >= 3)
 
-        out[0.0f] = 0.0f
+        out.set(0.0f, 0.0f)
         var area = 0.0f
 
         // pRef is the reference point for forming triangles.

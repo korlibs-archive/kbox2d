@@ -28,7 +28,6 @@ import org.jbox2d.common.Settings
 import org.jbox2d.common.Vec2
 import org.jbox2d.pooling.IWorldPool
 import org.jbox2d.pooling.normal.DefaultWorldPool
-import kotlin.jvm.JvmOverloads
 
 /** An axis-aligned bounding box.  */
 class AABB {

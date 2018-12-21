@@ -578,10 +578,10 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
      * @param def
      * @return
      */
-    fun createBody(def: BodyDef): Body? {
+    fun createBody(def: BodyDef): Body {
         assert(isLocked == false)
         if (isLocked) {
-            return null
+            error("World is locked")
         }
         // TODO djm pooling
         val b = Body(def, this)
@@ -930,19 +930,19 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
                 var f = b.getFixtureList()
                 while (f != null) {
                     if (b.isActive == false) {
-                        color[0.5f, 0.5f] = 0.3f
+                        color.set(0.5f, 0.5f, 0.3f)
                         drawShape(f, xf, color, wireframe)
                     } else if (b.type === BodyType.STATIC) {
-                        color[0.5f, 0.9f] = 0.3f
+                        color.set(0.5f, 0.9f, 0.3f)
                         drawShape(f, xf, color, wireframe)
                     } else if (b.type === BodyType.KINEMATIC) {
-                        color[0.5f, 0.5f] = 0.9f
+                        color.set(0.5f, 0.5f, 0.9f)
                         drawShape(f, xf, color, wireframe)
                     } else if (b.isAwake == false) {
-                        color[0.5f, 0.5f] = 0.5f
+                        color.set(0.5f, 0.5f, 0.5f)
                         drawShape(f, xf, color, wireframe)
                     } else {
-                        color[0.9f, 0.7f] = 0.7f
+                        color.set(0.9f, 0.7f, 0.7f)
                         drawShape(f, xf, color, wireframe)
                     }
                     f = f.getNext()
@@ -961,7 +961,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
         }
 
         if (flags and DebugDraw.e_pairBit != 0) {
-            color[0.3f, 0.9f] = 0.9f
+            color.set(0.3f, 0.9f, 0.9f)
             var c: Contact? = m_contactManager.m_contactList
             while (c != null) {
                 val fixtureA = c.getFixtureA()
@@ -974,7 +974,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
         }
 
         if (flags and DebugDraw.e_aabbBit != 0) {
-            color[0.9f, 0.3f] = 0.9f
+            color.set(0.9f, 0.3f, 0.9f)
 
             var b = bodyList
             while (b != null) {
@@ -990,10 +990,10 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
                         val aabb = m_contactManager.m_broadPhase.getFatAABB(proxy.proxyId)
                         if (aabb != null) {
                             val vs = avs[4]
-                            vs[0][aabb.lowerBound.x] = aabb.lowerBound.y
-                            vs[1][aabb.upperBound.x] = aabb.lowerBound.y
-                            vs[2][aabb.upperBound.x] = aabb.upperBound.y
-                            vs[3][aabb.lowerBound.x] = aabb.upperBound.y
+                            vs[0].set(aabb.lowerBound.x, aabb.lowerBound.y)
+                            vs[1].set(aabb.upperBound.x, aabb.lowerBound.y)
+                            vs[2].set(aabb.upperBound.x, aabb.upperBound.y)
+                            vs[3].set(aabb.lowerBound.x, aabb.upperBound.y)
                             m_debugDraw!!.drawPolygon(vs, 4, color)
                         }
                     }
@@ -1123,7 +1123,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
 
         // Size the island for the worst case.
         island.init(bodyCount, m_contactManager.m_contactCount, jointCount,
-                m_contactManager.m_contactListener!!)
+                m_contactManager.m_contactListener)
 
         // Clear all the island flags.
         run {
@@ -1306,7 +1306,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
 
         val island = toiIsland
         island.init(2 * Settings.maxTOIContacts, Settings.maxTOIContacts, 0,
-                m_contactManager.m_contactListener!!)
+                m_contactManager.m_contactListener)
         if (m_stepComplete) {
             var b = bodyList
             while (b != null) {
@@ -1403,8 +1403,8 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
 
                     // Compute the time of impact in interval [0, minTOI]
                     val input = toiInput
-                    input.proxyA[fA.getShape()!!] = indexA
-                    input.proxyB[fB.getShape()!!] = indexB
+                    input.proxyA.set(fA.getShape()!!, indexA)
+                    input.proxyB.set(fB.getShape()!!, indexB)
                     input.sweepA.set(bA.m_sweep)
                     input.sweepB.set(bB.m_sweep)
                     input.tMax = 1.0f
@@ -1616,7 +1616,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
         joint.getAnchorA(p1)
         joint.getAnchorB(p2)
 
-        color[0.5f, 0.8f] = 0.8f
+        color.set(0.5f, 0.8f, 0.8f)
 
         when (joint.getType()) {
             // TODO djm write after writing joints

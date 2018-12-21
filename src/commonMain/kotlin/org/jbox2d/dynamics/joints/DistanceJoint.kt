@@ -166,7 +166,7 @@ class DistanceJoint(argWorld: IWorldPool, def: DistanceJointDef) : Joint(argWorl
             m_u.x *= 1.0f / length
             m_u.y *= 1.0f / length
         } else {
-            m_u[0.0f] = 0.0f
+            m_u.set(0.0f, 0.0f)
         }
 
 

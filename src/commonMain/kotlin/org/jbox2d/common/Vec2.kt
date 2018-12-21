@@ -60,7 +60,7 @@ data class Vec2  constructor(
     }
 
     /** Set the vector component-wise.  */
-    operator fun set(x: Float, y: Float): Vec2 {
+    fun set(x: Float, y: Float): Vec2 {
         this.x = x
         this.y = y
         return this

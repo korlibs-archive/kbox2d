@@ -24,7 +24,6 @@
 package org.jbox2d.common
 
 import org.jbox2d.internal.*
-import kotlin.jvm.*
 
 // updated to rev 100
 
@@ -73,7 +72,7 @@ class Transform {
      * @param p
      * @param angle
      */
-    operator fun set(p: Vec2, angle: Float) {
+    fun set(p: Vec2, angle: Float) {
         this.p.set(p)
         q.set(angle)
     }

@@ -64,7 +64,7 @@ class Mat33 {
         ez.setZero()
     }
 
-    operator fun set(exx: Float, exy: Float, exz: Float, eyx: Float, eyy: Float, eyz: Float, ezx: Float,
+    fun set(exx: Float, exy: Float, exz: Float, eyx: Float, eyy: Float, eyz: Float, ezx: Float,
                      ezy: Float, ezz: Float) {
         ex.x = exx
         ex.y = exy

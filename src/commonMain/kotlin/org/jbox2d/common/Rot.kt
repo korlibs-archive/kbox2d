@@ -70,11 +70,11 @@ class Rot {
     }
 
     fun getXAxis(xAxis: Vec2) {
-        xAxis[c] = s
+        xAxis.set(c, s)
     }
 
     fun getYAxis(yAxis: Vec2) {
-        yAxis[-s] = c
+        yAxis.set(-s, c)
     }
 
     // @Override // annotation omitted for GWT-compatibility

@@ -296,7 +296,7 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
             Vec2.crossToOutUnsafe(wB, m_rB, Cdot1)
             Cdot1.addLocal(vB).subLocal(vA).subLocal(temp)
             val Cdot2 = wB - wA
-            Cdot[Cdot1.x, Cdot1.y] = Cdot2
+            Cdot.set(Cdot1.x, Cdot1.y, Cdot2)
 
             val impulse = pool.popVec3()
             m_mass.solve33ToOut(Cdot, impulse)
@@ -339,7 +339,7 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
             }
             val P = pool.popVec2()
 
-            P[impulse.x] = impulse.y
+            P.set(impulse.x, impulse.y)
 
             vA.x -= mA * P.x
             vA.y -= mA * P.y

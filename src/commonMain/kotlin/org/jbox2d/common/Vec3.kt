@@ -45,7 +45,7 @@ data class Vec3(
         return this
     }
 
-    operator fun set(argX: Float, argY: Float, argZ: Float): Vec3 {
+    fun set(argX: Float, argY: Float, argZ: Float): Vec3 {
         x = argX
         y = argY
         z = argZ

@@ -27,7 +27,6 @@ import org.jbox2d.callbacks.ContactImpulse
 import org.jbox2d.callbacks.ContactListener
 import org.jbox2d.common.MathUtils
 import org.jbox2d.common.Settings
-import org.jbox2d.common.Sweep
 import org.jbox2d.common.Timer
 import org.jbox2d.common.Vec2
 import org.jbox2d.dynamics.contacts.Contact
@@ -203,7 +202,7 @@ class Island {
     private val impulse = ContactImpulse()
 
     fun init(bodyCapacity: Int, contactCapacity: Int, jointCapacity: Int,
-             listener: ContactListener) {
+             listener: ContactListener?) {
         // System.out.println("Initializing Island");
         m_bodyCapacity = bodyCapacity
         m_contactCapacity = contactCapacity

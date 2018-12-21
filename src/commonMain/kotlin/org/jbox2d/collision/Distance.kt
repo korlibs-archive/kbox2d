@@ -500,7 +500,7 @@ class Distance {
          * Initialize the proxy using the given shape. The shape must remain in scope while the proxy is
          * in use.
          */
-        operator fun set(shape: Shape, index: Int) {
+        fun set(shape: Shape, index: Int) {
             when (shape.getType()) {
                 ShapeType.CIRCLE -> {
                     val circle = shape as CircleShape

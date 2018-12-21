@@ -24,7 +24,6 @@
 package org.jbox2d.common
 
 import org.jbox2d.internal.*
-import kotlin.jvm.*
 
 /**
  * This describes the motion of a body/shape for TOI computation. Shapes are defined with respect to

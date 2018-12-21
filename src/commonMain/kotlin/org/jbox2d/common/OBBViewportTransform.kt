@@ -83,16 +83,16 @@ class OBBViewportTransform : IViewportTransform {
     }
 
     override fun setCamera(x: Float, y: Float, scale: Float) {
-        box.center[x] = y
+        box.center.set(x, y)
         Mat22.createScaleTransform(scale, box.R)
     }
 
     override fun setExtents(halfWidth: Float, halfHeight: Float) {
-        box.extents[halfWidth] = halfHeight
+        box.extents.set(halfWidth, halfHeight)
     }
 
     override fun setCenter(x: Float, y: Float) {
-        box.center[x] = y
+        box.center.set(x, y)
     }
 
     /**

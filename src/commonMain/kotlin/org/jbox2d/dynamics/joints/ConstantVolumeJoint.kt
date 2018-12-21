@@ -137,7 +137,7 @@ class ConstantVolumeJoint(
         var done = true
         for (i in bodies.indices) {
             val next = if (i == bodies.size - 1) 0 else i + 1
-            delta[toExtrude * (normals[i].x + normals[next].x)] = toExtrude * (normals[i].y + normals[next].y)
+            delta.set(toExtrude * (normals[i].x + normals[next].x), toExtrude * (normals[i].y + normals[next].y))
             // sumdeltax += dx;
             val normSqrd = delta.lengthSquared()
             if (normSqrd > Settings.maxLinearCorrection * Settings.maxLinearCorrection) {

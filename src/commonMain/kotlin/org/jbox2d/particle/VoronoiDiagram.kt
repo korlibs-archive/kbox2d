@@ -47,7 +47,7 @@ class VoronoiDiagram(generatorCapacity: Int) {
             m_generator = g
         }
 
-        operator fun set(x: Int, y: Int, i: Int, g: Generator): VoronoiDiagramTask {
+        fun set(x: Int, y: Int, i: Int, g: Generator): VoronoiDiagramTask {
             m_x = x
             m_y = y
             m_i = i

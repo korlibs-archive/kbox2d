@@ -97,7 +97,7 @@ class Mat22 {
         return this
     }
 
-    operator fun set(exx: Float, col2x: Float, exy: Float, col2y: Float): Mat22 {
+    fun set(exx: Float, col2x: Float, exy: Float, col2y: Float): Mat22 {
         ex.x = exx
         ex.y = exy
         ey.x = col2x
@@ -153,7 +153,7 @@ class Mat22 {
      * @param c1 Column 1
      * @param c2 Column 2
      */
-    operator fun set(c1: Vec2, c2: Vec2) {
+    fun set(c1: Vec2, c2: Vec2) {
         ex.x = c1.x
         ey.x = c2.x
         ex.y = c1.y

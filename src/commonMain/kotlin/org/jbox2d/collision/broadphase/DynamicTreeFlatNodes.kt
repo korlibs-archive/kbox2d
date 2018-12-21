@@ -847,7 +847,7 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
         val a = m_aabb[node]
         a.getVertices(drawVecs)
 
-        color[1f, (height - spot) * 1f / height] = (height - spot) * 1f / height
+        color.set(1f, (height - spot) * 1f / height, (height - spot) * 1f / height)
         argDraw.drawPolygon(drawVecs, 4, color)
 
         argDraw.viewportTranform!!.getWorldToScreen(a.upperBound, textVec)

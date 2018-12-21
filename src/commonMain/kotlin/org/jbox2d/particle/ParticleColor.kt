@@ -49,7 +49,7 @@ class ParticleColor {
         a = color.a
     }
 
-    operator fun set(r: Byte, g: Byte, b: Byte, a: Byte) {
+    fun set(r: Byte, g: Byte, b: Byte, a: Byte) {
         this.r = r
         this.g = g
         this.b = b
