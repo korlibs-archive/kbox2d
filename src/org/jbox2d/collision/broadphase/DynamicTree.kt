@@ -44,13 +44,13 @@ import org.jbox2d.common.Vec2
 class DynamicTree : BroadPhaseStrategy {
 
     private var m_root: DynamicTreeNode? = null
-    private var m_nodes: Array<DynamicTreeNode>? = null
+    private var m_nodes: Array<DynamicTreeNode> = Array(16) { DynamicTreeNode(it) }
     private var m_nodeCount: Int = 0
-    private var m_nodeCapacity: Int = 0
+    private var m_nodeCapacity: Int = 16
 
     private var m_freeList: Int = 0
 
-    private val drawVecs = arrayOfNulls<Vec2>(4)
+    private val drawVecs = Array<Vec2>(4) { Vec2() }
     private var nodeStack = arrayOfNulls<DynamicTreeNode>(20)
     private var nodeStackIndex = 0
 
@@ -112,20 +112,10 @@ class DynamicTree : BroadPhaseStrategy {
     private val textVec = Vec2()
 
     init {
-        m_root = null
-        m_nodeCount = 0
-        m_nodeCapacity = 16
-        m_nodes = Array(16) { DynamicTreeNode(it) }
-
         // Build a linked list for the free list.
         for (i in m_nodeCapacity - 1 downTo 0) {
             m_nodes!![i].parent = if (i == m_nodeCapacity - 1) null else m_nodes!![i + 1]
             m_nodes!![i].height = -1
-        }
-        m_freeList = 0
-
-        for (i in drawVecs.indices) {
-            drawVecs[i] = Vec2()
         }
     }
 
@@ -854,7 +844,7 @@ class DynamicTree : BroadPhaseStrategy {
     }
 
     fun drawTree(argDraw: DebugDraw, node: DynamicTreeNode, spot: Int, height: Int) {
-        node.aabb.getVertices(drawVecs)
+        node.aabb.getVertices(drawVecs!!)
 
         color[1f, (height - spot) * 1f / height] = (height - spot) * 1f / height
         argDraw.drawPolygon(drawVecs!! as Array<Vec2>, 4, color)
