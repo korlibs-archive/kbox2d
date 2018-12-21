@@ -94,8 +94,8 @@ class DistanceJointDef : JointDef(JointType.DISTANCE) {
     fun initialize(b1: Body, b2: Body, anchor1: Vec2, anchor2: Vec2) {
         bodyA = b1
         bodyB = b2
-        localAnchorA.set(bodyA.getLocalPoint(anchor1))
-        localAnchorB.set(bodyB.getLocalPoint(anchor2))
+        localAnchorA.set(bodyA!!.getLocalPoint(anchor1))
+        localAnchorB.set(bodyB!!.getLocalPoint(anchor2))
         val d = anchor2.sub(anchor1)
         length = d.length()
     }
