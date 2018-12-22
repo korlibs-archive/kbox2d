@@ -43,6 +43,8 @@ class WorldTest {
 
         assertEquals(true, world[DemoKey] is Demo)
         assertEquals(true, bodyDef[DemoKey] == null)
+        world[DemoKey] = null
+        assertEquals(false, world[DemoKey] is Demo)
 
         // Run loop
         for (i in 0 until 60) {
