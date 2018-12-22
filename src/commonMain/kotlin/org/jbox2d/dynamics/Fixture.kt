@@ -23,17 +23,12 @@
  */
 package org.jbox2d.dynamics
 
-import org.jbox2d.collision.AABB
-import org.jbox2d.collision.RayCastInput
-import org.jbox2d.collision.RayCastOutput
-import org.jbox2d.collision.broadphase.BroadPhase
-import org.jbox2d.collision.shapes.MassData
-import org.jbox2d.collision.shapes.Shape
-import org.jbox2d.collision.shapes.ShapeType
-import org.jbox2d.common.MathUtils
-import org.jbox2d.common.Transform
-import org.jbox2d.common.Vec2
+import org.jbox2d.collision.*
+import org.jbox2d.collision.broadphase.*
+import org.jbox2d.collision.shapes.*
+import org.jbox2d.common.*
 import org.jbox2d.internal.*
+import org.jbox2d.userdata.*
 
 /**
  * A fixture is used to attach a shape to a body for collision detection. A fixture inherits its
@@ -44,7 +39,7 @@ import org.jbox2d.internal.*
  *
  * @author daniel
  */
-class Fixture {
+class Fixture : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
     var m_density: Float = 0.toFloat()
 

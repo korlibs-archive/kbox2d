@@ -23,7 +23,8 @@
  */
 package org.jbox2d.dynamics
 
-import org.jbox2d.common.Vec2
+import org.jbox2d.common.*
+import org.jbox2d.userdata.*
 
 /**
  * A body definition holds all the data needed to construct a rigid body. You can safely re-use body
@@ -31,7 +32,7 @@ import org.jbox2d.common.Vec2
  *
  * @author daniel
  */
-class BodyDef {
+class BodyDef : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
     /**
      * The body type: static, kinematic, or dynamic. Note: if a dynamic body would have zero mass, the

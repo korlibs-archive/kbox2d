@@ -28,7 +28,8 @@ import org.jbox2d.dynamics.Body
 import org.jbox2d.dynamics.SolverData
 import org.jbox2d.dynamics.World
 import org.jbox2d.internal.*
-import org.jbox2d.pooling.IWorldPool
+import org.jbox2d.pooling.*
+import org.jbox2d.userdata.*
 
 // updated to rev 100
 /**
@@ -43,7 +44,7 @@ abstract class Joint
 // float m_invMassA, m_invIA;
 // float m_invMassB, m_invIB;
 
-protected constructor( protected var pool: IWorldPool, def: JointDef) {
+protected constructor( protected var pool: IWorldPool, def: JointDef) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
     /**
      * get the type of the concrete joint.

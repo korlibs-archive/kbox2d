@@ -3,13 +3,19 @@ package org.jbox2d.utests
 import org.jbox2d.collision.shapes.*
 import org.jbox2d.common.*
 import org.jbox2d.dynamics.*
+import org.jbox2d.userdata.*
 import kotlin.test.*
 
 
 class WorldTest {
     @Test
     fun test() {
+        class Demo(val a: Int = 10)
+
+        val DemoKey = Box2dTypedUserData.Key<Demo>()
+
         val world = World(Vec2(0f, -10f))
+        world[DemoKey] = Demo()
         val groundBodyDef = BodyDef()
         groundBodyDef.position.set(0f, -10f)
         val groundBody = world.createBody(groundBodyDef)
@@ -34,6 +40,9 @@ class WorldTest {
         val timeStep = 1.0f / 60.0f
         val velocityIterations = 6
         val positionIterations = 2
+
+        assertEquals(true, world[DemoKey] is Demo)
+        assertEquals(true, bodyDef[DemoKey] == null)
 
         // Run loop
         for (i in 0 until 60) {

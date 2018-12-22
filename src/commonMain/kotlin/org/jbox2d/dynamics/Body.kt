@@ -33,6 +33,7 @@ import org.jbox2d.common.Vec2
 import org.jbox2d.dynamics.contacts.ContactEdge
 import org.jbox2d.dynamics.joints.JointEdge
 import org.jbox2d.internal.*
+import org.jbox2d.userdata.*
 
 /**
  * A rigid body. These are created via World.createBody.
@@ -43,7 +44,7 @@ class Body(bd: BodyDef,
            /**
             * Get the parent world of this body.
             */
-           var world: World) {
+           var world: World) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
 
     var m_type: BodyType

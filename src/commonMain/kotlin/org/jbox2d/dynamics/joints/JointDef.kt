@@ -23,7 +23,8 @@
  */
 package org.jbox2d.dynamics.joints
 
-import org.jbox2d.dynamics.Body
+import org.jbox2d.dynamics.*
+import org.jbox2d.userdata.*
 
 /**
  * Joint definitions are used to construct joints.
@@ -34,7 +35,7 @@ open class JointDef(
          * The joint type is set automatically for concrete joint types.
          */
 
-        var type: JointType) {
+        var type: JointType) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
     /**
      * Use this to attach application specific data to your joints.

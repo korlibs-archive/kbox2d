@@ -23,9 +23,10 @@
  */
 package org.jbox2d.collision.broadphase
 
-import org.jbox2d.collision.AABB
+import org.jbox2d.collision.*
+import org.jbox2d.userdata.*
 
-class DynamicTreeNode(internal val id: Int) {
+class DynamicTreeNode(internal val id: Int) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
     /**
      * Enlarged AABB
      */

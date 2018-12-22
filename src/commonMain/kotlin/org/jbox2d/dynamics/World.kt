@@ -23,55 +23,19 @@
  */
 package org.jbox2d.dynamics
 
-import org.jbox2d.callbacks.ContactFilter
-import org.jbox2d.callbacks.ContactListener
-import org.jbox2d.callbacks.DebugDraw
-import org.jbox2d.callbacks.DestructionListener
-import org.jbox2d.callbacks.ParticleDestructionListener
-import org.jbox2d.callbacks.ParticleQueryCallback
-import org.jbox2d.callbacks.ParticleRaycastCallback
-import org.jbox2d.callbacks.QueryCallback
-import org.jbox2d.callbacks.RayCastCallback
-import org.jbox2d.callbacks.TreeCallback
-import org.jbox2d.callbacks.TreeRayCastCallback
-import org.jbox2d.collision.AABB
-import org.jbox2d.collision.RayCastInput
-import org.jbox2d.collision.RayCastOutput
-import org.jbox2d.collision.TimeOfImpact.TOIInput
-import org.jbox2d.collision.TimeOfImpact.TOIOutput
-import org.jbox2d.collision.TimeOfImpact.TOIOutputState
-import org.jbox2d.collision.broadphase.BroadPhase
-import org.jbox2d.collision.broadphase.BroadPhaseStrategy
-import org.jbox2d.collision.broadphase.DefaultBroadPhaseBuffer
-import org.jbox2d.collision.broadphase.DynamicTree
-import org.jbox2d.collision.shapes.ChainShape
-import org.jbox2d.collision.shapes.CircleShape
-import org.jbox2d.collision.shapes.EdgeShape
-import org.jbox2d.collision.shapes.PolygonShape
-import org.jbox2d.collision.shapes.Shape
-import org.jbox2d.collision.shapes.ShapeType
-import org.jbox2d.common.Color3f
-import org.jbox2d.common.MathUtils
-import org.jbox2d.common.Settings
-import org.jbox2d.common.Sweep
-import org.jbox2d.common.Timer
-import org.jbox2d.common.Transform
-import org.jbox2d.common.Vec2
-import org.jbox2d.dynamics.contacts.Contact
-import org.jbox2d.dynamics.contacts.ContactRegister
+import org.jbox2d.callbacks.*
+import org.jbox2d.collision.*
+import org.jbox2d.collision.broadphase.*
+import org.jbox2d.collision.shapes.*
+import org.jbox2d.common.*
+import org.jbox2d.dynamics.contacts.*
 import org.jbox2d.dynamics.joints.*
 import org.jbox2d.internal.*
-import org.jbox2d.particle.ParticleBodyContact
-import org.jbox2d.particle.ParticleColor
-import org.jbox2d.particle.ParticleContact
-import org.jbox2d.particle.ParticleDef
-import org.jbox2d.particle.ParticleGroup
-import org.jbox2d.particle.ParticleGroupDef
-import org.jbox2d.particle.ParticleSystem
-import org.jbox2d.pooling.IDynamicStack
-import org.jbox2d.pooling.IWorldPool
-import org.jbox2d.pooling.arrays.Vec2ArrayPool
-import org.jbox2d.pooling.normal.DefaultWorldPool
+import org.jbox2d.particle.*
+import org.jbox2d.pooling.*
+import org.jbox2d.pooling.arrays.*
+import org.jbox2d.pooling.normal.*
+import org.jbox2d.userdata.*
 
 /**
  * The world class manages all physics entities, dynamic simulation, and asynchronous queries. The
@@ -79,12 +43,14 @@ import org.jbox2d.pooling.normal.DefaultWorldPool
  *
  * @author Daniel Murphy
  */
-class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
+open class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
 
     // statistics gathering
     var activeContacts = 0
     var contactPoolCount = 0
+
+    var userData: Any? = null
 
     var m_flags: Int = CLEAR_FORCES
 
@@ -300,8 +266,8 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
     private val broadphaseTimer = Timer()
 
     private val toiIsland = Island()
-    private val toiInput = TOIInput()
-    private val toiOutput = TOIOutput()
+    private val toiInput = TimeOfImpact.TOIInput()
+    private val toiOutput = TimeOfImpact.TOIOutput()
     private val subStep = TimeStep()
     private val tempBodies = arrayOfNulls<Body>(2)
     private val backup1 = Sweep()
@@ -1413,7 +1379,7 @@ class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) {
 
                     // Beta is the fraction of the remaining portion of the .
                     val beta = toiOutput.t
-                    if (toiOutput.state === TOIOutputState.TOUCHING) {
+                    if (toiOutput.state === TimeOfImpact.TOIOutputState.TOUCHING) {
                         alpha = MathUtils.min(alpha0 + (1.0f - alpha0) * beta, 1.0f)
                     } else {
                         alpha = 1.0f
