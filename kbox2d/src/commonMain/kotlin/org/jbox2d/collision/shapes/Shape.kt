@@ -34,22 +34,14 @@ import org.jbox2d.common.Vec2
  * simulation in World are created automatically when a Fixture is created. Shapes may encapsulate a
  * one or more child shapes.
  */
-abstract class Shape(
-        private val m_type: ShapeType) {
+abstract class Shape(private val m_type: ShapeType) {
     /**
      * The radius of the underlying shape. This can refer to different things depending on the shape
      * implementation
      *
      * @return
      */
-    /**
-     * Sets the radius of the underlying shape. This can refer to different things depending on the
-     * implementation
-     *
-     * @param radius
-     */
-
-    var m_radius: Float = 0.toFloat()
+    var m_radius: Float = 0f
 
     /**
      * Get the type of this shape. You can use this to down cast to the concrete shape.

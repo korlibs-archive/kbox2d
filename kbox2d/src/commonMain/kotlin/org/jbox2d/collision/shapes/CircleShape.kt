@@ -37,7 +37,9 @@ import org.jbox2d.internal.*
  * A circle shape.
  */
 class CircleShape : Shape(ShapeType.CIRCLE) {
-
+    companion object {
+        operator fun invoke(radius: Number): CircleShape = CircleShape().also { it.m_radius = radius.toFloat() }
+    }
 
     val m_p: Vec2 = Vec2()
 
@@ -46,12 +48,7 @@ class CircleShape : Shape(ShapeType.CIRCLE) {
      *
      * @return
      */
-    val vertexCount: Int
-        get() = 1
-
-    init {
-        m_radius = 0f
-    }
+    val vertexCount: Int get() = 1
 
     override fun clone(): Shape {
         val shape = CircleShape()
@@ -61,9 +58,7 @@ class CircleShape : Shape(ShapeType.CIRCLE) {
         return shape
     }
 
-    override fun getChildCount(): Int {
-        return 1
-    }
+    override fun getChildCount(): Int = 1
 
     /**
      * Get the supporting vertex index in the given direction.
@@ -71,9 +66,7 @@ class CircleShape : Shape(ShapeType.CIRCLE) {
      * @param d
      * @return
      */
-    fun getSupport(d: Vec2): Int {
-        return 0
-    }
+    fun getSupport(d: Vec2): Int = 0
 
     /**
      * Get the supporting vertex in the given direction.
@@ -81,9 +74,7 @@ class CircleShape : Shape(ShapeType.CIRCLE) {
      * @param d
      * @return
      */
-    fun getSupportVertex(d: Vec2): Vec2 {
-        return m_p
-    }
+    fun getSupportVertex(d: Vec2): Vec2 = m_p
 
     /**
      * Get a vertex by index.
@@ -126,8 +117,10 @@ class CircleShape : Shape(ShapeType.CIRCLE) {
     // From Section 3.1.2
     // x = s + a * r
     // norm(x) = radius
-    override fun raycast(output: RayCastOutput, input: RayCastInput, transform: Transform,
-                         childIndex: Int): Boolean {
+    override fun raycast(
+        output: RayCastOutput, input: RayCastInput,
+        transform: Transform, childIndex: Int
+    ): Boolean {
 
         val inputp1 = input.p1
         val inputp2 = input.p2
