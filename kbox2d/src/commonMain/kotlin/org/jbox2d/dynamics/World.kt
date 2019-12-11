@@ -43,8 +43,8 @@ import org.jbox2d.userdata.*
  *
  * @author Daniel Murphy
  */
-open class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
-
+open class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) : WorldRef, Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+    override val world: World get() = this
 
     // statistics gathering
     var activeContacts = 0
