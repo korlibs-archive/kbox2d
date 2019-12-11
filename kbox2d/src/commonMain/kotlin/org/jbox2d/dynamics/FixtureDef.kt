@@ -32,91 +32,40 @@ import org.jbox2d.userdata.*
  *
  * @author daniel
  */
-class FixtureDef : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+data class FixtureDef(
     /**
      * The shape, this must be set. The shape will be cloned, so you can create the shape on the
      * stack.
      */
-    /**
-     * The shape, this must be set. The shape will be cloned, so you can create the shape on the
-     * stack.
-     */
-    /**
-     * The shape, this must be set. The shape will be cloned, so you can create the shape on the
-     * stack.
-     */
-
-    var shape: Shape? = null
+    var shape: Shape? = null,
 
     /**
      * Use this to store application specific fixture data.
      */
-    /**
-     * Use this to store application specific fixture data.
-     */
-    /**
-     * Use this to store application specific fixture data.
-     */
-
-    var userData: Any? = null
+    var userData: Any? = null,
 
     /**
      * The friction coefficient, usually in the range [0,1].
      */
-    /**
-     * The friction coefficient, usually in the range [0,1].
-     */
-    /**
-     * The friction coefficient, usually in the range [0,1].
-     */
-
-    var friction: Float = .2f
+    var friction: Float = .2f,
 
     /**
      * The restitution (elasticity) usually in the range [0,1].
      */
-    /**
-     * The restitution (elasticity) usually in the range [0,1].
-     */
-    /**
-     * The restitution (elasticity) usually in the range [0,1].
-     */
-
-    var restitution: Float = 0f
+    var restitution: Float = 0f,
 
     /**
      * The density, usually in kg/m^2
      */
-    /**
-     * The density, usually in kg/m^2
-     */
-    /**
-     * The density, usually in kg/m^2
-     */
-
-    var density: Float = 0f
+    var density: Float = 0f,
 
     /**
      * A sensor shape collects contact information but never generates a collision response.
      */
-    /**
-     * A sensor shape collects contact information but never generates a collision response.
-     */
-    /**
-     * A sensor shape collects contact information but never generates a collision response.
-     */
-
-    var isSensor: Boolean = false
+    var isSensor: Boolean = false,
 
     /**
      * Contact filtering data;
      */
-    /**
-     * Contact filtering data;
-     */
-    /**
-     * Contact filtering data;
-     */
-
     var filter: Filter = Filter()
-}
+) : Box2dTypedUserData by Box2dTypedUserData.Mixin()

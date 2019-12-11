@@ -32,68 +32,68 @@ import org.jbox2d.userdata.*
  *
  * @author daniel
  */
-class BodyDef : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+data class BodyDef(
     /**
      * The body type: static, kinematic, or dynamic. Note: if a dynamic body would have zero mass, the
      * mass is set to one.
      */
-    var type: BodyType = BodyType.STATIC
+    var type: BodyType = BodyType.STATIC,
 
     /**
      * Use this to store application specific body data.
      */
-    var userData: Any? = null
+    var userData: Any? = null,
 
     /**
      * The world position of the body. Avoid creating bodies at the origin since this can lead to many
      * overlapping shapes.
      */
-    var position: Vec2 = Vec2()
+    var position: Vec2 = Vec2(),
 
     /**
      * The world angle of the body in radians.
      */
-    var angle: Float = 0f
+    var angle: Float = 0f,
 
     /**
      * The linear velocity of the body in world co-ordinates.
      */
-    var linearVelocity: Vec2 = Vec2()
+    var linearVelocity: Vec2 = Vec2(),
 
     /**
      * The angular velocity of the body.
      */
-    var angularVelocity: Float = 0f
+    var angularVelocity: Float = 0f,
 
     /**
      * Linear damping is use to reduce the linear velocity. The damping parameter can be larger than
      * 1.0f but the damping effect becomes sensitive to the time step when the damping parameter is
      * large.
      */
-    var linearDamping: Float = 0f
+    var linearDamping: Float = 0f,
 
     /**
      * Angular damping is use to reduce the angular velocity. The damping parameter can be larger than
      * 1.0f but the damping effect becomes sensitive to the time step when the damping parameter is
      * large.
      */
-    var angularDamping: Float = 0f
+    var angularDamping: Float = 0f,
 
     /**
      * Set this flag to false if this body should never fall asleep. Note that this increases CPU
      * usage.
      */
-    var allowSleep: Boolean = true
+    var allowSleep: Boolean = true,
 
     /**
      * Is this body initially sleeping?
      */
-    var awake: Boolean = true
+    var awake: Boolean = true,
 
     /**
      * Should this body be prevented from rotating? Useful for characters.
      */
-    var fixedRotation: Boolean = false
+    var fixedRotation: Boolean = false,
 
     /**
      * Is this a fast moving body that should be prevented from tunneling through other moving bodies?
@@ -102,15 +102,15 @@ class BodyDef : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
      *
      * @warning You should use this flag sparingly since it increases processing time.
      */
-    var bullet: Boolean = false
+    var bullet: Boolean = false,
 
     /**
      * Does this body start out active?
      */
-    var active: Boolean = true
+    var active: Boolean = true,
 
     /**
      * Experimental: scales the inertia tensor.
      */
     var gravityScale: Float = 1f
-}
+) : Box2dTypedUserData by Box2dTypedUserData.Mixin()
