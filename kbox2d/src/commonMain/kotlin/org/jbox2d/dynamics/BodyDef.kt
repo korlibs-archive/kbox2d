@@ -33,158 +33,66 @@ import org.jbox2d.userdata.*
  * @author daniel
  */
 class BodyDef : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
-
     /**
      * The body type: static, kinematic, or dynamic. Note: if a dynamic body would have zero mass, the
      * mass is set to one.
      */
-    /**
-     * The body type: static, kinematic, or dynamic. Note: if a dynamic body would have zero mass, the
-     * mass is set to one.
-     */
-    /**
-     * The body type: static, kinematic, or dynamic. Note: if a dynamic body would have zero mass, the
-     * mass is set to one.
-     */
-
-    var type: BodyType
+    var type: BodyType = BodyType.STATIC
 
     /**
      * Use this to store application specific body data.
      */
-    /**
-     * Use this to store application specific body data.
-     */
-    /**
-     * Use this to store application specific body data.
-     */
-
     var userData: Any? = null
 
     /**
      * The world position of the body. Avoid creating bodies at the origin since this can lead to many
      * overlapping shapes.
      */
-    /**
-     * The world position of the body. Avoid creating bodies at the origin since this can lead to many
-     * overlapping shapes.
-     */
-    /**
-     * The world position of the body. Avoid creating bodies at the origin since this can lead to many
-     * overlapping shapes.
-     */
-
-    var position: Vec2
+    var position: Vec2 = Vec2()
 
     /**
      * The world angle of the body in radians.
      */
-    /**
-     * The world angle of the body in radians.
-     */
-    /**
-     * The world angle of the body in radians.
-     */
-
-    var angle: Float = 0.toFloat()
+    var angle: Float = 0f
 
     /**
      * The linear velocity of the body in world co-ordinates.
      */
-    /**
-     * The linear velocity of the body in world co-ordinates.
-     */
-    /**
-     * The linear velocity of the body in world co-ordinates.
-     */
-
-    var linearVelocity: Vec2
+    var linearVelocity: Vec2 = Vec2()
 
     /**
      * The angular velocity of the body.
      */
-    /**
-     * The angular velocity of the body.
-     */
-    /**
-     * The angular velocity of the body.
-     */
-
-    var angularVelocity: Float = 0.toFloat()
+    var angularVelocity: Float = 0f
 
     /**
      * Linear damping is use to reduce the linear velocity. The damping parameter can be larger than
      * 1.0f but the damping effect becomes sensitive to the time step when the damping parameter is
      * large.
      */
-    /**
-     * Linear damping is use to reduce the linear velocity. The damping parameter can be larger than
-     * 1.0f but the damping effect becomes sensitive to the time step when the damping parameter is
-     * large.
-     */
-    /**
-     * Linear damping is use to reduce the linear velocity. The damping parameter can be larger than
-     * 1.0f but the damping effect becomes sensitive to the time step when the damping parameter is
-     * large.
-     */
-
-    var linearDamping: Float = 0.toFloat()
+    var linearDamping: Float = 0f
 
     /**
      * Angular damping is use to reduce the angular velocity. The damping parameter can be larger than
      * 1.0f but the damping effect becomes sensitive to the time step when the damping parameter is
      * large.
      */
-    /**
-     * Angular damping is use to reduce the angular velocity. The damping parameter can be larger than
-     * 1.0f but the damping effect becomes sensitive to the time step when the damping parameter is
-     * large.
-     */
-    /**
-     * Angular damping is use to reduce the angular velocity. The damping parameter can be larger than
-     * 1.0f but the damping effect becomes sensitive to the time step when the damping parameter is
-     * large.
-     */
-
-    var angularDamping: Float = 0.toFloat()
+    var angularDamping: Float = 0f
 
     /**
      * Set this flag to false if this body should never fall asleep. Note that this increases CPU
      * usage.
      */
-    /**
-     * Set this flag to false if this body should never fall asleep. Note that this increases CPU
-     * usage.
-     */
-    /**
-     * Set this flag to false if this body should never fall asleep. Note that this increases CPU
-     * usage.
-     */
-
-    var allowSleep: Boolean = false
+    var allowSleep: Boolean = true
 
     /**
      * Is this body initially sleeping?
      */
-    /**
-     * Is this body initially sleeping?
-     */
-    /**
-     * Is this body initially sleeping?
-     */
-
-    var awake: Boolean = false
+    var awake: Boolean = true
 
     /**
      * Should this body be prevented from rotating? Useful for characters.
      */
-    /**
-     * Should this body be prevented from rotating? Useful for characters.
-     */
-    /**
-     * Should this body be prevented from rotating? Useful for characters.
-     */
-
     var fixedRotation: Boolean = false
 
     /**
@@ -194,61 +102,15 @@ class BodyDef : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
      *
      * @warning You should use this flag sparingly since it increases processing time.
      */
-    /**
-     * Is this a fast moving body that should be prevented from tunneling through other moving bodies?
-     * Note that all bodies are prevented from tunneling through kinematic and static bodies. This
-     * setting is only considered on dynamic bodies.
-     *
-     * @warning You should use this flag sparingly since it increases processing time.
-     */
-    /**
-     * Is this a fast moving body that should be prevented from tunneling through other moving bodies?
-     * Note that all bodies are prevented from tunneling through kinematic and static bodies. This
-     * setting is only considered on dynamic bodies.
-     *
-     * @warning You should use this flag sparingly since it increases processing time.
-     */
-
     var bullet: Boolean = false
 
     /**
      * Does this body start out active?
      */
-    /**
-     * Does this body start out active?
-     */
-    /**
-     * Does this body start out active?
-     */
-
-    var active: Boolean = false
+    var active: Boolean = true
 
     /**
      * Experimental: scales the inertia tensor.
      */
-    /**
-     * Experimental: scales the inertia tensor.
-     */
-    /**
-     * Experimental: scales the inertia tensor.
-     */
-
-    var gravityScale: Float = 0.toFloat()
-
-    init {
-        userData = null
-        position = Vec2()
-        angle = 0f
-        linearVelocity = Vec2()
-        angularVelocity = 0f
-        linearDamping = 0f
-        angularDamping = 0f
-        allowSleep = true
-        awake = true
-        fixedRotation = false
-        bullet = false
-        type = BodyType.STATIC
-        active = true
-        gravityScale = 1.0f
-    }
+    var gravityScale: Float = 1f
 }
