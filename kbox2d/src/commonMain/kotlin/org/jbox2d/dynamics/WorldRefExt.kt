@@ -2,7 +2,7 @@ package org.jbox2d.dynamics
 
 import org.jbox2d.dynamics.joints.*
 
-inline fun WorldRef.forEachBody(callback: (Body) -> Unit) {
+inline fun WorldRef.forEachBody(callback: (body: Body) -> Unit) {
     var node = world.bodyList
     while (node != null) {
         callback(node)
@@ -10,7 +10,7 @@ inline fun WorldRef.forEachBody(callback: (Body) -> Unit) {
     }
 }
 
-inline fun WorldRef.forEachJoint(callback: (Joint) -> Unit) {
+inline fun WorldRef.forEachJoint(callback: (joint: Joint) -> Unit) {
     var node = world.jointList
     while (node != null) {
         callback(node)
