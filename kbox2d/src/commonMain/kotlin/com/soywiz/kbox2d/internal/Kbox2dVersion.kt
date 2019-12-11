@@ -1,3 +1,3 @@
 package com.soywiz.kbox2d.internal
 
-internal const val KBOX2D_VERSION = "0.5.3-SNAPSHOT"
+internal const val KBOX2D_VERSION = "0.5.3"
