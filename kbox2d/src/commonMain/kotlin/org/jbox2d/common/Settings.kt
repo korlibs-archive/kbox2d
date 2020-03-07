@@ -52,7 +52,8 @@ object Settings {
     var FAST_CEIL = true
 
     @ThreadLocal
-    var FAST_ROUND = true
+    //var FAST_ROUND = true
+    var FAST_ROUND = false
 
     @ThreadLocal
     var FAST_ATAN2 = true

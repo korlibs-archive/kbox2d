@@ -153,47 +153,25 @@ class MathUtils : PlatformMathUtils() {
         }
 
 
-        fun floor(x: Float): Int {
-            return if (Settings.FAST_FLOOR) {
-                fastFloor(x)
-            } else {
-                kotlin.math.floor(x.toDouble()).toInt()
-            }
-        }
+        fun floor(x: Float): Int = if (Settings.FAST_FLOOR) fastFloor(x) else floor(x.toDouble()).toInt()
 
 
         fun fastFloor(x: Float): Int {
             val y = x.toInt()
-            return if (x < y) {
-                y - 1
-            } else y
+            return if (x < y) y - 1 else y
         }
 
 
-        fun ceil(x: Float): Int {
-            return if (Settings.FAST_CEIL) {
-                fastCeil(x)
-            } else {
-                kotlin.math.ceil(x.toDouble()).toInt()
-            }
-        }
+        fun ceil(x: Float): Int = if (Settings.FAST_CEIL) fastCeil(x) else ceil(x.toDouble()).toInt()
 
 
         fun fastCeil(x: Float): Int {
             val y = x.toInt()
-            return if (x > y) {
-                y + 1
-            } else y
+            return if (x > y) y + 1 else y
         }
 
 
-        fun round(x: Float): Int {
-            return if (Settings.FAST_ROUND) {
-                floor(x + .5f)
-            } else {
-                x.roundToInt()
-            }
-        }
+        fun round(x: Float): Int = if (Settings.FAST_ROUND) floor(x + .5f) else round(x.toDouble()).toInt()
 
         /**
          * Rounds up the value to the nearest higher power^2 value.
@@ -204,32 +182,15 @@ class MathUtils : PlatformMathUtils() {
 
         fun ceilPowerOf2(x: Int): Int {
             var pow2 = 1
-            while (pow2 < x) {
-                pow2 = pow2 shl 1
-            }
+            while (pow2 < x) pow2 = pow2 shl 1
             return pow2
         }
 
 
-        fun max(a: Float, b: Float): Float {
-            return if (a > b) a else b
-        }
-
-
-        fun max(a: Int, b: Int): Int {
-            return if (a > b) a else b
-        }
-
-
-        fun min(a: Float, b: Float): Float {
-            return if (a < b) a else b
-        }
-
-
-        fun min(a: Int, b: Int): Int {
-            return if (a < b) a else b
-        }
-
+        fun max(a: Float, b: Float): Float = if (a > b) a else b
+        fun max(a: Int, b: Int): Int = if (a > b) a else b
+        fun min(a: Float, b: Float): Float = if (a < b) a else b
+        fun min(a: Int, b: Int): Int = if (a < b) a else b
 
         fun map(`val`: Float, fromMin: Float, fromMax: Float,
                 toMin: Float, toMax: Float): Float {
@@ -240,9 +201,7 @@ class MathUtils : PlatformMathUtils() {
 
         /** Returns the closest value to 'a' that is in between 'low' and 'high'  */
 
-        fun clamp(a: Float, low: Float, high: Float): Float {
-            return max(low, min(a, high))
-        }
+        fun clamp(a: Float, low: Float, high: Float): Float = max(low, min(a, high))
 
 
         fun clamp(a: Vec2, low: Vec2, high: Vec2): Vec2 {

@@ -62,7 +62,7 @@ class MathTest {
 
         for (i in 0 until RAND_ITERS) {
             val a = r.nextFloat() * MAX - MAX / 2
-            assertEquals(round(a).toInt(), MathUtils.round(a))
+            assertEquals(round(a).toInt(), MathUtils.round(a)) // Failed on watchOS X86
         }
 
         for (i in 0 until RAND_ITERS) {
