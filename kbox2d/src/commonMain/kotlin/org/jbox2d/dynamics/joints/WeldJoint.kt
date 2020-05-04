@@ -26,6 +26,7 @@
  */
 package org.jbox2d.dynamics.joints
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.common.Mat33
 import org.jbox2d.common.MathUtils
 import org.jbox2d.common.Rot
@@ -68,7 +69,9 @@ class WeldJoint(argWorld: IWorldPool, def: WeldJointDef) : Joint(argWorld, def) 
     val localAnchorA: Vec2 = Vec2(def.localAnchorA)
 
     val localAnchorB: Vec2 = Vec2(def.localAnchorB)
-    val referenceAngle: Float = def.referenceAngle
+    val referenceAngleRadians: Float = def.referenceAngleRadians
+    val referenceAngleDegrees: Float get() = referenceAngleRadians * MathUtils.RAD2DEG
+    val referenceAngle: Angle get() = referenceAngleRadians.radians
     private var m_gamma: Float = 0.toFloat()
     private val m_impulse: Vec3 = Vec3(0f, 0f, 0f)
 
@@ -127,8 +130,8 @@ class WeldJoint(argWorld: IWorldPool, def: WeldJointDef) : Joint(argWorld, def) 
         val qB = pool.popRot()
         val temp = pool.popVec2()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // Compute the effective masses.
         Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), m_rA)
@@ -166,7 +169,7 @@ class WeldJoint(argWorld: IWorldPool, def: WeldJointDef) : Joint(argWorld, def) 
             var invM = iA + iB
             val m = if (invM > 0.0f) 1.0f / invM else 0.0f
 
-            val C = aB - aA - referenceAngle
+            val C = aB - aA - referenceAngleRadians
 
             // Frequency
             val omega = 2.0f * MathUtils.PI * frequency
@@ -307,8 +310,8 @@ class WeldJoint(argWorld: IWorldPool, def: WeldJointDef) : Joint(argWorld, def) 
         val rA = pool.popVec2()
         val rB = pool.popVec2()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         val mA = m_invMassA
         val mB = m_invMassB
@@ -351,7 +354,7 @@ class WeldJoint(argWorld: IWorldPool, def: WeldJointDef) : Joint(argWorld, def) 
             aB += iB * Vec2.cross(rB, P)
         } else {
             C1.set(cB).addLocal(rB).subLocal(cA).subLocal(rA)
-            val C2 = aB - aA - referenceAngle
+            val C2 = aB - aA - referenceAngleRadians
 
             positionError = C1.length()
             angularError = MathUtils.abs(C2)

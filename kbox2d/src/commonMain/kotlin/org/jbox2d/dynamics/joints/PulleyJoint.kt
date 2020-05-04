@@ -180,8 +180,8 @@ class PulleyJoint constructor(argWorldPool: IWorldPool, def: PulleyJointDef) : J
         val qB = pool.popRot()
         val temp = pool.popVec2()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // Compute the effective masses.
         Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), m_rA)
@@ -303,8 +303,8 @@ class PulleyJoint constructor(argWorldPool: IWorldPool, def: PulleyJointDef) : J
         val cB = data.positions!![m_indexB].c
         var aB = data.positions!![m_indexB].a
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), rA)
         Rot.mulToOutUnsafe(qB, temp.set(localAnchorB).subLocal(m_localCenterB), rB)

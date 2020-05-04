@@ -221,8 +221,8 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
         val qB = pool.popRot()
         val temp = pool.popVec2()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // Compute the effective masses.
         Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), rA)
@@ -415,8 +415,8 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
         val qB = pool.popRot()
         val temp = pool.popVec2()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         Rot.mulToOut(qA, temp.set(localAnchorA).subLocal(m_localCenterA), rA)
         Rot.mulToOut(qB, temp.set(localAnchorB).subLocal(m_localCenterB), rB)

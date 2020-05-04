@@ -23,6 +23,7 @@
  */
 package org.jbox2d.dynamics
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.common.*
 import org.jbox2d.userdata.*
 
@@ -53,7 +54,7 @@ data class BodyDef(
     /**
      * The world angle of the body in radians.
      */
-    var angle: Float = 0f,
+    var angleRadians: Float = 0f,
 
     /**
      * The linear velocity of the body in world co-ordinates.
@@ -113,4 +114,18 @@ data class BodyDef(
      * Experimental: scales the inertia tensor.
      */
     var gravityScale: Float = 1f
-) : Box2dTypedUserData by Box2dTypedUserData.Mixin()
+) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+    /**
+     * The world angle of the body in degrees.
+     */
+    var angleDegrees: Float
+        set(value) = run { angleRadians = value * MathUtils.DEG2RAD }
+        get() = angleRadians * MathUtils.RAD2DEG
+
+    /**
+     * The world angle of the body.
+     */
+    var angle: Angle
+        set(value) = run { angleRadians = value.radians.toFloat() }
+        get() = angleRadians.radians
+}

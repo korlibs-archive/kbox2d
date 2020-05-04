@@ -150,8 +150,8 @@ class DistanceJoint(argWorld: IWorldPool, def: DistanceJointDef) : Joint(argWorl
         val qA = pool.popRot()
         val qB = pool.popRot()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // use m_u as temporary variable
         Rot.mulToOutUnsafe(qA, m_u.set(localAnchorA).subLocal(m_localCenterA), m_rA)
@@ -280,8 +280,8 @@ class DistanceJoint(argWorld: IWorldPool, def: DistanceJointDef) : Joint(argWorl
         val cB = data.positions!![m_indexB].c
         var aB = data.positions!![m_indexB].a
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         Rot.mulToOutUnsafe(qA, u.set(localAnchorA).subLocal(m_localCenterA), rA)
         Rot.mulToOutUnsafe(qB, u.set(localAnchorB).subLocal(m_localCenterB), rB)

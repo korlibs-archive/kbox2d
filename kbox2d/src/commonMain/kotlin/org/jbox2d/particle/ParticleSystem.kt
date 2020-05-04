@@ -254,7 +254,7 @@ class ParticleSystem(internal var m_world: World) {
             particleDef.color = groupDef.color
             particleDef.userData = groupDef.userData
             val shape = groupDef.shape
-            transform.set(groupDef.position, groupDef.angle)
+            transform.setRadians(groupDef.position, groupDef.angleRadians)
             val aabb = temp
             val childCount = shape!!.getChildCount()
             for (childIndex in 0 until childCount) {
@@ -864,7 +864,7 @@ class ParticleSystem(internal var m_world: World) {
                 val temp = tempVec
                 val cross = tempVec2
                 val rotation = tempRot
-                rotation.set(step.dt * group.m_angularVelocity)
+                rotation.setRadians(step.dt * group.m_angularVelocity)
                 Rot.mulToOutUnsafe(rotation, group.m_center, cross)
                 temp.set(group.m_linearVelocity).mulLocal(step.dt).addLocal(group.m_center).subLocal(cross)
                 tempXf.p.set(temp)

@@ -23,6 +23,7 @@
  */
 package org.jbox2d.dynamics
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.collision.shapes.MassData
 import org.jbox2d.collision.shapes.Shape
 import org.jbox2d.common.MathUtils
@@ -183,8 +184,17 @@ class Body(bd: BodyDef,
      *
      * @return the current world rotation angle in radians.
      */
-    val angle: Float
+    val angleRadians: Float
         get() = m_sweep.a
+
+    /**
+     * Get the angle in degrees.
+     *
+     * @return the current world rotation angle in degrees.
+     */
+    val angleDegrees: Float get() = angleRadians * MathUtils.RAD2DEG
+
+    val angle: Angle get() = angleRadians.radians
 
     /**
      * Get the world position of the center of mass. Do not modify.
@@ -476,13 +486,13 @@ class Body(bd: BodyDef,
         }
 
         m_xf.p.set(bd.position)
-        m_xf.q.set(bd.angle)
+        m_xf.q.setRadians(bd.angleRadians)
 
         m_sweep.localCenter.setZero()
         m_sweep.c0.set(m_xf.p)
         m_sweep.c.set(m_xf.p)
-        m_sweep.a0 = bd.angle
-        m_sweep.a = bd.angle
+        m_sweep.a0 = bd.angleRadians
+        m_sweep.a = bd.angleRadians
         m_sweep.alpha0 = 0.0f
 
         m_jointList = null
@@ -660,20 +670,20 @@ class Body(bd: BodyDef,
      * are updated on the next call to World.step().
      *
      * @param position the world position of the body's local origin.
-     * @param angle the world rotation in radians.
+     * @param angleRadians the world rotation in radians.
      */
-    fun setTransform(position: Vec2, angle: Float) {
+    fun setTransformRadians(position: Vec2, angleRadians: Float) {
         assert(world.isLocked == false)
         if (world.isLocked == true) {
             return
         }
 
-        m_xf.q.set(angle)
+        m_xf.q.setRadians(angleRadians)
         m_xf.p.set(position)
 
         // m_sweep.c0 = m_sweep.c = Mul(m_xf, m_sweep.localCenter);
         Transform.mulToOutUnsafe(m_xf, m_sweep.localCenter, m_sweep.c)
-        m_sweep.a = angle
+        m_sweep.a = angleRadians
 
         m_sweep.c0.set(m_sweep.c)
         m_sweep.a0 = m_sweep.a
@@ -685,6 +695,26 @@ class Body(bd: BodyDef,
             f = f.m_next
         }
     }
+
+    /**
+     * Set the position of the body's origin and rotation. This breaks any contacts and wakes the
+     * other bodies. Manipulating a body's transform may cause non-physical behavior. Note: contacts
+     * are updated on the next call to World.step().
+     *
+     * @param position the world position of the body's local origin.
+     * @param angleDegrees the world rotation in degrees.
+     */
+    fun setTransformDegrees(position: Vec2, angleDegrees: Float) = setTransformRadians(position, angleDegrees * MathUtils.DEG2RAD)
+
+    /**
+     * Set the position of the body's origin and rotation. This breaks any contacts and wakes the
+     * other bodies. Manipulating a body's transform may cause non-physical behavior. Note: contacts
+     * are updated on the next call to World.step().
+     *
+     * @param position the world position of the body's local origin.
+     * @param angle the world rotation.
+     */
+    fun setTransform(position: Vec2, angle: Angle) = setTransformRadians(position, angle.radians.toFloat())
 
     /**
      * Apply a force at a world point. If the force is not applied at the center of mass, it will
@@ -1122,7 +1152,7 @@ class Body(bd: BodyDef,
         m_sweep.advance(t)
         m_sweep.c.set(m_sweep.c0)
         m_sweep.a = m_sweep.a0
-        m_xf.q.set(m_sweep.a)
+        m_xf.q.setRadians(m_sweep.a)
         // m_xf.position = m_sweep.c - Mul(m_xf.R, m_sweep.localCenter);
         Rot.mulToOutUnsafe(m_xf.q, m_sweep.localCenter, m_xf.p)
         m_xf.p.mulLocal(-1f).addLocal(m_sweep.c)

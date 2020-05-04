@@ -79,8 +79,8 @@ class RopeJoint(worldPool: IWorldPool, def: RopeJointDef) : Joint(worldPool, def
         val qB = pool.popRot()
         val temp = pool.popVec2()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // Compute the effective masses.
         Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), m_rA)
@@ -200,8 +200,8 @@ class RopeJoint(worldPool: IWorldPool, def: RopeJointDef) : Joint(worldPool, def
         val rB = pool.popVec2()
         val temp = pool.popVec2()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // Compute the effective masses.
         Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), rA)

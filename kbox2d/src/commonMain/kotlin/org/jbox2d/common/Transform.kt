@@ -23,6 +23,7 @@
  */
 package org.jbox2d.common
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.internal.*
 
 // updated to rev 100
@@ -72,10 +73,26 @@ class Transform {
      * @param p
      * @param angle
      */
-    fun set(p: Vec2, angle: Float) {
+    fun set(p: Vec2, angle: Angle) = this.setRadians(p, angle.radians.toFloat())
+
+    /**
+     * Set this based on the position and angle in radians.
+     *
+     * @param p
+     * @param angleRadians
+     */
+    fun setRadians(p: Vec2, angleRadians: Float) {
         this.p.set(p)
-        q.set(angle)
+        q.setRadians(angleRadians)
     }
+
+    /**
+     * Set this based on the position and angle in degrees.
+     *
+     * @param p
+     * @param angle
+     */
+    fun setDegrees(p: Vec2, angleDegrees: Float) = setRadians(p, angleDegrees * MathUtils.DEG2RAD)
 
     /** Set this to the identity transform.  */
     fun setIdentity() {

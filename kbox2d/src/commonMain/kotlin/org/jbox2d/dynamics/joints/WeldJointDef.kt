@@ -23,10 +23,9 @@
  */
 package org.jbox2d.dynamics.joints
 
-import org.jbox2d.common.Vec2
+import com.soywiz.korma.geom.*
+import org.jbox2d.common.*
 import org.jbox2d.dynamics.Body
-import org.jbox2d.dynamics.joints.JointDef
-import org.jbox2d.dynamics.joints.JointType
 
 /**
  * Created at 3:38:52 AM Jan 15, 2011
@@ -51,8 +50,21 @@ class WeldJointDef : JointDef(JointType.WELD) {
     /**
      * The body2 angle minus body1 angle in the reference state (radians).
      */
+    var referenceAngleRadians: Float = 0f
 
-    var referenceAngle: Float = 0f
+    /**
+     * The body2 angle minus body1 angle in the reference state (degrees).
+     */
+    var referenceAngleDegrees: Float
+        set(value) = run { referenceAngleRadians = value * MathUtils.DEG2RAD }
+        get() = referenceAngleRadians * MathUtils.RAD2DEG
+
+    /**
+     * The body2 angle minus body1 angle in the reference state.
+     */
+    var referenceAngle: Angle
+        set(value) = run { referenceAngleRadians = value.radians.toFloat() }
+        get() = referenceAngleRadians.radians
 
     /**
      * The mass-spring-damper frequency in Hertz. Rotation only. Disable softness with a value of 0.
@@ -78,6 +90,6 @@ class WeldJointDef : JointDef(JointType.WELD) {
         bodyB = bB
         bodyA!!.getLocalPointToOut(anchor, localAnchorA)
         bodyB!!.getLocalPointToOut(anchor, localAnchorB)
-        referenceAngle = bodyB!!.angle - bodyA!!.angle
+        referenceAngleRadians = bodyB!!.angleRadians - bodyA!!.angleRadians
     }
 }

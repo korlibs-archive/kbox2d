@@ -1,5 +1,6 @@
 package org.jbox2d.particle
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.common.Transform
 import org.jbox2d.common.Vec2
 
@@ -82,8 +83,9 @@ class ParticleGroup {
     val position: Vec2
         get() = m_transform.p
 
-    val angle: Float
-        get() = m_transform.q.angle
+    val angleRadians: Float get() = m_transform.q.angleRadians
+    val angleDegrees: Float get() = m_transform.q.angleDegrees
+    val angle: Angle get() = m_transform.q.angle
 
     init {
         // m_system = null;

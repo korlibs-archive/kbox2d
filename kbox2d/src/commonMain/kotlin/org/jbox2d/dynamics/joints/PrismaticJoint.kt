@@ -23,6 +23,7 @@
  */
 package org.jbox2d.dynamics.joints
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.common.Mat33
 import org.jbox2d.common.MathUtils
 import org.jbox2d.common.Rot
@@ -117,8 +118,16 @@ class PrismaticJoint(argWorld: IWorldPool, def: PrismaticJointDef) : Joint(argWo
 
     val m_localXAxisA: Vec2 = Vec2(def.localAxisA)
     protected val m_localYAxisA: Vec2 = Vec2()
-    var m_referenceAngle: Float = 0.toFloat()
+
+    var m_referenceAngleRadians: Float = 0.toFloat()
         protected set
+    var m_referenceAngleDegrees: Float
+        protected set(value) = run { m_referenceAngleRadians = value * MathUtils.DEG2RAD }
+        get() = m_referenceAngleRadians * MathUtils.RAD2DEG
+    var m_referenceAngle: Angle
+        protected set(value) = run { m_referenceAngleRadians = value.radians.toFloat() }
+        get() = m_referenceAngleRadians.radians
+
     private val m_impulse: Vec3 = Vec3()
     private var m_motorImpulse: Float = 0.toFloat()
     /**
@@ -280,7 +289,7 @@ class PrismaticJoint(argWorld: IWorldPool, def: PrismaticJointDef) : Joint(argWo
 
         m_localXAxisA.normalize()
         Vec2.crossToOutUnsafe(1f, m_localXAxisA, m_localYAxisA)
-        m_referenceAngle = def.referenceAngle
+        m_referenceAngleRadians = def.referenceAngleRadians
 
 
     }
@@ -383,8 +392,8 @@ class PrismaticJoint(argWorld: IWorldPool, def: PrismaticJointDef) : Joint(argWo
         val rA = pool.popVec2()
         val rB = pool.popVec2()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // Compute the effective masses.
         Rot.mulToOutUnsafe(qA, d.set(m_localAnchorA).subLocal(m_localCenterA), rA)
@@ -650,8 +659,8 @@ class PrismaticJoint(argWorld: IWorldPool, def: PrismaticJointDef) : Joint(argWo
         val cB = data.positions!![m_indexB].c
         var aB = data.positions!![m_indexB].a
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         val mA = m_invMassA
         val mB = m_invMassB
@@ -672,7 +681,7 @@ class PrismaticJoint(argWorld: IWorldPool, def: PrismaticJointDef) : Joint(argWo
         val s2 = Vec2.cross(rB, perp)
 
         C1.x = Vec2.dot(perp, d)
-        C1.y = aB - aA - m_referenceAngle
+        C1.y = aB - aA - m_referenceAngleRadians
 
         var linearError = MathUtils.abs(C1.x)
         val angularError = MathUtils.abs(C1.y)

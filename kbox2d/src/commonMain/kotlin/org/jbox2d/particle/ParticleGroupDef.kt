@@ -1,5 +1,6 @@
 package org.jbox2d.particle
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.collision.shapes.*
 import org.jbox2d.common.*
 import org.jbox2d.userdata.*
@@ -29,8 +30,23 @@ class ParticleGroupDef : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
      * The world angle of the group in radians. Rotates the shape by an angle equal to the value of
      * angle.
      */
+    var angleRadians: Float = 0f
 
-    var angle: Float = 0f
+    /**
+     * The world angle of the group in degrees. Rotates the shape by an angle equal to the value of
+     * angle.
+     */
+    var angleDegrees: Float
+        set(value) = run { angleRadians = value * MathUtils.DEG2RAD }
+        get() = angleRadians * MathUtils.RAD2DEG
+
+    /**
+     * The world angle of the group. Rotates the shape by an angle equal to the value of
+     * angle.
+     */
+    var angle: Angle
+        set(value) = run { angleRadians = value.radians.toFloat() }
+        get() = angleRadians.radians
 
     /** The linear velocity of the group's origin in world co-ordinates.  */
 
