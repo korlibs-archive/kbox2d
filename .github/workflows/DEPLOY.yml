@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: ./gradlew
-      - run: ./gradlew assemble check lint testDebugUnitTest publishKotlinMultiplatformPublicationToMavenRepository publishLinuxX64PublicationToMavenRepository -x jsBrowserTest -x jsNodeTest
+      - run: ./gradlew assemble check lint testDebugUnitTest publishKotlinMultiplatformPublicationToMavenRepository publishLinuxX64PublicationToMavenRepository
 
   publish-finalize:
     needs: [publish-windows, publish-mac, publish-linux]
