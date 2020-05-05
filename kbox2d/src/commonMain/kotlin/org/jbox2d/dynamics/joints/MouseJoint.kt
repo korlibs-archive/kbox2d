@@ -122,7 +122,7 @@ class MouseJoint constructor(argWorld: IWorldPool, def: MouseJointDef) : Joint(a
 
         val qB = pool.popRot()
 
-        qB.set(aB)
+        qB.setRadians(aB)
 
         val mass = m_bodyB!!.m_mass
 

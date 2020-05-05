@@ -128,8 +128,8 @@ class FrictionJoint(argWorldPool: IWorldPool, def: FrictionJointDef) : Joint(arg
         val qA = pool.popRot()
         val qB = pool.popRot()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // Compute the effective mass matrix.
         Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), m_rA)

@@ -23,6 +23,7 @@
  */
 package org.jbox2d.common
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.internal.*
 
 /**
@@ -37,13 +38,22 @@ class Rot {
 
     var c: Float = 0.toFloat() // sin and cos
 
-    val angle: Float get() = MathUtils.atan2(s, c)
+    val angleRadians: Float get() = MathUtils.atan2(s, c)
+
+    val angleDegrees: Float get() = angleRadians * MathUtils.RAD2DEG
+
+    val angle: Angle get() = angleRadians.radians
 
     constructor() {
         setIdentity()
     }
 
-    constructor(angle: Float) {
+    @Deprecated("", replaceWith = ReplaceWith("Rot(angleRadians.radians)"))
+    constructor(angleRadians: Float) {
+        setRadians(angleRadians)
+    }
+
+    constructor(angle: Angle) {
         set(angle)
     }
 
@@ -51,11 +61,15 @@ class Rot {
         return "Rot(s:$s, c:$c)"
     }
 
-    fun set(angle: Float): Rot {
-        s = MathUtils.sin(angle)
-        c = MathUtils.cos(angle)
+    fun setRadians(angleRadians: Float): Rot {
+        s = MathUtils.sin(angleRadians)
+        c = MathUtils.cos(angleRadians)
         return this
     }
+
+    fun set(angle: Angle): Rot = setRadians(angle.radians.toFloat())
+
+    fun setDegrees(angleDegrees: Float): Rot = setRadians(angleDegrees * MathUtils.DEG2RAD)
 
     fun set(other: Rot): Rot {
         s = other.s

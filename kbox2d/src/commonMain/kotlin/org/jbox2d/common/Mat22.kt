@@ -23,6 +23,7 @@
  */
 package org.jbox2d.common
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.internal.*
 
 /**
@@ -36,12 +37,25 @@ class Mat22 {
     val ey: Vec2
 
     /**
+     * Extract the angle in radians from this matrix (assumed to be a rotation matrix).
+     *
+     * @return
+     */
+    val angleRadians: Float get() = MathUtils.atan2(ex.y, ex.x)
+
+    /**
+     * Extract the angle in degrees from this matrix (assumed to be a rotation matrix).
+     *
+     * @return
+     */
+    val angleDegrees: Float get() = angleRadians * MathUtils.RAD2DEG
+
+    /**
      * Extract the angle from this matrix (assumed to be a rotation matrix).
      *
      * @return
      */
-    val angle: Float
-        get() = MathUtils.atan2(ex.y, ex.x)
+    val angle: Angle get() = angleRadians.radians
 
     /** Convert the matrix to printable format.  */
     override fun toString(): String {
@@ -116,16 +130,20 @@ class Mat22 {
     /**
      * Set as a matrix representing a rotation.
      *
-     * @param angle Rotation (in radians) that matrix represents.
+     * @param angleRadians Rotation (in radians) that matrix represents.
      */
-    fun set(angle: Float) {
-        val c = MathUtils.cos(angle)
-        val s = MathUtils.sin(angle)
+    fun setRadians(angleRadians: Float) {
+        val c = MathUtils.cos(angleRadians)
+        val s = MathUtils.sin(angleRadians)
         ex.x = c
         ey.x = -s
         ex.y = s
         ey.y = c
     }
+
+    fun setDegrees(angleDegrees: Float) = setRadians(angleDegrees * MathUtils.DEG2RAD)
+
+    fun set(angle: Angle) = setRadians(angle.radians.toFloat())
 
     /**
      * Set as the identity matrix.
@@ -577,26 +595,21 @@ class Mat22 {
         }
 
 
-        fun createRotationalTransform(angle: Float): Mat22 {
-            val mat = Mat22()
-            val c = MathUtils.cos(angle)
-            val s = MathUtils.sin(angle)
-            mat.ex.x = c
-            mat.ey.x = -s
-            mat.ex.y = s
-            mat.ey.y = c
-            return mat
-        }
-
-
-        fun createRotationalTransform(angle: Float, out: Mat22) {
-            val c = MathUtils.cos(angle)
-            val s = MathUtils.sin(angle)
+        fun createRotationalTransformRadians(angleRadians: Float, out: Mat22 = Mat22()): Mat22 {
+            val c = MathUtils.cos(angleRadians)
+            val s = MathUtils.sin(angleRadians)
             out.ex.x = c
             out.ey.x = -s
             out.ex.y = s
             out.ey.y = c
+            return out
         }
+
+        fun createRotationalTransformDegrees(angleDegrees: Float, out: Mat22 = Mat22()): Mat22
+            = createRotationalTransformRadians(angleDegrees * MathUtils.DEG2RAD, out)
+
+        fun createRotationalTransform(angle: Angle, out: Mat22 = Mat22()): Mat22
+            = createRotationalTransformRadians(angle.radians.toFloat(), out)
 
 
         fun createScaleTransform(scale: Float): Mat22 {

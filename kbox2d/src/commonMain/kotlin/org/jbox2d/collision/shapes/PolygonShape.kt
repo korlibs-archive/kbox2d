@@ -23,6 +23,7 @@
  */
 package org.jbox2d.collision.shapes
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.collision.AABB
 import org.jbox2d.collision.RayCastInput
 import org.jbox2d.collision.RayCastOutput
@@ -259,9 +260,9 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
      * @param hx the half-width.
      * @param hy the half-height.
      * @param center the center of the box in local coordinates.
-     * @param angle the rotation of the box in local coordinates.
+     * @param angleRadians the rotation of the box in local coordinates.
      */
-    fun setAsBox(hx: Float, hy: Float, center: Vec2, angle: Float) {
+    fun setAsBoxRadians(hx: Float, hy: Float, center: Vec2, angleRadians: Float) {
         m_count = 4
         m_vertices[0].set(-hx, -hy)
         m_vertices[1].set(hx, -hy)
@@ -275,7 +276,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
 
         val xf = poolt1
         xf.p.set(center)
-        xf.q.set(angle)
+        xf.q.setRadians(angleRadians)
 
         // Transform vertices and normals.
         for (i in 0 until m_count) {
@@ -283,6 +284,10 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
             Rot.mulToOut(xf.q, m_normals[i], m_normals[i])
         }
     }
+
+    fun setAsBoxDegrees(hx: Float, hy: Float, center: Vec2, angleDegrees: Float) = setAsBoxRadians(hx, hy, center, angleDegrees * MathUtils.DEG2RAD)
+
+    fun setAsBox(hx: Float, hy: Float, center: Vec2, angle: Angle) = setAsBoxRadians(hx, hy, center, angle.radians.toFloat())
 
     override fun getChildCount(): Int {
         return 1

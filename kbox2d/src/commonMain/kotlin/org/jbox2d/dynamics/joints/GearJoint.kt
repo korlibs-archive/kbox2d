@@ -147,7 +147,7 @@ class GearJoint(argWorldPool: IWorldPool, def: GearJointDef) : Joint(argWorldPoo
             val revolute = def.joint1 as RevoluteJoint?
             m_localAnchorC.set(revolute!!.m_localAnchorA)
             m_localAnchorA.set(revolute.m_localAnchorB)
-            m_referenceAngleA = revolute.m_referenceAngle
+            m_referenceAngleA = revolute.m_referenceAngleRadians
             m_localAxisC.setZero()
 
             coordinateA = aA - aC - m_referenceAngleA
@@ -157,7 +157,7 @@ class GearJoint(argWorldPool: IWorldPool, def: GearJointDef) : Joint(argWorldPoo
             val prismatic = def.joint1 as PrismaticJoint?
             m_localAnchorC.set(prismatic!!.m_localAnchorA)
             m_localAnchorA.set(prismatic.m_localAnchorB)
-            m_referenceAngleA = prismatic.m_referenceAngle
+            m_referenceAngleA = prismatic.m_referenceAngleRadians
             m_localAxisC.set(prismatic.m_localXAxisA)
 
             val pC = m_localAnchorC
@@ -181,7 +181,7 @@ class GearJoint(argWorldPool: IWorldPool, def: GearJointDef) : Joint(argWorldPoo
             val revolute = def.joint2 as RevoluteJoint?
             m_localAnchorD.set(revolute!!.m_localAnchorA)
             m_localAnchorB.set(revolute.m_localAnchorB)
-            m_referenceAngleB = revolute.m_referenceAngle
+            m_referenceAngleB = revolute.m_referenceAngleRadians
             m_localAxisD.setZero()
 
             coordinateB = aB - aD - m_referenceAngleB
@@ -191,7 +191,7 @@ class GearJoint(argWorldPool: IWorldPool, def: GearJointDef) : Joint(argWorldPoo
             val prismatic = def.joint2 as PrismaticJoint?
             m_localAnchorD.set(prismatic!!.m_localAnchorA)
             m_localAnchorB.set(prismatic.m_localAnchorB)
-            m_referenceAngleB = prismatic.m_referenceAngle
+            m_referenceAngleB = prismatic.m_referenceAngleRadians
             m_localAxisD.set(prismatic.m_localXAxisA)
 
             val pD = m_localAnchorD
@@ -269,10 +269,10 @@ class GearJoint(argWorldPool: IWorldPool, def: GearJointDef) : Joint(argWorldPoo
         val qB = pool.popRot()
         val qC = pool.popRot()
         val qD = pool.popRot()
-        qA.set(aA)
-        qB.set(aB)
-        qC.set(aC)
-        qD.set(aD)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
+        qC.setRadians(aC)
+        qD.setRadians(aD)
 
         m_mass = 0.0f
 
@@ -409,10 +409,10 @@ class GearJoint(argWorldPool: IWorldPool, def: GearJointDef) : Joint(argWorldPoo
         val qB = pool.popRot()
         val qC = pool.popRot()
         val qD = pool.popRot()
-        qA.set(aA)
-        qB.set(aB)
-        qC.set(aC)
-        qD.set(aD)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
+        qC.setRadians(aC)
+        qD.setRadians(aD)
 
         val linearError = 0.0f
 

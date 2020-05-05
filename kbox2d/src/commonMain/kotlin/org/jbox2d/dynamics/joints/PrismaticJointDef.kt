@@ -23,7 +23,8 @@
  */
 package org.jbox2d.dynamics.joints
 
-import org.jbox2d.common.Vec2
+import com.soywiz.korma.geom.*
+import org.jbox2d.common.*
 import org.jbox2d.dynamics.Body
 
 /**
@@ -58,10 +59,23 @@ class PrismaticJointDef : JointDef(JointType.PRISMATIC) {
     val localAxisA: Vec2 = Vec2(1.0f, 0.0f)
 
     /**
+     * The constrained angle in radians between the bodies: body2_angle - body1_angle.
+     */
+    var referenceAngleRadians: Float = 0f
+
+    /**
+     * The constrained angle in degrees between the bodies: body2_angle - body1_angle.
+     */
+    var referenceAngleDegrees: Float
+        set(value) = run { referenceAngleRadians = value * MathUtils.DEG2RAD }
+        get() = referenceAngleRadians * MathUtils.RAD2DEG
+
+    /**
      * The constrained angle between the bodies: body2_angle - body1_angle.
      */
-
-    var referenceAngle: Float = 0f
+    var referenceAngle: Angle
+        set(value) = run { referenceAngleRadians = value.radians.toFloat() }
+        get() = referenceAngleRadians.radians
 
     /**
      * Enable/disable the joint limit.
@@ -109,6 +123,6 @@ class PrismaticJointDef : JointDef(JointType.PRISMATIC) {
         bodyA!!.getLocalPointToOut(anchor, localAnchorA)
         bodyB!!.getLocalPointToOut(anchor, localAnchorB)
         bodyA!!.getLocalVectorToOut(axis, localAxisA)
-        referenceAngle = bodyB!!.angle - bodyA!!.angle
+        referenceAngleRadians = bodyB!!.angleRadians - bodyA!!.angleRadians
     }
 }

@@ -50,7 +50,7 @@ class WorldTest {
         for (i in 0 until 60) {
             world.step(timeStep, velocityIterations, positionIterations)
             val position = body.position
-            val angle = body.angle
+            val angle = body.angleRadians
             println("${position.x} ${position.y} $angle")
         }
     }

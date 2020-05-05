@@ -46,7 +46,8 @@
 
 package org.jbox2d.dynamics.joints
 
-import org.jbox2d.common.Vec2
+import com.soywiz.korma.geom.*
+import org.jbox2d.common.*
 import org.jbox2d.dynamics.Body
 
 /**
@@ -77,8 +78,21 @@ class RevoluteJointDef : JointDef(JointType.REVOLUTE) {
     /**
      * The body2 angle minus body1 angle in the reference state (radians).
      */
+    var referenceAngleRadians: Float = 0f
 
-    var referenceAngle: Float = 0f
+    /**
+     * The body2 angle minus body1 angle in the reference state (degrees).
+     */
+    var referenceAngleDegrees: Float
+        set(value) = run { referenceAngleRadians = value * MathUtils.DEG2RAD }
+        get() = referenceAngleRadians * MathUtils.RAD2DEG
+
+    /**
+     * The body2 angle minus body1 angle in the reference state.
+     */
+    var referenceAngle: Angle
+        set(value) = run { referenceAngleRadians = value.radians.toFloat() }
+        get() = referenceAngleRadians.radians
 
     /**
      * A flag to enable joint limits.
@@ -86,17 +100,31 @@ class RevoluteJointDef : JointDef(JointType.REVOLUTE) {
 
     var enableLimit: Boolean = false
 
-    /**
-     * The lower angle for the joint limit (radians).
-     */
+    /** The lower angle for the joint limit (radians). */
+    var lowerAngleRadians: Float = 0f
 
-    var lowerAngle: Float = 0f
+    /** The lower angle for the joint limit (degrees). */
+    var lowerAngleDegrees: Float
+        set(value) = run { lowerAngleRadians = value * MathUtils.DEG2RAD }
+        get() = lowerAngleRadians * MathUtils.RAD2DEG
 
-    /**
-     * The upper angle for the joint limit (radians).
-     */
+    /** The lower angle for the joint limit. */
+    var lowerAngle: Angle
+        set(value) = run { lowerAngleRadians = value.radians.toFloat() }
+        get() = lowerAngleRadians.radians
 
-    var upperAngle: Float = 0f
+    /** The upper angle for the joint limit (radians). */
+    var upperAngleRadians: Float = 0f
+
+    /** The upper angle for the joint limit (degrees). */
+    var upperAngleDegrees: Float
+        set(value) = run { upperAngleRadians = value * MathUtils.DEG2RAD }
+        get() = upperAngleRadians * MathUtils.RAD2DEG
+
+    /** The lower angle for the joint limit. */
+    var upperAngle: Angle
+        set(value) = run { upperAngleRadians = value.radians.toFloat() }
+        get() = upperAngleRadians.radians
 
     /**
      * A flag to enable the joint motor.
@@ -128,6 +156,6 @@ class RevoluteJointDef : JointDef(JointType.REVOLUTE) {
         bodyB = b2
         bodyA!!.getLocalPointToOut(anchor, localAnchorA)
         bodyB!!.getLocalPointToOut(anchor, localAnchorB)
-        referenceAngle = bodyB!!.angle - bodyA!!.angle
+        referenceAngleRadians = bodyB!!.angleRadians - bodyA!!.angleRadians
     }
 }

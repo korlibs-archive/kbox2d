@@ -88,7 +88,7 @@ class Sweep {
         xf.p.x = (1.0f - beta) * c0.x + beta * c.x
         xf.p.y = (1.0f - beta) * c0.y + beta * c.y
         val angle = (1.0f - beta) * a0 + beta * a
-        xf.q.set(angle)
+        xf.q.setRadians(angle)
 
         // Shift to origin
         // xf->p -= b2Mul(xf->q, localCenter);

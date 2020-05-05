@@ -45,8 +45,8 @@ class MotorJointDef : JointDef(JointType.MOTOR) {
         val xB = bodyB!!.position
         bodyA!!.getLocalPointToOut(xB, linearOffset)
 
-        val angleA = bodyA!!.angle
-        val angleB = bodyB!!.angle
+        val angleA = bodyA!!.angleRadians
+        val angleB = bodyB!!.angleRadians
         angularOffset = angleB - angleA
     }
 }

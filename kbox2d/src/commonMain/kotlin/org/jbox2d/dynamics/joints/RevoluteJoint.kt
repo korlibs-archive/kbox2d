@@ -23,6 +23,7 @@
  */
 package org.jbox2d.dynamics.joints
 
+import com.soywiz.korma.geom.*
 import org.jbox2d.common.Mat33
 import org.jbox2d.common.MathUtils
 import org.jbox2d.common.Rot
@@ -72,8 +73,14 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
 
     var isLimitEnabled: Boolean = false
         private set
-    var m_referenceAngle: Float = 0.toFloat()
+    var m_referenceAngleRadians: Float = 0.toFloat()
         protected set
+    var m_referenceAngleDegrees: Float
+        protected set(value) = run { m_referenceAngleRadians = value * MathUtils.DEG2RAD }
+        get() = m_referenceAngleRadians * MathUtils.RAD2DEG
+    var m_referenceAngle: Angle
+        protected set(value) = run { m_referenceAngleRadians = value.radians.toFloat() }
+        get() = m_referenceAngleRadians.radians
     var lowerLimit: Float = 0.toFloat()
         private set
     var upperLimit: Float = 0.toFloat()
@@ -94,12 +101,16 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
     private var m_motorMass: Float = 0.toFloat() // effective mass for motor/limit angular constraint.
     private var m_limitState: LimitState? = null
 
-    val jointAngle: Float
+    val jointAngleRadians: Float
         get() {
             val b1 = m_bodyA
             val b2 = m_bodyB
-            return b2!!.m_sweep.a - b1!!.m_sweep.a - m_referenceAngle
+            return b2!!.m_sweep.a - b1!!.m_sweep.a - m_referenceAngleRadians
         }
+
+    val jointAngleDegrees: Float get() = jointAngleRadians * MathUtils.RAD2DEG
+
+    val jointAngle: Angle get() = jointAngleRadians.radians
 
     val jointSpeed: Float
         get() {
@@ -127,12 +138,12 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
     init {
         m_localAnchorA.set(def.localAnchorA)
         m_localAnchorB.set(def.localAnchorB)
-        m_referenceAngle = def.referenceAngle
+        m_referenceAngleRadians = def.referenceAngleRadians
 
         m_motorImpulse = 0f
 
-        lowerLimit = def.lowerAngle
-        upperLimit = def.upperAngle
+        lowerLimit = def.lowerAngleRadians
+        upperLimit = def.upperAngleRadians
         m_maxMotorTorque = def.maxMotorTorque
         m_motorSpeed = def.motorSpeed
         isLimitEnabled = def.enableLimit
@@ -163,8 +174,8 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
         val qB = pool.popRot()
         val temp = pool.popVec2()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // Compute the effective masses.
         Rot.mulToOutUnsafe(qA, temp.set(m_localAnchorA).subLocal(m_localCenterA), m_rA)
@@ -206,7 +217,7 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
         }
 
         if (isLimitEnabled && fixedRotation == false) {
-            val jointAngle = aB - aA - m_referenceAngle
+            val jointAngle = aB - aA - m_referenceAngleRadians
             if (MathUtils.abs(upperLimit - lowerLimit) < 2.0f * Settings.angularSlop) {
                 m_limitState = LimitState.EQUAL
             } else if (jointAngle <= lowerLimit) {
@@ -392,8 +403,8 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
         val cB = data.positions!![m_indexB].c
         var aB = data.positions!![m_indexB].a
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         var angularError = 0.0f
         var positionError = 0.0f
@@ -402,7 +413,7 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
 
         // Solve angular limit constraint.
         if (isLimitEnabled && m_limitState !== LimitState.INACTIVE && fixedRotation == false) {
-            val angle = aB - aA - m_referenceAngle
+            val angle = aB - aA - m_referenceAngleRadians
             var limitImpulse = 0.0f
 
             if (m_limitState === LimitState.EQUAL) {
@@ -432,8 +443,8 @@ class RevoluteJoint(argWorld: IWorldPool, def: RevoluteJointDef) : Joint(argWorl
         }
         // Solve point-to-point constraint.
         run {
-            qA.set(aA)
-            qB.set(aB)
+            qA.setRadians(aA)
+            qB.setRadians(aB)
 
             val rA = pool.popVec2()
             val rB = pool.popVec2()

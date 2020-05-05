@@ -268,8 +268,8 @@ class ContactSolver {
 
             val xfAq = xfA.q
             val xfBq = xfB.q
-            xfAq.set(aA)
-            xfBq.set(aB)
+            xfAq.setRadians(aA)
+            xfBq.setRadians(aB)
             xfA.p.x = cA.x - (xfAq.c * localCenterA.x - xfAq.s * localCenterA.y)
             xfA.p.y = cA.y - (xfAq.s * localCenterA.x + xfAq.c * localCenterA.y)
             xfB.p.x = cB.x - (xfBq.c * localCenterB.x - xfBq.s * localCenterB.y)
@@ -392,8 +392,8 @@ class ContactSolver {
             for (j in 0 until pointCount) {
                 val xfAq = xfA.q
                 val xfBq = xfB.q
-                xfAq.set(aA)
-                xfBq.set(aB)
+                xfAq.setRadians(aA)
+                xfBq.setRadians(aB)
                 xfA.p.x = cA.x - xfAq.c * localCenterAx + xfAq.s * localCenterAy
                 xfA.p.y = cA.y - xfAq.s * localCenterAx - xfAq.c * localCenterAy
                 xfB.p.x = cB.x - xfBq.c * localCenterBx + xfBq.s * localCenterBy
@@ -490,8 +490,8 @@ class ContactSolver {
             for (j in 0 until pointCount) {
                 val xfAq = xfA.q
                 val xfBq = xfB.q
-                xfAq.set(aA)
-                xfBq.set(aB)
+                xfAq.setRadians(aA)
+                xfBq.setRadians(aB)
                 xfA.p.x = cA.x - xfAq.c * localCenterAx + xfAq.s * localCenterAy
                 xfA.p.y = cA.y - xfAq.s * localCenterAx - xfAq.c * localCenterAy
                 xfB.p.x = cB.x - xfBq.c * localCenterBx + xfBq.s * localCenterBy

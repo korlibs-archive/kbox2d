@@ -162,8 +162,8 @@ class MotorJoint(pool: IWorldPool, def: MotorJointDef) : Joint(pool, def) {
         val temp = pool.popVec2()
         val K = pool.popMat22()
 
-        qA.set(aA)
-        qB.set(aB)
+        qA.setRadians(aA)
+        qB.setRadians(aB)
 
         // Compute the effective mass matrix.
         // m_rA = b2Mul(qA, -m_localCenterA);
