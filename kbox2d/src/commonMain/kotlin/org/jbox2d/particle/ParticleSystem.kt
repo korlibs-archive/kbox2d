@@ -18,6 +18,7 @@ import org.jbox2d.dynamics.TimeStep
 import org.jbox2d.dynamics.World
 import org.jbox2d.internal.*
 import org.jbox2d.particle.VoronoiDiagram.VoronoiDiagramCallback
+import kotlin.experimental.and
 
 class ParticleSystem(internal var m_world: World) {
 
@@ -1133,10 +1134,10 @@ class ParticleSystem(internal var m_world: World) {
             if (m_flagsBuffer.data!![a] and m_flagsBuffer.data!![b] and ParticleType.b2_colorMixingParticle != 0) {
                 val colorA = m_colorBuffer.data!![a]!!
                 val colorB = m_colorBuffer.data!![b]!!
-                val dr = colorMixing256 * (colorB.r - colorA.r) shr 8
-                val dg = colorMixing256 * (colorB.g - colorA.g) shr 8
-                val db = colorMixing256 * (colorB.b - colorA.b) shr 8
-                val da = colorMixing256 * (colorB.a - colorA.a) shr 8
+                val dr = colorMixing256 * ((colorB.r and 0xFF.toByte()) - (colorA.r and 0xFF.toByte())) shr 8
+                val dg = colorMixing256 * ((colorB.g and 0xFF.toByte()) - (colorA.g and 0xFF.toByte())) shr 8
+                val db = colorMixing256 * ((colorB.b and 0xFF.toByte()) - (colorA.b and 0xFF.toByte())) shr 8
+                val da = colorMixing256 * ((colorB.a and 0xFF.toByte()) - (colorA.a and 0xFF.toByte())) shr 8
                 colorA.r = (colorA.r + dr.toByte()).toByte()
                 colorA.g = (colorA.g + dg.toByte()).toByte()
                 colorA.b = (colorA.b + db.toByte()).toByte()

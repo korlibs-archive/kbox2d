@@ -27,7 +27,12 @@ internal inline fun arraycopy(src: DoubleArray, srcPos: Int, dst: DoubleArray, d
 internal inline fun assert(boolean: Boolean) = check(boolean)
 internal inline fun assert(boolean: Boolean, message: () -> String) = check(boolean)
 
-internal fun <T : Comparable<T>> Arrays_sort(array: Array<T>, fromIndex: Int, toIndex: Int): Unit {
+internal fun <T : Comparable<T>> Arrays_sort(array: Array<T>, fromIndex: Int, toIndex: Int) {
+    val sorted = array.copyOfRange(fromIndex, toIndex).sortedArray()
+    arraycopy(sorted, 0, array, fromIndex, toIndex - fromIndex)
+}
+
+internal fun Arrays_sort(array: LongArray, fromIndex: Int, toIndex: Int) {
     val sorted = array.copyOfRange(fromIndex, toIndex).sortedArray()
     arraycopy(sorted, 0, array, fromIndex, toIndex - fromIndex)
 }
