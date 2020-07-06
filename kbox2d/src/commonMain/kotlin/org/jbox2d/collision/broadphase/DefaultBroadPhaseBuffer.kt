@@ -50,7 +50,7 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
     private var m_moveCapacity: Int = 0
     private var m_moveCount: Int = 0
 
-    private var m_pairBuffer: Array<Pair>? = null
+    private var m_pairBuffer: LongArray? = null
     private var m_pairCapacity: Int = 0
     private var m_pairCount: Int = 0
 
@@ -70,7 +70,7 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
 
         m_pairCapacity = 16
         m_pairCount = 0
-        m_pairBuffer = Array(m_pairCapacity) { Pair() }
+        m_pairBuffer = LongArray(m_pairCapacity)
 
         m_moveCapacity = 16
         m_moveCount = 0
@@ -160,8 +160,8 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
         var i = 0
         while (i < m_pairCount) {
             val primaryPair = m_pairBuffer!![i]
-            val userDataA = m_tree.getUserData(primaryPair.proxyIdA)
-            val userDataB = m_tree.getUserData(primaryPair.proxyIdB)
+            val userDataA = m_tree.getUserData((primaryPair shr 32).toInt())
+            val userDataB = m_tree.getUserData(primaryPair.toInt())
 
             // log.debug("returning pair: "+userDataA+", "+userDataB);
             callback.addPair(userDataA, userDataB)
@@ -170,7 +170,7 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
             // Skip any duplicate pairs.
             while (i < m_pairCount) {
                 val pair = m_pairBuffer!![i]
-                if (pair.proxyIdA != primaryPair.proxyIdA || pair.proxyIdB != primaryPair.proxyIdB) {
+                if (pair != primaryPair) {
                     break
                 }
                 ++i
@@ -219,19 +219,17 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
         if (m_pairCount == m_pairCapacity) {
             val oldBuffer = m_pairBuffer
             m_pairCapacity *= 2
-            m_pairBuffer = arrayOfNulls<Pair>(m_pairCapacity) as Array<Pair>
+            m_pairBuffer = LongArray(m_pairCapacity)
             arraycopy(oldBuffer!!, 0, m_pairBuffer!!, 0, oldBuffer.size)
             for (i in oldBuffer.size until m_pairCapacity) {
-                m_pairBuffer!![i] = Pair()
+                m_pairBuffer!![i] = 0
             }
         }
 
         if (proxyId < m_queryProxyId) {
-            m_pairBuffer!![m_pairCount].proxyIdA = proxyId
-            m_pairBuffer!![m_pairCount].proxyIdB = m_queryProxyId
+            m_pairBuffer!![m_pairCount] = (proxyId.toLong() shl 32) or m_queryProxyId.toLong()
         } else {
-            m_pairBuffer!![m_pairCount].proxyIdA = m_queryProxyId
-            m_pairBuffer!![m_pairCount].proxyIdB = proxyId
+            m_pairBuffer!![m_pairCount] = (m_queryProxyId.toLong() shl 32) or proxyId.toLong()
         }
 
         ++m_pairCount

@@ -18,6 +18,7 @@ import org.jbox2d.dynamics.TimeStep
 import org.jbox2d.dynamics.World
 import org.jbox2d.internal.*
 import org.jbox2d.particle.VoronoiDiagram.VoronoiDiagramCallback
+import kotlin.experimental.and
 
 class ParticleSystem(internal var m_world: World) {
 
@@ -1133,18 +1134,18 @@ class ParticleSystem(internal var m_world: World) {
             if (m_flagsBuffer.data!![a] and m_flagsBuffer.data!![b] and ParticleType.b2_colorMixingParticle != 0) {
                 val colorA = m_colorBuffer.data!![a]!!
                 val colorB = m_colorBuffer.data!![b]!!
-                val dr = colorMixing256 * (colorB.r - colorA.r) shr 8
-                val dg = colorMixing256 * (colorB.g - colorA.g) shr 8
-                val db = colorMixing256 * (colorB.b - colorA.b) shr 8
-                val da = colorMixing256 * (colorB.a - colorA.a) shr 8
-                colorA.r = (colorA.r + dr.toByte()).toByte()
-                colorA.g = (colorA.g + dg.toByte()).toByte()
-                colorA.b = (colorA.b + db.toByte()).toByte()
-                colorA.a = (colorA.a + da.toByte()).toByte()
-                colorB.r = (colorB.r - dr.toByte()).toByte()
-                colorB.g = (colorB.g - dg.toByte()).toByte()
-                colorB.b = (colorB.b - db.toByte()).toByte()
-                colorB.a = (colorB.a - da.toByte()).toByte()
+                val dr = (colorMixing256 * ((colorB.r.toInt() and 0xFF) - (colorA.r.toInt() and 0xFF))) ushr 8
+                val dg = (colorMixing256 * ((colorB.g.toInt() and 0xFF) - (colorA.g.toInt() and 0xFF))) ushr 8
+                val db = (colorMixing256 * ((colorB.b.toInt() and 0xFF) - (colorA.b.toInt() and 0xFF))) ushr 8
+                val da = (colorMixing256 * ((colorB.a.toInt() and 0xFF) - (colorA.a.toInt() and 0xFF))) ushr 8
+                colorA.r = (colorA.r.toInt() + dr).toByte()
+                colorA.g = (colorA.g.toInt() + dg).toByte()
+                colorA.b = (colorA.b.toInt() + db).toByte()
+                colorA.a = (colorA.a.toInt() + da).toByte()
+                colorB.r = (colorB.r.toInt() - dr).toByte()
+                colorB.g = (colorB.g.toInt() - dg).toByte()
+                colorB.b = (colorB.b.toInt() - db).toByte()
+                colorB.a = (colorB.a.toInt() - da).toByte()
             }
         }
     }
