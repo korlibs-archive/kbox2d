@@ -227,9 +227,9 @@ class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCall
         }
 
         if (proxyId < m_queryProxyId) {
-            m_pairBuffer!![m_pairCount] = (proxyId shl 32).toLong() or m_queryProxyId.toLong()
+            m_pairBuffer!![m_pairCount] = (proxyId.toLong() shl 32) or m_queryProxyId.toLong()
         } else {
-            m_pairBuffer!![m_pairCount] = (m_queryProxyId shl 32).toLong() or proxyId.toLong()
+            m_pairBuffer!![m_pairCount] = (m_queryProxyId.toLong() shl 32) or proxyId.toLong()
         }
 
         ++m_pairCount
