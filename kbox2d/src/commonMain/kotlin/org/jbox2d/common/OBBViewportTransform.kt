@@ -50,10 +50,7 @@ class OBBViewportTransform : IViewportTransform {
         }
 
     /**
-     * Gets the transform of the viewport, transforms around the center. Not a copy.
-     */
-    /**
-     * Sets the transform of the viewport. Transforms about the center.
+     * Transform of the viewport, transforms around the center. Not a copy.
      */
     var transform: Mat22
         get() = box.R
@@ -62,7 +59,6 @@ class OBBViewportTransform : IViewportTransform {
         }
 
     private val inv = Mat22()
-
     private val inv2 = Mat22()
 
     class OBB {

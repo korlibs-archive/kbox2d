@@ -2,43 +2,40 @@ package org.jbox2d.particle
 
 import org.jbox2d.internal.*
 
-
 class StackQueue<T> {
 
-    private var m_buffer: Array<T>? = null
-    private var m_front: Int = 0
-    private var m_back: Int = 0
-    private var m_end: Int = 0
+    private var buffer: Array<T>? = null
+    private var front: Int = 0
+    private var back: Int = 0
+    private var end: Int = 0
 
     fun reset(buffer: Array<T>) {
-        m_buffer = buffer
-        m_front = 0
-        m_back = 0
-        m_end = buffer.size
+        this.buffer = buffer
+        front = 0
+        back = 0
+        end = buffer.size
     }
 
     fun push(task: T) {
-        if (m_back >= m_end) {
-            arraycopy(m_buffer!!, m_front, m_buffer!!, 0, m_back - m_front)
-            m_back -= m_front
-            m_front = 0
-            if (m_back >= m_end) {
-                return
-            }
+        if (back >= end) {
+            arraycopy(buffer!!, front, buffer!!, 0, back - front)
+            back -= front
+            front = 0
+            if (back >= end) return
         }
-        m_buffer!![m_back++] = task
+        buffer!![back++] = task
     }
 
     fun pop(): T {
-        assert(m_front < m_back)
-        return m_buffer!![m_front++]
+        assert(front < back)
+        return buffer!![front++]
     }
 
     fun empty(): Boolean {
-        return m_front >= m_back
+        return front >= back
     }
 
     fun front(): T {
-        return m_buffer!![m_front]
+        return buffer!![front]
     }
 }

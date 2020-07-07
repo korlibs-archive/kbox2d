@@ -59,20 +59,17 @@ import org.jbox2d.dynamics.Body
  *
  *  * you might not know where the center of mass will be.
  *  * if you add/remove shapes from a body and recompute the mass, the joints will be broken.
- *
  */
 class RevoluteJointDef : JointDef(JointType.REVOLUTE) {
 
     /**
      * The local anchor point relative to body1's origin.
      */
-
     var localAnchorA: Vec2 = Vec2(0.0f, 0.0f)
 
     /**
      * The local anchor point relative to body2's origin.
      */
-
     var localAnchorB: Vec2 = Vec2(0.0f, 0.0f)
 
     /**
@@ -97,7 +94,6 @@ class RevoluteJointDef : JointDef(JointType.REVOLUTE) {
     /**
      * A flag to enable joint limits.
      */
-
     var enableLimit: Boolean = false
 
     /** The lower angle for the joint limit (radians). */
@@ -129,27 +125,20 @@ class RevoluteJointDef : JointDef(JointType.REVOLUTE) {
     /**
      * A flag to enable the joint motor.
      */
-
     var enableMotor: Boolean = false
 
     /**
      * The desired motor speed. Usually in radians per second.
      */
-
     var motorSpeed: Float = 0f
 
     /**
      * The maximum motor torque used to achieve the desired motor speed. Usually in N-m.
      */
-
     var maxMotorTorque: Float = 0f
 
     /**
      * Initialize the bodies, anchors, and reference angle using the world anchor.
-     *
-     * @param b1
-     * @param b2
-     * @param anchor
      */
     fun initialize(b1: Body, b2: Body, anchor: Vec2) {
         bodyA = b1

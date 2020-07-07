@@ -30,6 +30,5 @@ class Jacobian {
     val linearA = Vec2()
 
     var angularA: Float = 0f
-
     var angularB: Float = 0f
 }

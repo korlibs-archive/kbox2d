@@ -31,29 +31,19 @@ import org.jbox2d.common.Vec2
 
 /**
  * A shape is used for collision detection. You can create a shape however you like. Shapes used for
- * simulation in World are created automatically when a Fixture is created. Shapes may encapsulate a
+ * simulation in World are created automatically when a Fixture is created. Shapes may encapsulate
  * one or more child shapes.
  */
-abstract class Shape(private val m_type: ShapeType) {
+abstract class Shape(val type: ShapeType) {
+
     /**
      * The radius of the underlying shape. This can refer to different things depending on the shape
      * implementation
-     *
-     * @return
      */
-    var m_radius: Float = 0f
-
-    /**
-     * Get the type of this shape. You can use this to down cast to the concrete shape.
-     *
-     * @return the shape type.
-     */
-    fun getType(): ShapeType = m_type
+    var radius: Float = 0f
 
     /**
      * Get the number of child primitives
-     *
-     * @return
      */
     abstract fun getChildCount(): Int
 
@@ -68,21 +58,19 @@ abstract class Shape(private val m_type: ShapeType) {
     /**
      * Cast a ray against a child shape.
      *
-     * @param argOutput the ray-cast results.
-     * @param argInput the ray-cast input parameters.
-     * @param argTransform the transform to be applied to the shape.
-     * @param argChildIndex the child shape index
-     * @return if hit
+     * @param output the ray-cast results.
+     * @param input the ray-cast input parameters.
+     * @param transform the transform to be applied to the shape.
+     * @param childIndex the child shape index
+     * @return true if hit
      */
-    abstract fun raycast(output: RayCastOutput, input: RayCastInput, transform: Transform,
-                         childIndex: Int): Boolean
-
+    abstract fun raycast(output: RayCastOutput, input: RayCastInput, transform: Transform, childIndex: Int): Boolean
 
     /**
      * Given a transform, compute the associated axis aligned bounding box for a child shape.
      *
-     * @param argAabb returns the axis aligned box.
-     * @param argXf the world transform of the shape.
+     * @param aabb returns the axis aligned box.
+     * @param xf the world transform of the shape.
      */
     abstract fun computeAABB(aabb: AABB, xf: Transform, childIndex: Int)
 
@@ -102,7 +90,7 @@ abstract class Shape(private val m_type: ShapeType) {
      * @param xf the shape world transform.
      * @param p a point in world coordinates.
      * @param normalOut returns the direction in which the distance increases.
-     * @return distance returns the distance from the current shape.
+     * @return the distance from the current shape.
      */
     abstract fun computeDistanceToOut(xf: Transform, p: Vec2, childIndex: Int, normalOut: Vec2): Float
 

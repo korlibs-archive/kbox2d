@@ -10,11 +10,8 @@ import org.jbox2d.common.Color3f
 class ParticleColor {
 
     var r: Byte = 0
-
     var g: Byte = 0
-
     var b: Byte = 0
-
     var a: Byte = 0
 
     val isZero: Boolean

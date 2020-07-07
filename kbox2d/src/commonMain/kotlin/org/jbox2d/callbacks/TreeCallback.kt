@@ -25,17 +25,15 @@ package org.jbox2d.callbacks
 
 import org.jbox2d.collision.broadphase.DynamicTree
 
-// update to rev 100
 /**
- * callback for [DynamicTree]
+ * Callback for [DynamicTree]
  * @author Daniel Murphy
  */
 interface TreeCallback {
 
     /**
      * Callback from a query request.
-     * @param proxyId the id of the proxy
-     * @return if the query should be continued
+     * @return true if the query should be continued
      */
     fun treeCallback(proxyId: Int): Boolean
 }

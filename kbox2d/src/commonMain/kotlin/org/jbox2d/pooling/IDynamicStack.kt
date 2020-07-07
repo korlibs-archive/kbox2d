@@ -26,22 +26,18 @@ package org.jbox2d.pooling
 /**
  * Same functionality of a regular java.util stack.  Object
  * return order does not matter.
- * @author Daniel
  *
- * @param <E>
-</E> */
+ * @author Daniel
+ */
 interface IDynamicStack<E> {
 
     /**
      * Pops an item off the stack
-     * @return
      */
     fun pop(): E
 
     /**
      * Pushes an item back on the stack
-     * @param argObject
      */
     fun push(argObject: E)
-
 }

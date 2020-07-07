@@ -41,424 +41,318 @@ import org.jbox2d.userdata.*
  *
  * @author Daniel Murphy
  */
-class Body(bd: BodyDef,
-           /**
-            * Get the parent world of this body.
-            */
-           var world: World) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+class Body(bd: BodyDef, var world: World) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
+    var _type: BodyType
 
-    var m_type: BodyType
+    var flags: Int = 0
 
-
-    var m_flags: Int = 0
-
-
-    var m_islandIndex: Int = 0
+    var islandIndex: Int = 0
 
     /**
      * The body origin transform.
      */
-    /**
-     * Get the body transform for the body's origin.
-     *
-     * @return the world transform of the body's origin.
-     */
+    val xf = Transform()
 
-    val m_xf = Transform()
-
-    fun getTransform() = m_xf
+    fun getTransform() = xf
 
     /**
      * The previous transform for particle simulation
      */
-
-    val m_xf0 = Transform()
+    val xf0 = Transform()
 
     /**
      * The swept motion for CCD
      */
+    val sweep = Sweep()
 
-    val m_sweep = Sweep()
+    val _linearVelocity = Vec2()
+    var _angularVelocity = 0f
 
+    val force = Vec2()
+    var torque = 0f
 
-    val m_linearVelocity = Vec2()
+    var prev: Body? = null
+    var next: Body? = null
 
-    var m_angularVelocity = 0f
+    /** List of all fixtures attached to this body.  */
+    var fixtureList: Fixture? = null
 
+    var fixtureCount: Int = 0
 
-    val m_force = Vec2()
+    /** List of all joints attached to this body.  */
+    var jointList: JointEdge? = null
 
-    var m_torque = 0f
-
-    var m_prev: Body? = null
-    /** Get the next body in the world's body list.  */
-
-    var m_next: Body? = null
-
-    fun getNext() = m_next
-
-    /** Get the list of all fixtures attached to this body.  */
-
-    var m_fixtureList: Fixture? = null
-
-    fun getFixtureList() = m_fixtureList
-
-
-    var m_fixtureCount: Int = 0
-
-    /** Get the list of all joints attached to this body.  */
-
-    var m_jointList: JointEdge? = null
     /**
-     * Get the list of all contacts attached to this body.
+     * List of all contacts attached to this body.
      *
      * @warning this list changes during the time step and you may miss some collisions if you don't
      * use ContactListener.
      */
-
-    var m_contactList: ContactEdge? = null
-
-    fun getContactList() = m_contactList
+    var contactList: ContactEdge? = null
 
     /**
-     * Get the total mass of the body.
-     *
-     * @return the mass, usually in kilograms (kg).
+     * Total mass of the body, usually in kilograms (kg).
      */
+    var mass: Float = 0f
+    var invMass: Float = 0f
 
-    var m_mass: Float = 0.toFloat()
+    /** Rotational inertia about the center of mass. */
+    var I: Float = 0f
+    var invI: Float = 0f
 
-    fun getMass() = m_mass
+    /** Linear damping of the body. */
+    var linearDamping: Float = 0f
 
+    /** Angular damping of the body. */
+    var angularDamping: Float = 0f
 
-    var m_invMass: Float = 0.toFloat()
-
-    // Rotational inertia about the center of mass.
-
-    var m_I: Float = 0.toFloat()
-
-    var m_invI: Float = 0.toFloat()
-
-    /** Get the linear damping of the body.  */
-    /** Set the linear damping of the body.  */
-
-    var m_linearDamping: Float = 0.toFloat()
-    /** Get the angular damping of the body.  */
-    /** Set the angular damping of the body.  */
-
-    var m_angularDamping: Float = 0.toFloat()
     /**
-     * Get the gravity scale of the body.
-     *
-     * @return
+     * Gravity scale of the body.
      */
+    var gravityScale: Float = 0f
+
+    var sleepTime: Float = 0f
+
     /**
-     * Set the gravity scale of the body.
-     *
-     * @param gravityScale
-     */
-
-    var m_gravityScale: Float = 0.toFloat()
-
-    var m_sleepTime: Float = 0.toFloat()
-
-    /** Get the user data pointer that was provided in the body definition.  */
-    /**
-     * Set the user data. Use this to store your application specific data.
+     * User data pointer that was provided in the body definition.
+     * Use this to store your application specific data.
      */
     var userData: Any? = null
 
     private val fixDef = FixtureDef()
 
     /**
-     * Get the world body origin position. Do not modify.
-     *
-     * @return the world position of the body's origin.
+     * World body origin position
      */
     val position: Vec2
-        get() = m_xf.p
+        get() = xf.p
 
     /**
-     * Get the angle in radians.
-     *
-     * @return the current world rotation angle in radians.
+     * Current world rotation angle in radians.
      */
     val angleRadians: Float
-        get() = m_sweep.a
+        get() = sweep.a
 
     /**
-     * Get the angle in degrees.
-     *
-     * @return the current world rotation angle in degrees.
+     * Current world rotation angle in degrees.
      */
     val angleDegrees: Float get() = angleRadians * MathUtils.RAD2DEG
 
     val angle: Angle get() = angleRadians.radians
 
     /**
-     * Get the world position of the center of mass. Do not modify.
+     * World position of the center of mass.
      */
     val worldCenter: Vec2
-        get() = m_sweep.c
+        get() = sweep.c
 
     /**
-     * Get the local position of the center of mass. Do not modify.
+     * Local position of the center of mass.
      */
     val localCenter: Vec2
-        get() = m_sweep.localCenter
+        get() = sweep.localCenter
 
     /**
-     * Get the linear velocity of the center of mass. Do not modify, instead use
-     * [.setLinearVelocity].
-     *
-     * @return the linear velocity of the center of mass.
-     */
-    /**
-     * Set the linear velocity of the center of mass.
-     *
-     * @param v the new linear velocity of the center of mass.
+     * Linear velocity of the center of mass.
      */
     var linearVelocity: Vec2
-        get() = m_linearVelocity
+        get() = _linearVelocity
         set(v) {
-            if (m_type === BodyType.STATIC) {
-                return
-            }
+            if (_type === BodyType.STATIC) return
 
             if (Vec2.dot(v, v) > 0.0f) {
                 isAwake = true
             }
-
-            m_linearVelocity.set(v)
+            _linearVelocity.set(v)
         }
 
     /**
-     * Get the angular velocity.
-     *
-     * @return the angular velocity in radians/second.
-     */
-    /**
-     * Set the angular velocity.
-     *
-     * @param omega the new angular velocity in radians/second.
+     * Angular velocity in radians/second.
      */
     var angularVelocity: Float
-        get() = m_angularVelocity
+        get() = _angularVelocity
         set(w) {
-            if (m_type === BodyType.STATIC) {
-                return
-            }
+            if (_type === BodyType.STATIC) return
 
             if (w * w > 0f) {
                 isAwake = true
             }
-
-            m_angularVelocity = w
+            _angularVelocity = w
         }
 
     /**
-     * Get the central rotational inertia of the body.
-     *
-     * @return the rotational inertia, usually in kg-m^2.
+     * Central rotational inertia of the body, usually in kg-m^2.
      */
     val inertia: Float
-        get() = m_I + m_mass * (m_sweep.localCenter.x * m_sweep.localCenter.x + m_sweep.localCenter.y * m_sweep.localCenter.y)
+        get() = I + mass * (sweep.localCenter.x * sweep.localCenter.x + sweep.localCenter.y * sweep.localCenter.y)
 
     private val pmd = MassData()
 
     /**
-     * Set the type of this body. This may alter the mass and velocity.
-     *
-     * @param type
+     * Type of this body. Changing it may alter the mass and velocity.
      */
-    // Delete the attached contacts.
-    // Touch the proxies so that new contacts will be created (when appropriate)
     var type: BodyType
-        get() = m_type
+        get() = _type
         set(type) {
-            assert(world.isLocked == false)
-            if (world.isLocked == true) {
-                return
-            }
+            assert(!world.isLocked)
+            if (world.isLocked) return
 
-            if (m_type === type) {
-                return
-            }
+            if (_type === type) return
 
-            m_type = type
+            _type = type
 
             resetMassData()
 
-            if (m_type === BodyType.STATIC) {
-                m_linearVelocity.setZero()
-                m_angularVelocity = 0.0f
-                m_sweep.a0 = m_sweep.a
-                m_sweep.c0.set(m_sweep.c)
+            if (_type === BodyType.STATIC) {
+                _linearVelocity.setZero()
+                _angularVelocity = 0.0f
+                sweep.a0 = sweep.a
+                sweep.c0.set(sweep.c)
                 synchronizeFixtures()
             }
 
             isAwake = true
 
-            m_force.setZero()
-            m_torque = 0.0f
-            var ce = m_contactList
+            force.setZero()
+            torque = 0.0f
+
+            // Delete the attached contacts.
+            var ce = contactList
             while (ce != null) {
                 val ce0 = ce
                 ce = ce.next
-                world.m_contactManager.destroy(ce0.contact!!)
+                world.contactManager.destroy(ce0.contact!!)
             }
-            m_contactList = null
-            val broadPhase = world.m_contactManager.m_broadPhase
-            var f = m_fixtureList
+            contactList = null
+
+            // Touch the proxies so that new contacts will be created (when appropriate)
+            val broadPhase = world.contactManager.broadPhase
+            var f = fixtureList
             while (f != null) {
-                val proxyCount = f.m_proxyCount
+                val proxyCount = f.proxyCount
                 for (i in 0 until proxyCount) {
-                    broadPhase.touchProxy(f.m_proxies!![i].proxyId)
+                    broadPhase.touchProxy(f.proxies!![i].proxyId)
                 }
-                f = f.m_next
+                f = f.next
             }
         }
 
-    /** Is this body treated like a bullet for continuous collision detection?  */
-    /** Should this body be treated like a bullet for continuous collision detection?  */
+    /** Whether this body treated like a bullet for continuous collision detection  */
     var isBullet: Boolean
-        get() = m_flags and e_bulletFlag == e_bulletFlag
-        set(flag) = if (flag) {
-            m_flags = m_flags or e_bulletFlag
-        } else {
-            m_flags = m_flags and e_bulletFlag.inv()
+        get() = flags and bulletFlag == bulletFlag
+        set(flag) {
+            flags = if (flag) {
+                flags or bulletFlag
+            } else {
+                flags and bulletFlag.inv()
+            }
         }
 
     /**
-     * Is this body allowed to sleep
-     *
-     * @return
-     */
-    /**
+     * Whether this body allowed to sleep.
      * You can disable sleeping on this body. If you disable sleeping, the body will be woken.
-     *
-     * @param flag
      */
     var isSleepingAllowed: Boolean
-        get() = m_flags and e_autoSleepFlag == e_autoSleepFlag
-        set(flag) = if (flag) {
-            m_flags = m_flags or e_autoSleepFlag
-        } else {
-            m_flags = m_flags and e_autoSleepFlag.inv()
-            isAwake = true
+        get() = flags and autoSleepFlag == autoSleepFlag
+        set(flag) {
+            if (flag) {
+                flags = flags or autoSleepFlag
+            } else {
+                flags = flags and autoSleepFlag.inv()
+                isAwake = true
+            }
         }
 
     /**
-     * Get the sleeping state of this body.
-     *
-     * @return true if the body is awake.
-     */
-    /**
-     * Set the sleep state of the body. A sleeping body has very low CPU cost.
-     *
-     * @param flag set to true to put body to sleep, false to wake it.
-     * @param flag
+     * Sleeping state of this body. A sleeping body has very low CPU cost.
+     * Set to true to put body to sleep, false to wake it.
      */
     var isAwake: Boolean
-        get() = m_flags and e_awakeFlag == e_awakeFlag
+        get() = flags and awakeFlag == awakeFlag
         set(flag) {
             if (flag) {
-                if (m_flags and e_awakeFlag == 0) {
-                    m_flags = m_flags or e_awakeFlag
-                    m_sleepTime = 0.0f
+                if (flags and awakeFlag == 0) {
+                    flags = flags or awakeFlag
+                    sleepTime = 0.0f
                 }
             } else {
-                m_flags = m_flags and e_awakeFlag.inv()
-                m_sleepTime = 0.0f
-                m_linearVelocity.setZero()
-                m_angularVelocity = 0.0f
-                m_force.setZero()
-                m_torque = 0.0f
+                flags = flags and awakeFlag.inv()
+                sleepTime = 0.0f
+                _linearVelocity.setZero()
+                _angularVelocity = 0.0f
+                force.setZero()
+                torque = 0.0f
             }
         }
 
     /**
-     * Get the active state of the body.
-     *
-     * @return
+     * Active state of the body.
+     * An inactive body is not simulated and cannot be collided with or woken up.
+     * If you pass a flag of true, all fixtures will be added to the broad-phase.
+     * If you pass a flag of false, all fixtures will be removed from the broad-phase and
+     * all contacts will be destroyed. Fixtures and joints are otherwise unaffected.
+     * You may continue to create/destroy fixtures and joints on inactive bodies.
+     * Fixtures on an inactive body are implicitly inactive and will not participate in collisions,
+     * ray-casts, or queries. Joints connected to an inactive body are implicitly inactive.
+     * An inactive body is still owned by a World object and remains in the body list.
      */
-    /**
-     * Set the active state of the body. An inactive body is not simulated and cannot be collided with
-     * or woken up. If you pass a flag of true, all fixtures will be added to the broad-phase. If you
-     * pass a flag of false, all fixtures will be removed from the broad-phase and all contacts will
-     * be destroyed. Fixtures and joints are otherwise unaffected. You may continue to create/destroy
-     * fixtures and joints on inactive bodies. Fixtures on an inactive body are implicitly inactive
-     * and will not participate in collisions, ray-casts, or queries. Joints connected to an inactive
-     * body are implicitly inactive. An inactive body is still owned by a World object and remains in
-     * the body list.
-     *
-     * @param flag
-     */
-    // Create all proxies.
-    // Contacts are created the next time step.
-    // Destroy all proxies.
-    // Destroy the attached contacts.
     var isActive: Boolean
-        get() = m_flags and e_activeFlag == e_activeFlag
+        get() = flags and activeFlag == activeFlag
         set(flag) {
-            assert(world.isLocked == false)
+            assert(!world.isLocked)
 
-            if (flag == isActive) {
-                return
-            }
+            if (flag == isActive) return
 
             if (flag) {
-                m_flags = m_flags or e_activeFlag
-                val broadPhase = world.m_contactManager.m_broadPhase
-                var f = m_fixtureList
+                flags = flags or activeFlag
+
+                // Create all proxies.
+                val broadPhase = world.contactManager.broadPhase
+                var f = fixtureList
                 while (f != null) {
-                    f.createProxies(broadPhase, m_xf)
-                    f = f.m_next
+                    f.createProxies(broadPhase, xf)
+                    f = f.next
                 }
             } else {
-                m_flags = m_flags and e_activeFlag.inv()
-                val broadPhase = world.m_contactManager.m_broadPhase
-                var f = m_fixtureList
+                // Contacts are created the next time step.
+                flags = flags and activeFlag.inv()
+
+                // Destroy all proxies.
+                val broadPhase = world.contactManager.broadPhase
+                var f = fixtureList
                 while (f != null) {
                     f.destroyProxies(broadPhase)
-                    f = f.m_next
+                    f = f.next
                 }
-                var ce = m_contactList
+
+                // Destroy the attached contacts.
+                var ce = contactList
                 while (ce != null) {
                     val ce0 = ce
                     ce = ce.next
-                    world.m_contactManager.destroy(ce0.contact!!)
+                    world.contactManager.destroy(ce0.contact!!)
                 }
-                m_contactList = null
+                contactList = null
             }
         }
 
     /**
-     * Does this body have fixed rotation?
-     *
-     * @return
-     */
-    /**
-     * Set this body to have fixed rotation. This causes the mass to be reset.
-     *
-     * @param flag
+     * Whether this body have fixed rotation. Changing value causes the mass to be reset.
      */
     var isFixedRotation: Boolean
-        get() = m_flags and e_fixedRotationFlag == e_fixedRotationFlag
+        get() = flags and fixedRotationFlag == fixedRotationFlag
         set(flag) {
-            if (flag) {
-                m_flags = m_flags or e_fixedRotationFlag
+            flags = if (flag) {
+                flags or fixedRotationFlag
             } else {
-                m_flags = m_flags and e_fixedRotationFlag.inv()
+                flags and fixedRotationFlag.inv()
             }
-
             resetMassData()
         }
 
     // djm pooling
     private val pxf = Transform()
-
 
     init {
         assert(bd.position.isValid)
@@ -467,68 +361,54 @@ class Body(bd: BodyDef,
         assert(bd.angularDamping >= 0.0f)
         assert(bd.linearDamping >= 0.0f)
 
-        m_flags = 0
+        flags = 0
 
         if (bd.bullet) {
-            m_flags = m_flags or e_bulletFlag
+            flags = flags or bulletFlag
         }
         if (bd.fixedRotation) {
-            m_flags = m_flags or e_fixedRotationFlag
+            flags = flags or fixedRotationFlag
         }
         if (bd.allowSleep) {
-            m_flags = m_flags or e_autoSleepFlag
+            flags = flags or autoSleepFlag
         }
         if (bd.awake) {
-            m_flags = m_flags or e_awakeFlag
+            flags = flags or awakeFlag
         }
         if (bd.active) {
-            m_flags = m_flags or e_activeFlag
+            flags = flags or activeFlag
         }
 
-        m_xf.p.set(bd.position)
-        m_xf.q.setRadians(bd.angleRadians)
+        xf.p.set(bd.position)
+        xf.q.setRadians(bd.angleRadians)
 
-        m_sweep.localCenter.setZero()
-        m_sweep.c0.set(m_xf.p)
-        m_sweep.c.set(m_xf.p)
-        m_sweep.a0 = bd.angleRadians
-        m_sweep.a = bd.angleRadians
-        m_sweep.alpha0 = 0.0f
+        sweep.localCenter.setZero()
+        sweep.c0.set(xf.p)
+        sweep.c.set(xf.p)
+        sweep.a0 = bd.angleRadians
+        sweep.a = bd.angleRadians
+        sweep.alpha0 = 0.0f
 
-        m_jointList = null
-        m_contactList = null
-        m_prev = null
-        m_next = null
+        _linearVelocity.set(bd.linearVelocity)
+        _angularVelocity = bd.angularVelocity
 
-        m_linearVelocity.set(bd.linearVelocity)
-        m_angularVelocity = bd.angularVelocity
+        linearDamping = bd.linearDamping
+        angularDamping = bd.angularDamping
+        gravityScale = bd.gravityScale
 
-        m_linearDamping = bd.linearDamping
-        m_angularDamping = bd.angularDamping
-        m_gravityScale = bd.gravityScale
+        force.setZero()
 
-        m_force.setZero()
-        m_torque = 0.0f
+        _type = bd.type
 
-        m_sleepTime = 0.0f
-
-        m_type = bd.type
-
-        if (m_type === BodyType.DYNAMIC) {
-            m_mass = 1f
-            m_invMass = 1f
+        if (_type === BodyType.DYNAMIC) {
+            mass = 1f
+            invMass = 1f
         } else {
-            m_mass = 0f
-            m_invMass = 0f
+            mass = 0f
+            invMass = 0f
         }
-
-        m_I = 0.0f
-        m_invI = 0.0f
 
         userData = bd.userData
-
-        m_fixtureList = null
-        m_fixtureCount = 0
     }
 
     /**
@@ -541,34 +421,34 @@ class Body(bd: BodyDef,
      * @warning This function is locked during callbacks.
      */
     fun createFixture(def: FixtureDef): Fixture? {
-        assert(world.isLocked == false)
+        assert(!world.isLocked)
 
-        if (world.isLocked == true) {
+        if (world.isLocked) {
             return null
         }
 
         val fixture = Fixture()
         fixture.create(this, def)
 
-        if (m_flags and e_activeFlag == e_activeFlag) {
-            val broadPhase = world.m_contactManager.m_broadPhase
-            fixture.createProxies(broadPhase, m_xf)
+        if (flags and activeFlag == activeFlag) {
+            val broadPhase = world.contactManager.broadPhase
+            fixture.createProxies(broadPhase, xf)
         }
 
-        fixture.m_next = m_fixtureList
-        m_fixtureList = fixture
-        ++m_fixtureCount
+        fixture.next = fixtureList
+        fixtureList = fixture
+        ++fixtureCount
 
-        fixture.m_body = this
+        fixture.body = this
 
         // Adjust mass properties if needed.
-        if (fixture.m_density > 0.0f) {
+        if (fixture._density > 0.0f) {
             resetMassData()
         }
 
         // Let the world know we have a new fixture. This will cause new contacts
         // to be created at the beginning of the next time step.
-        world.m_flags = world.m_flags or World.NEW_FIXTURE
+        world.flags = world.flags or World.NEW_FIXTURE
 
         return fixture
     }
@@ -598,28 +478,25 @@ class Body(bd: BodyDef,
      * @param fixture the fixture to be removed.
      * @warning This function is locked during callbacks.
      */
-    fun destroyFixture(fixture: Fixture?) {
-        var fixture = fixture
-        assert(world.isLocked == false)
-        if (world.isLocked == true) {
-            return
-        }
+    fun destroyFixture(fixture: Fixture) {
+        assert(!world.isLocked)
+        if (world.isLocked) return
 
-        assert(fixture!!.m_body === this)
+        assert(fixture.body === this)
 
         // Remove the fixture from this body's singly linked list.
-        assert(m_fixtureCount > 0)
-        var node = m_fixtureList
+        assert(fixtureCount > 0)
+        var node = fixtureList
         var last: Fixture? = null // java change
         var found = false
         while (node != null) {
             if (node === fixture) {
-                node = fixture.m_next
+                node = fixture.next
                 found = true
                 break
             }
             last = node
-            node = node.m_next
+            node = node.next
         }
 
         // You tried to remove a shape that is not attached to this body.
@@ -627,38 +504,37 @@ class Body(bd: BodyDef,
 
         // java change, remove it from the list
         if (last == null) {
-            m_fixtureList = fixture!!.m_next
+            fixtureList = fixture.next
         } else {
-            last.m_next = fixture!!.m_next
+            last.next = fixture.next
         }
 
         // Destroy any contacts associated with the fixture.
-        var edge = m_contactList
+        var edge = contactList
         while (edge != null) {
             val c = edge.contact
             edge = edge.next
 
-            val fixtureA = c!!.getFixtureA()
-            val fixtureB = c.getFixtureB()
+            val fixtureA = c!!.fixtureA
+            val fixtureB = c.fixtureB
 
             if (fixture === fixtureA || fixture === fixtureB) {
                 // This destroys the contact and removes it from
                 // this body's contact list.
-                world.m_contactManager.destroy(c)
+                world.contactManager.destroy(c)
             }
         }
 
-        if (m_flags and e_activeFlag == e_activeFlag) {
-            val broadPhase = world.m_contactManager.m_broadPhase
+        if (flags and activeFlag == activeFlag) {
+            val broadPhase = world.contactManager.broadPhase
             fixture.destroyProxies(broadPhase)
         }
 
         fixture.destroy()
-        fixture.m_body = null
-        fixture.m_next = null
-        fixture = null
+        fixture.body = null
+        fixture.next = null
 
-        --m_fixtureCount
+        --fixtureCount
 
         // Reset the mass data.
         resetMassData()
@@ -673,26 +549,24 @@ class Body(bd: BodyDef,
      * @param angleRadians the world rotation in radians.
      */
     fun setTransformRadians(position: Vec2, angleRadians: Float) {
-        assert(world.isLocked == false)
-        if (world.isLocked == true) {
-            return
-        }
+        assert(!world.isLocked)
+        if (world.isLocked) return
 
-        m_xf.q.setRadians(angleRadians)
-        m_xf.p.set(position)
+        xf.q.setRadians(angleRadians)
+        xf.p.set(position)
 
         // m_sweep.c0 = m_sweep.c = Mul(m_xf, m_sweep.localCenter);
-        Transform.mulToOutUnsafe(m_xf, m_sweep.localCenter, m_sweep.c)
-        m_sweep.a = angleRadians
+        Transform.mulToOutUnsafe(xf, sweep.localCenter, sweep.c)
+        sweep.a = angleRadians
 
-        m_sweep.c0.set(m_sweep.c)
-        m_sweep.a0 = m_sweep.a
+        sweep.c0.set(sweep.c)
+        sweep.a0 = sweep.a
 
-        val broadPhase = world.m_contactManager.m_broadPhase
-        var f = m_fixtureList
+        val broadPhase = world.contactManager.broadPhase
+        var f = fixtureList
         while (f != null) {
-            f.synchronize(broadPhase, m_xf, m_xf)
-            f = f.m_next
+            f.synchronize(broadPhase, xf, xf)
+            f = f.next
         }
     }
 
@@ -704,7 +578,8 @@ class Body(bd: BodyDef,
      * @param position the world position of the body's local origin.
      * @param angleDegrees the world rotation in degrees.
      */
-    fun setTransformDegrees(position: Vec2, angleDegrees: Float) = setTransformRadians(position, angleDegrees * MathUtils.DEG2RAD)
+    fun setTransformDegrees(position: Vec2, angleDegrees: Float) =
+        setTransformRadians(position, angleDegrees * MathUtils.DEG2RAD)
 
     /**
      * Set the position of the body's origin and rotation. This breaks any contacts and wakes the
@@ -724,11 +599,9 @@ class Body(bd: BodyDef,
      * @param point the world position of the point of application.
      */
     fun applyForce(force: Vec2, point: Vec2) {
-        if (m_type !== BodyType.DYNAMIC) {
-            return
-        }
+        if (_type !== BodyType.DYNAMIC) return
 
-        if (isAwake == false) {
+        if (!isAwake) {
             isAwake = true
         }
 
@@ -737,10 +610,10 @@ class Body(bd: BodyDef,
         // temp.set(point).subLocal(m_sweep.c);
         // m_torque += Vec2.cross(temp, force);
 
-        m_force.x += force.x
-        m_force.y += force.y
+        this.force.x += force.x
+        this.force.y += force.y
 
-        m_torque += (point.x - m_sweep.c.x) * force.y - (point.y - m_sweep.c.y) * force.x
+        torque += (point.x - sweep.c.x) * force.y - (point.y - sweep.c.y) * force.x
     }
 
     /**
@@ -749,16 +622,14 @@ class Body(bd: BodyDef,
      * @param force the world force vector, usually in Newtons (N).
      */
     fun applyForceToCenter(force: Vec2) {
-        if (m_type !== BodyType.DYNAMIC) {
-            return
-        }
+        if (_type !== BodyType.DYNAMIC) return
 
-        if (isAwake == false) {
+        if (!isAwake) {
             isAwake = true
         }
 
-        m_force.x += force.x
-        m_force.y += force.y
+        this.force.x += force.x
+        this.force.y += force.y
     }
 
     /**
@@ -768,15 +639,13 @@ class Body(bd: BodyDef,
      * @param torque about the z-axis (out of the screen), usually in N-m.
      */
     fun applyTorque(torque: Float) {
-        if (m_type !== BodyType.DYNAMIC) {
-            return
-        }
+        if (_type !== BodyType.DYNAMIC) return
 
-        if (isAwake == false) {
+        if (!isAwake) {
             isAwake = true
         }
 
-        m_torque += torque
+        this.torque += torque
     }
 
     /**
@@ -790,9 +659,7 @@ class Body(bd: BodyDef,
      * @param wake also wake up the body
      */
     fun applyLinearImpulse(impulse: Vec2, point: Vec2, wake: Boolean) {
-        if (m_type !== BodyType.DYNAMIC) {
-            return
-        }
+        if (_type !== BodyType.DYNAMIC) return
 
         if (!isAwake) {
             if (wake) {
@@ -802,10 +669,10 @@ class Body(bd: BodyDef,
             }
         }
 
-        m_linearVelocity.x += impulse.x * m_invMass
-        m_linearVelocity.y += impulse.y * m_invMass
+        _linearVelocity.x += impulse.x * invMass
+        _linearVelocity.y += impulse.y * invMass
 
-        m_angularVelocity += m_invI * ((point.x - m_sweep.c.x) * impulse.y - (point.y - m_sweep.c.y) * impulse.x)
+        _angularVelocity += invI * ((point.x - sweep.c.x) * impulse.y - (point.y - sweep.c.y) * impulse.x)
     }
 
     /**
@@ -814,14 +681,12 @@ class Body(bd: BodyDef,
      * @param impulse the angular impulse in units of kg*m*m/s
      */
     fun applyAngularImpulse(impulse: Float) {
-        if (m_type !== BodyType.DYNAMIC) {
-            return
-        }
+        if (_type !== BodyType.DYNAMIC) return
 
-        if (isAwake == false) {
+        if (!isAwake) {
             isAwake = true
         }
-        m_angularVelocity += m_invI * impulse
+        _angularVelocity += invI * impulse
     }
 
     /**
@@ -834,10 +699,10 @@ class Body(bd: BodyDef,
         // data.I = m_I + m_mass * Vec2.dot(m_sweep.localCenter, m_sweep.localCenter);
         // data.center.set(m_sweep.localCenter);
 
-        data.mass = m_mass
-        data.I = m_I + m_mass * (m_sweep.localCenter.x * m_sweep.localCenter.x + m_sweep.localCenter.y * m_sweep.localCenter.y)
-        data.center.x = m_sweep.localCenter.x
-        data.center.y = m_sweep.localCenter.y
+        data.mass = mass
+        data.I = I + mass * (sweep.localCenter.x * sweep.localCenter.x + sweep.localCenter.y * sweep.localCenter.y)
+        data.center.x = sweep.localCenter.x
+        data.center.y = sweep.localCenter.y
     }
 
     /**
@@ -849,46 +714,42 @@ class Body(bd: BodyDef,
      */
     fun setMassData(massData: MassData) {
         // TODO_ERIN adjust linear velocity and torque to account for movement of center.
-        assert(world.isLocked == false)
-        if (world.isLocked == true) {
-            return
+        assert(!world.isLocked)
+        if (world.isLocked) return
+
+        if (_type !== BodyType.DYNAMIC) return
+
+        invMass = 0.0f
+        I = 0.0f
+        invI = 0.0f
+
+        mass = massData.mass
+        if (mass <= 0.0f) {
+            mass = 1f
         }
 
-        if (m_type !== BodyType.DYNAMIC) {
-            return
-        }
+        invMass = 1.0f / mass
 
-        m_invMass = 0.0f
-        m_I = 0.0f
-        m_invI = 0.0f
-
-        m_mass = massData.mass
-        if (m_mass <= 0.0f) {
-            m_mass = 1f
-        }
-
-        m_invMass = 1.0f / m_mass
-
-        if (massData.I > 0.0f && m_flags and e_fixedRotationFlag == 0) {
-            m_I = massData.I - m_mass * Vec2.dot(massData.center, massData.center)
-            assert(m_I > 0.0f)
-            m_invI = 1.0f / m_I
+        if (massData.I > 0.0f && flags and fixedRotationFlag == 0) {
+            I = massData.I - mass * Vec2.dot(massData.center, massData.center)
+            assert(I > 0.0f)
+            invI = 1.0f / I
         }
 
         val oldCenter = world.pool.popVec2()
         // Move center of mass.
-        oldCenter.set(m_sweep.c)
-        m_sweep.localCenter.set(massData.center)
+        oldCenter.set(sweep.c)
+        sweep.localCenter.set(massData.center)
         // m_sweep.c0 = m_sweep.c = Mul(m_xf, m_sweep.localCenter);
-        Transform.mulToOutUnsafe(m_xf, m_sweep.localCenter, m_sweep.c0)
-        m_sweep.c.set(m_sweep.c0)
+        Transform.mulToOutUnsafe(xf, sweep.localCenter, sweep.c0)
+        sweep.c.set(sweep.c0)
 
         // Update center of mass velocity.
         // m_linearVelocity += Cross(m_angularVelocity, m_sweep.c - oldCenter);
         val temp = world.pool.popVec2()
-        temp.set(m_sweep.c).subLocal(oldCenter)
-        Vec2.crossToOut(m_angularVelocity, temp, temp)
-        m_linearVelocity.addLocal(temp)
+        temp.set(sweep.c).subLocal(oldCenter)
+        Vec2.crossToOut(_angularVelocity, temp, temp)
+        _linearVelocity.addLocal(temp)
 
         world.pool.pushVec2(2)
     }
@@ -900,78 +761,78 @@ class Body(bd: BodyDef,
      */
     fun resetMassData() {
         // Compute mass data from shapes. Each shape has its own density.
-        m_mass = 0.0f
-        m_invMass = 0.0f
-        m_I = 0.0f
-        m_invI = 0.0f
-        m_sweep.localCenter.setZero()
+        mass = 0.0f
+        invMass = 0.0f
+        I = 0.0f
+        invI = 0.0f
+        sweep.localCenter.setZero()
 
         // Static and kinematic bodies have zero mass.
-        if (m_type === BodyType.STATIC || m_type === BodyType.KINEMATIC) {
+        if (_type === BodyType.STATIC || _type === BodyType.KINEMATIC) {
             // m_sweep.c0 = m_sweep.c = m_xf.position;
-            m_sweep.c0.set(m_xf.p)
-            m_sweep.c.set(m_xf.p)
-            m_sweep.a0 = m_sweep.a
+            sweep.c0.set(xf.p)
+            sweep.c.set(xf.p)
+            sweep.a0 = sweep.a
             return
         }
 
-        assert(m_type === BodyType.DYNAMIC)
+        assert(_type === BodyType.DYNAMIC)
 
         // Accumulate mass over all fixtures.
         val localCenter = world.pool.popVec2()
         localCenter.setZero()
         val temp = world.pool.popVec2()
         val massData = pmd
-        var f = m_fixtureList
+        var f = fixtureList
         while (f != null) {
-            if (f.m_density == 0.0f) {
-                f = f.m_next
+            if (f._density == 0.0f) {
+                f = f.next
                 continue
             }
             f.getMassData(massData)
-            m_mass += massData.mass
+            mass += massData.mass
             // center += massData.mass * massData.center;
             temp.set(massData.center).mulLocal(massData.mass)
             localCenter.addLocal(temp)
-            m_I += massData.I
-            f = f.m_next
+            I += massData.I
+            f = f.next
         }
 
         // Compute center of mass.
-        if (m_mass > 0.0f) {
-            m_invMass = 1.0f / m_mass
-            localCenter.mulLocal(m_invMass)
+        if (mass > 0.0f) {
+            invMass = 1.0f / mass
+            localCenter.mulLocal(invMass)
         } else {
             // Force all dynamic bodies to have a positive mass.
-            m_mass = 1.0f
-            m_invMass = 1.0f
+            mass = 1.0f
+            invMass = 1.0f
         }
 
-        if (m_I > 0.0f && m_flags and e_fixedRotationFlag == 0) {
+        if (I > 0.0f && flags and fixedRotationFlag == 0) {
             // Center the inertia about the center of mass.
-            m_I -= m_mass * Vec2.dot(localCenter, localCenter)
-            assert(m_I > 0.0f)
-            m_invI = 1.0f / m_I
+            I -= mass * Vec2.dot(localCenter, localCenter)
+            assert(I > 0.0f)
+            invI = 1.0f / I
         } else {
-            m_I = 0.0f
-            m_invI = 0.0f
+            I = 0.0f
+            invI = 0.0f
         }
 
         val oldCenter = world.pool.popVec2()
         // Move center of mass.
-        oldCenter.set(m_sweep.c)
-        m_sweep.localCenter.set(localCenter)
+        oldCenter.set(sweep.c)
+        sweep.localCenter.set(localCenter)
         // m_sweep.c0 = m_sweep.c = Mul(m_xf, m_sweep.localCenter);
-        Transform.mulToOutUnsafe(m_xf, m_sweep.localCenter, m_sweep.c0)
-        m_sweep.c.set(m_sweep.c0)
+        Transform.mulToOutUnsafe(xf, sweep.localCenter, sweep.c0)
+        sweep.c.set(sweep.c0)
 
         // Update center of mass velocity.
         // m_linearVelocity += Cross(m_angularVelocity, m_sweep.c - oldCenter);
-        temp.set(m_sweep.c).subLocal(oldCenter)
+        temp.set(sweep.c).subLocal(oldCenter)
 
         val temp2 = oldCenter
-        Vec2.crossToOutUnsafe(m_angularVelocity, temp, temp2)
-        m_linearVelocity.addLocal(temp2)
+        Vec2.crossToOutUnsafe(_angularVelocity, temp, temp2)
+        _linearVelocity.addLocal(temp2)
 
         world.pool.pushVec2(3)
     }
@@ -989,7 +850,7 @@ class Body(bd: BodyDef,
     }
 
     fun getWorldPointToOut(localPoint: Vec2, out: Vec2) {
-        Transform.mulToOut(m_xf, localPoint, out)
+        Transform.mulToOut(xf, localPoint, out)
     }
 
     /**
@@ -1005,11 +866,11 @@ class Body(bd: BodyDef,
     }
 
     fun getWorldVectorToOut(localVector: Vec2, out: Vec2) {
-        Rot.mulToOut(m_xf.q, localVector, out)
+        Rot.mulToOut(xf.q, localVector, out)
     }
 
     fun getWorldVectorToOutUnsafe(localVector: Vec2, out: Vec2) {
-        Rot.mulToOutUnsafe(m_xf.q, localVector, out)
+        Rot.mulToOutUnsafe(xf.q, localVector, out)
     }
 
     /**
@@ -1025,7 +886,7 @@ class Body(bd: BodyDef,
     }
 
     fun getLocalPointToOut(worldPoint: Vec2, out: Vec2) {
-        Transform.mulTransToOut(m_xf, worldPoint, out)
+        Transform.mulTransToOut(xf, worldPoint, out)
     }
 
     /**
@@ -1041,11 +902,11 @@ class Body(bd: BodyDef,
     }
 
     fun getLocalVectorToOut(worldVector: Vec2, out: Vec2) {
-        Rot.mulTrans(m_xf.q, worldVector, out)
+        Rot.mulTrans(xf.q, worldVector, out)
     }
 
     fun getLocalVectorToOutUnsafe(worldVector: Vec2, out: Vec2) {
-        Rot.mulTransUnsafe(m_xf.q, worldVector, out)
+        Rot.mulTransUnsafe(xf.q, worldVector, out)
     }
 
     /**
@@ -1061,10 +922,10 @@ class Body(bd: BodyDef,
     }
 
     fun getLinearVelocityFromWorldPointToOut(worldPoint: Vec2, out: Vec2) {
-        val tempX = worldPoint.x - m_sweep.c.x
-        val tempY = worldPoint.y - m_sweep.c.y
-        out.x = -m_angularVelocity * tempY + m_linearVelocity.x
-        out.y = m_angularVelocity * tempX + m_linearVelocity.y
+        val tempX = worldPoint.x - sweep.c.x
+        val tempY = worldPoint.y - sweep.c.y
+        out.x = -_angularVelocity * tempY + _linearVelocity.x
+        out.y = _angularVelocity * tempX + _linearVelocity.y
     }
 
     /**
@@ -1092,16 +953,16 @@ class Body(bd: BodyDef,
         // Rot.mulToOutUnsafe(xf1.q, m_sweep.localCenter, xf1.p);
         // xf1.p.mulLocal(-1).addLocal(m_sweep.c0);
         // inlined:
-        xf1.q.s = MathUtils.sin(m_sweep.a0)
-        xf1.q.c = MathUtils.cos(m_sweep.a0)
-        xf1.p.x = m_sweep.c0.x - xf1.q.c * m_sweep.localCenter.x + xf1.q.s * m_sweep.localCenter.y
-        xf1.p.y = m_sweep.c0.y - xf1.q.s * m_sweep.localCenter.x - xf1.q.c * m_sweep.localCenter.y
+        xf1.q.s = MathUtils.sin(sweep.a0)
+        xf1.q.c = MathUtils.cos(sweep.a0)
+        xf1.p.x = sweep.c0.x - xf1.q.c * sweep.localCenter.x + xf1.q.s * sweep.localCenter.y
+        xf1.p.y = sweep.c0.y - xf1.q.s * sweep.localCenter.x - xf1.q.c * sweep.localCenter.y
         // end inline
 
-        var f = m_fixtureList
+        var f = fixtureList
         while (f != null) {
-            f.synchronize(world.m_contactManager.m_broadPhase, xf1, m_xf)
-            f = f.m_next
+            f.synchronize(world.contactManager.broadPhase, xf1, xf)
+            f = f.next
         }
     }
 
@@ -1112,34 +973,29 @@ class Body(bd: BodyDef,
         // Rot.mulToOutUnsafe(m_xf.q, m_sweep.localCenter, m_xf.p);
         // m_xf.p.mulLocal(-1).addLocal(m_sweep.c);
         //
-        m_xf.q.s = MathUtils.sin(m_sweep.a)
-        m_xf.q.c = MathUtils.cos(m_sweep.a)
-        val q = m_xf.q
-        val v = m_sweep.localCenter
-        m_xf.p.x = m_sweep.c.x - q.c * v.x + q.s * v.y
-        m_xf.p.y = m_sweep.c.y - q.s * v.x - q.c * v.y
+        xf.q.s = MathUtils.sin(sweep.a)
+        xf.q.c = MathUtils.cos(sweep.a)
+        val q = xf.q
+        val v = sweep.localCenter
+        xf.p.x = sweep.c.x - q.c * v.x + q.s * v.y
+        xf.p.y = sweep.c.y - q.s * v.x - q.c * v.y
     }
 
     /**
      * This is used to prevent connected bodies from colliding. It may lie, depending on the
      * collideConnected flag.
-     *
-     * @param other
-     * @return
      */
     fun shouldCollide(other: Body): Boolean {
         // At least one body should be dynamic.
-        if (m_type !== BodyType.DYNAMIC && other.m_type !== BodyType.DYNAMIC) {
+        if (_type !== BodyType.DYNAMIC && other._type !== BodyType.DYNAMIC) {
             return false
         }
 
         // Does a joint prevent collision?
-        var jn = m_jointList
+        var jn = jointList
         while (jn != null) {
-            if (jn.other === other) {
-                if (jn.joint!!.getCollideConnected() == false) {
-                    return false
-                }
+            if (jn.other === other && !jn.joint!!.collideConnected) {
+                return false
             }
             jn = jn.next
         }
@@ -1149,29 +1005,22 @@ class Body(bd: BodyDef,
 
     fun advance(t: Float) {
         // Advance to the new safe time. This doesn't sync the broad-phase.
-        m_sweep.advance(t)
-        m_sweep.c.set(m_sweep.c0)
-        m_sweep.a = m_sweep.a0
-        m_xf.q.setRadians(m_sweep.a)
+        sweep.advance(t)
+        sweep.c.set(sweep.c0)
+        sweep.a = sweep.a0
+        xf.q.setRadians(sweep.a)
         // m_xf.position = m_sweep.c - Mul(m_xf.R, m_sweep.localCenter);
-        Rot.mulToOutUnsafe(m_xf.q, m_sweep.localCenter, m_xf.p)
-        m_xf.p.mulLocal(-1f).addLocal(m_sweep.c)
+        Rot.mulToOutUnsafe(xf.q, sweep.localCenter, xf.p)
+        xf.p.mulLocal(-1f).addLocal(sweep.c)
     }
 
     companion object {
-
-        val e_islandFlag = 0x0001
-
-        val e_awakeFlag = 0x0002
-
-        val e_autoSleepFlag = 0x0004
-
-        val e_bulletFlag = 0x0008
-
-        val e_fixedRotationFlag = 0x0010
-
-        val e_activeFlag = 0x0020
-
-        val e_toiFlag = 0x0040
+        val islandFlag = 0x0001
+        val awakeFlag = 0x0002
+        val autoSleepFlag = 0x0004
+        val bulletFlag = 0x0008
+        val fixedRotationFlag = 0x0010
+        val activeFlag = 0x0020
+        val toiFlag = 0x0040
     }
 }

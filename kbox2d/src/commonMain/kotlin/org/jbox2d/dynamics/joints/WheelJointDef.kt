@@ -43,50 +43,42 @@ class WheelJointDef : JointDef(JointType.WHEEL) {
     /**
      * The local anchor point relative to body1's origin.
      */
-
     val localAnchorA = Vec2()
 
     /**
      * The local anchor point relative to body2's origin.
      */
-
     val localAnchorB = Vec2()
 
     /**
      * The local translation axis in body1.
      */
-
     val localAxisA = Vec2(1f, 0f)
 
     /**
      * Enable/disable the joint motor.
      */
-
     var enableMotor: Boolean = false
 
     /**
      * The maximum motor torque, usually in N-m.
      */
-
     var maxMotorTorque: Float = 0f
 
     /**
      * The desired motor speed in radians per second.
      */
-
     var motorSpeed: Float = 0f
 
     /**
      * Suspension frequency, zero indicates no suspension
      */
-
     var frequencyHz: Float = 0f
 
     /**
      * Suspension damping ratio, one indicates critical damping
      */
-
-    var dampingRatio: Float = 0.toFloat()
+    var dampingRatio: Float = 0f
 
     fun initialize(b1: Body, b2: Body, anchor: Vec2, axis: Vec2) {
         bodyA = b1

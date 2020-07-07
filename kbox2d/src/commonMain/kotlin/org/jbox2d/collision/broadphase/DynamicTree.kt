@@ -36,7 +36,7 @@ import org.jbox2d.internal.*
 
 /**
  * A dynamic tree arranges data in a binary tree to accelerate queries such as volume queries and
- * ray casts. Leafs are proxies with an AABB. In the tree we expand the proxy AABB by _fatAABBFactor
+ * ray casts. Leaves are proxies with an AABB. In the tree we expand the proxy AABB by _fatAABBFactor
  * so that the proxy AABB is bigger than the client object. This allows the client object to move by
  * small amounts without triggering a tree update.
  *
@@ -44,14 +44,20 @@ import org.jbox2d.internal.*
  */
 class DynamicTree : BroadPhaseStrategy {
 
-    private var m_root: DynamicTreeNode? = null
-    private var m_nodes: Array<DynamicTreeNode> = Array(16) { DynamicTreeNode(it) }
-    private var m_nodeCount: Int = 0
-    private var m_nodeCapacity: Int = 16
+    private var root: DynamicTreeNode? = null
+    private var nodeCount: Int = 0
+    private var nodeCapacity: Int = 16
+    private var nodes = Array(16) { DynamicTreeNode(it) }.also { nodes ->
+        // Build a linked list for the free list.
+        for (i in nodeCapacity - 1 downTo 0) {
+            nodes[i].parent = if (i == nodeCapacity - 1) null else nodes[i + 1]
+            nodes[i].height = -1
+        }
+    }
 
-    private var m_freeList: Int = 0
+    private var freeList: Int = 0
 
-    private val drawVecs = Array<Vec2>(4) { Vec2() }
+    private val drawVecs = Array(4) { Vec2() }
     private var nodeStack = arrayOfNulls<DynamicTreeNode>(20)
     private var nodeStackIndex = 0
 
@@ -60,46 +66,33 @@ class DynamicTree : BroadPhaseStrategy {
     private val subInput = RayCastInput()
 
     override val height: Int
-        get() = if (m_root == null) {
-            0
-        } else m_root!!.height
+        get() = if (root == null) 0 else root!!.height
 
     override val maxBalance: Int
         get() {
             var maxBalance = 0
-            for (i in 0 until m_nodeCapacity) {
-                val node = m_nodes!![i]
-                if (node.height <= 1) {
-                    continue
-                }
+            for (i in 0 until nodeCapacity) {
+                val node = nodes[i]
+                if (node.height <= 1) continue
 
-                assert(node.child1 == null == false)
-
-                val child1 = node.child1
-                val child2 = node.child2
-                val balance = MathUtils.abs(child2!!.height - child1!!.height)
+                val child1 = node.child1!!
+                val child2 = node.child2!!
+                val balance = MathUtils.abs(child2.height - child1.height)
                 maxBalance = MathUtils.max(maxBalance, balance)
             }
-
             return maxBalance
         }
 
-    override// Free node in pool
-    val areaRatio: Float
+    override val areaRatio: Float
         get() {
-            if (m_root == null) {
-                return 0.0f
-            }
-
-            val root = m_root
-            val rootArea = root!!.aabb.perimeter
-
+            val root = root ?: return 0.0f
+            val rootArea = root.aabb.perimeter
             var totalArea = 0.0f
-            for (i in 0 until m_nodeCapacity) {
-                val node = m_nodes!![i]
-                if (node.height < 0) {
-                    continue
-                }
+
+            for (i in 0 until nodeCapacity) {
+                val node = nodes[i]
+                // Free node in pool
+                if (node.height < 0) continue
 
                 totalArea += node.aabb.perimeter
             }
@@ -111,14 +104,6 @@ class DynamicTree : BroadPhaseStrategy {
 
     private val color = Color3f()
     private val textVec = Vec2()
-
-    init {
-        // Build a linked list for the free list.
-        for (i in m_nodeCapacity - 1 downTo 0) {
-            m_nodes!![i].parent = if (i == m_nodeCapacity - 1) null else m_nodes!![i + 1]
-            m_nodes!![i].height = -1
-        }
-    }
 
     override fun createProxy(aabb: AABB, userData: Any): Int {
         assert(aabb.isValid)
@@ -138,8 +123,8 @@ class DynamicTree : BroadPhaseStrategy {
     }
 
     override fun destroyProxy(proxyId: Int) {
-        assert(0 <= proxyId && proxyId < m_nodeCapacity)
-        val node = m_nodes!![proxyId]
+        assert(proxyId in 0 until nodeCapacity)
+        val node = nodes[proxyId]
         assert(node.child1 == null)
 
         removeLeaf(node)
@@ -148,16 +133,12 @@ class DynamicTree : BroadPhaseStrategy {
 
     override fun moveProxy(proxyId: Int, aabb: AABB, displacement: Vec2): Boolean {
         assert(aabb.isValid)
-        assert(0 <= proxyId && proxyId < m_nodeCapacity)
-        val node = m_nodes!![proxyId]
+        assert(proxyId in 0 until nodeCapacity)
+        val node = nodes[proxyId]
         assert(node.child1 == null)
 
         val nodeAABB = node.aabb
-        // if (nodeAABB.contains(aabb)) {
-        if (nodeAABB.lowerBound.x <= aabb.lowerBound.x && nodeAABB.lowerBound.y <= aabb.lowerBound.y
-                && aabb.upperBound.x <= nodeAABB.upperBound.x && aabb.upperBound.y <= nodeAABB.upperBound.y) {
-            return false
-        }
+        if (nodeAABB.contains(aabb)) return false
 
         removeLeaf(node)
 
@@ -189,19 +170,19 @@ class DynamicTree : BroadPhaseStrategy {
     }
 
     override fun getUserData(proxyId: Int): Any? {
-        assert(0 <= proxyId && proxyId < m_nodeCapacity)
-        return m_nodes!![proxyId].userData
+        assert(proxyId in 0 until nodeCapacity)
+        return nodes[proxyId].userData
     }
 
     override fun getFatAABB(proxyId: Int): AABB {
-        assert(0 <= proxyId && proxyId < m_nodeCapacity)
-        return m_nodes!![proxyId].aabb
+        assert(proxyId in 0 until nodeCapacity)
+        return nodes[proxyId].aabb
     }
 
     override fun query(callback: TreeCallback, aabb: AABB) {
         assert(aabb.isValid)
         nodeStackIndex = 0
-        nodeStack[nodeStackIndex++] = m_root
+        nodeStack[nodeStackIndex++] = root
 
         while (nodeStackIndex > 0) {
             val node = nodeStack[--nodeStackIndex] ?: continue
@@ -209,9 +190,7 @@ class DynamicTree : BroadPhaseStrategy {
             if (AABB.testOverlap(node.aabb, aabb)) {
                 if (node.child1 == null) {
                     val proceed = callback.treeCallback(node.id)
-                    if (!proceed) {
-                        return
-                    }
+                    if (!proceed) return
                 } else {
                     if (nodeStack.size - nodeStackIndex - 2 <= 0) {
                         val newBuffer = arrayOfNulls<DynamicTreeNode>(nodeStack.size * 2)
@@ -232,30 +211,18 @@ class DynamicTree : BroadPhaseStrategy {
         val p2x = p2.x
         val p1y = p1.y
         val p2y = p2.y
-        val vx: Float
-        val vy: Float
-        val rx: Float
-        val ry: Float
-        val absVx: Float
-        val absVy: Float
-        var cx: Float
-        var cy: Float
-        var hx: Float
-        var hy: Float
-        var tempx: Float
-        var tempy: Float
         r.x = p2x - p1x
         r.y = p2y - p1y
         assert(r.x * r.x + r.y * r.y > 0f)
         r.normalize()
-        rx = r.x
-        ry = r.y
+        val rx = r.x
+        val ry = r.y
 
         // v is perpendicular to the segment.
-        vx = -1f * ry
-        vy = 1f * rx
-        absVx = MathUtils.abs(vx)
-        absVy = MathUtils.abs(vy)
+        val vx = -1f * ry
+        val vy = 1f * rx
+        val absVx = MathUtils.abs(vx)
+        val absVy = MathUtils.abs(vy)
 
         // Separating axis for segment (Gino, p80).
         // |dot(v, p1 - c)| > dot(|v|, h)
@@ -269,8 +236,8 @@ class DynamicTree : BroadPhaseStrategy {
         // temp.set(p2).subLocal(p1).mulLocal(maxFraction).addLocal(p1);
         // Vec2.minToOut(p1, temp, segAABB.lowerBound);
         // Vec2.maxToOut(p1, temp, segAABB.upperBound);
-        tempx = (p2x - p1x) * maxFraction + p1x
-        tempy = (p2y - p1y) * maxFraction + p1y
+        var tempx = (p2x - p1x) * maxFraction + p1x
+        var tempy = (p2y - p1y) * maxFraction + p1y
         segAABB.lowerBound.x = if (p1x < tempx) p1x else tempx
         segAABB.lowerBound.y = if (p1y < tempy) p1y else tempy
         segAABB.upperBound.x = if (p1x > tempx) p1x else tempx
@@ -278,7 +245,7 @@ class DynamicTree : BroadPhaseStrategy {
         // end inline
 
         nodeStackIndex = 0
-        nodeStack[nodeStackIndex++] = m_root
+        nodeStack[nodeStackIndex++] = root
         while (nodeStackIndex > 0) {
             val node = nodeStack[--nodeStackIndex] ?: continue
 
@@ -291,16 +258,14 @@ class DynamicTree : BroadPhaseStrategy {
             // |dot(v, p1 - c)| > dot(|v|, h)
             // node.aabb.getCenterToOut(c);
             // node.aabb.getExtentsToOut(h);
-            cx = (nodeAABB.lowerBound.x + nodeAABB.upperBound.x) * .5f
-            cy = (nodeAABB.lowerBound.y + nodeAABB.upperBound.y) * .5f
-            hx = (nodeAABB.upperBound.x - nodeAABB.lowerBound.x) * .5f
-            hy = (nodeAABB.upperBound.y - nodeAABB.lowerBound.y) * .5f
+            val cx = (nodeAABB.lowerBound.x + nodeAABB.upperBound.x) * .5f
+            val cy = (nodeAABB.lowerBound.y + nodeAABB.upperBound.y) * .5f
+            val hx = (nodeAABB.upperBound.x - nodeAABB.lowerBound.x) * .5f
+            val hy = (nodeAABB.upperBound.y - nodeAABB.lowerBound.y) * .5f
             tempx = p1x - cx
             tempy = p1y - cy
             val separation = MathUtils.abs(vx * tempx + vy * tempy) - (absVx * hx + absVy * hy)
-            if (separation > 0.0f) {
-                continue
-            }
+            if (separation > 0.0f) continue
 
             if (node.child1 == null) {
                 subInput.p1.x = p1x
@@ -311,10 +276,8 @@ class DynamicTree : BroadPhaseStrategy {
 
                 val value = callback.raycastCallback(subInput, node.id)
 
-                if (value == 0.0f) {
-                    // The client has terminated the ray cast.
-                    return
-                }
+                // The client has terminated the ray cast.
+                if (value == 0.0f) return
 
                 if (value > 0.0f) {
                     // Update segment bounding box.
@@ -341,16 +304,12 @@ class DynamicTree : BroadPhaseStrategy {
         }
     }
 
-    override fun computeHeight(): Int {
-        return computeHeight(m_root!!)
-    }
+    override fun computeHeight(): Int = computeHeight(root!!)
 
     private fun computeHeight(node: DynamicTreeNode): Int {
-        assert(0 <= node.id && node.id < m_nodeCapacity)
+        assert(node.id in 0 until nodeCapacity)
 
-        if (node.child1 == null) {
-            return 0
-        }
+        if (node.child1 == null) return 0
         val height1 = computeHeight(node.child1!!)
         val height2 = computeHeight(node.child2!!)
         return 1 + MathUtils.max(height1, height2)
@@ -360,38 +319,38 @@ class DynamicTree : BroadPhaseStrategy {
      * Validate this tree. For testing.
      */
     fun validate() {
-        validateStructure(m_root)
-        validateMetrics(m_root)
+        validateStructure(root)
+        validateMetrics(root)
 
         var freeCount = 0
-        var freeNode: DynamicTreeNode? = if (m_freeList != NULL_NODE) m_nodes!![m_freeList] else null
+        var freeNode: DynamicTreeNode? = if (freeList != NULL_NODE) nodes[freeList] else null
         while (freeNode != null) {
-            assert(0 <= freeNode.id && freeNode.id < m_nodeCapacity)
-            assert(freeNode === m_nodes!![freeNode.id])
+            assert(freeNode.id in 0 until nodeCapacity)
+            assert(freeNode === nodes[freeNode.id])
             freeNode = freeNode.parent
             ++freeCount
         }
 
         assert(height == computeHeight())
 
-        assert(m_nodeCount + freeCount == m_nodeCapacity)
+        assert(nodeCount + freeCount == nodeCapacity)
     }
 
     /**
      * Build an optimal tree. Very expensive. For testing.
      */
     fun rebuildBottomUp() {
-        val nodes = IntArray(m_nodeCount)
+        val nodes = IntArray(nodeCount)
         var count = 0
 
         // Build array of leaves. Free the rest.
-        for (i in 0 until m_nodeCapacity) {
-            if (m_nodes!![i].height < 0) {
+        for (i in 0 until nodeCapacity) {
+            if (this.nodes[i].height < 0) {
                 // free node in pool
                 continue
             }
 
-            val node = m_nodes!![i]
+            val node = this.nodes[i]
             if (node.child1 == null) {
                 node.parent = null
                 nodes[count] = i
@@ -407,10 +366,10 @@ class DynamicTree : BroadPhaseStrategy {
             var iMin = -1
             var jMin = -1
             for (i in 0 until count) {
-                val aabbi = m_nodes!![nodes[i]].aabb
+                val aabbi = this.nodes[nodes[i]].aabb
 
                 for (j in i + 1 until count) {
-                    val aabbj = m_nodes!![nodes[j]].aabb
+                    val aabbj = this.nodes[nodes[j]].aabb
                     b.combine(aabbi, aabbj)
                     val cost = b.perimeter
                     if (cost < minCost) {
@@ -423,8 +382,8 @@ class DynamicTree : BroadPhaseStrategy {
 
             val index1 = nodes[iMin]
             val index2 = nodes[jMin]
-            val child1 = m_nodes!![index1]
-            val child2 = m_nodes!![index2]
+            val child1 = this.nodes[index1]
+            val child2 = this.nodes[index2]
 
             val parent = allocateNode()
             parent.child1 = child1
@@ -441,64 +400,63 @@ class DynamicTree : BroadPhaseStrategy {
             --count
         }
 
-        m_root = m_nodes!![nodes[0]]
+        root = this.nodes[nodes[0]]
 
         validate()
     }
 
     private fun allocateNode(): DynamicTreeNode {
-        if (m_freeList == NULL_NODE) {
-            assert(m_nodeCount == m_nodeCapacity)
+        if (freeList == NULL_NODE) {
+            assert(nodeCount == nodeCapacity)
 
-            val old = m_nodes
-            m_nodeCapacity *= 2
-            m_nodes = arrayOfNulls<DynamicTreeNode>(m_nodeCapacity) as Array<DynamicTreeNode>
-            arraycopy(old!!, 0, m_nodes!!, 0, old.size)
+            val old = nodes
+            nodeCapacity *= 2
+            nodes = arrayOfNulls<DynamicTreeNode>(nodeCapacity) as Array<DynamicTreeNode>
+            arraycopy(old, 0, nodes, 0, old.size)
 
             // Build a linked list for the free list.
-            for (i in m_nodeCapacity - 1 downTo m_nodeCount) {
-                m_nodes!![i] = DynamicTreeNode(i)
-                m_nodes!![i].parent = if (i == m_nodeCapacity - 1) null else m_nodes!![i + 1]
-                m_nodes!![i].height = -1
+            for (i in nodeCapacity - 1 downTo nodeCount) {
+                nodes[i] = DynamicTreeNode(i)
+                nodes[i].parent = if (i == nodeCapacity - 1) null else nodes[i + 1]
+                nodes[i].height = -1
             }
-            m_freeList = m_nodeCount
+            freeList = nodeCount
         }
-        val nodeId = m_freeList
-        val treeNode = m_nodes!![nodeId]
-        m_freeList = if (treeNode.parent != null) treeNode.parent!!.id else NULL_NODE
+        val nodeId = freeList
+        val treeNode = nodes[nodeId]
+        freeList = if (treeNode.parent != null) treeNode.parent!!.id else NULL_NODE
 
         treeNode.parent = null
         treeNode.child1 = null
         treeNode.child2 = null
         treeNode.height = 0
         treeNode.userData = null
-        ++m_nodeCount
+        ++nodeCount
         return treeNode
     }
 
     /**
-     * returns a node to the pool
+     * Returns a node to the pool
      */
     private fun freeNode(node: DynamicTreeNode) {
-        assert(node != null)
-        assert(0 < m_nodeCount)
-        node.parent = if (m_freeList != NULL_NODE) m_nodes!![m_freeList] else null
+        assert(nodeCount > 0)
+        node.parent = if (freeList != NULL_NODE) nodes[freeList] else null
         node.height = -1
-        m_freeList = node.id
-        m_nodeCount--
+        freeList = node.id
+        nodeCount--
     }
 
-    private fun insertLeaf(leaf_index: Int) {
-        val leaf = m_nodes!![leaf_index]
-        if (m_root == null) {
-            m_root = leaf
-            m_root!!.parent = null
+    private fun insertLeaf(leafIndex: Int) {
+        val leaf = nodes[leafIndex]
+        if (root == null) {
+            root = leaf
+            root!!.parent = null
             return
         }
 
         // find the best sibling
         val leafAABB = leaf.aabb
-        var index = m_root
+        var index = root
         while (index!!.child1 != null) {
             val node = index
             val child1 = node.child1
@@ -545,15 +503,11 @@ class DynamicTree : BroadPhaseStrategy {
             }
 
             // Descend
-            if (cost1 < cost2) {
-                index = child1
-            } else {
-                index = child2
-            }
+            index = if (cost1 < cost2) child1 else child2
         }
 
         val sibling = index
-        val oldParent = m_nodes!![sibling.id].parent
+        val oldParent = nodes[sibling.id].parent
         val newParent = allocateNode()
         newParent.parent = oldParent
         newParent.userData = null
@@ -578,7 +532,7 @@ class DynamicTree : BroadPhaseStrategy {
             newParent.child2 = leaf
             sibling.parent = newParent
             leaf.parent = newParent
-            m_root = newParent
+            root = newParent
         }
 
         // Walk back up the tree fixing heights and AABBs
@@ -601,19 +555,14 @@ class DynamicTree : BroadPhaseStrategy {
     }
 
     private fun removeLeaf(leaf: DynamicTreeNode) {
-        if (leaf === m_root) {
-            m_root = null
+        if (leaf === root) {
+            root = null
             return
         }
 
-        val parent = leaf.parent
-        val grandParent = parent?.parent
-        val sibling: DynamicTreeNode
-        if (parent!!.child1 === leaf) {
-            sibling = parent!!.child2!!
-        } else {
-            sibling = parent!!.child1!!
-        }
+        val parent = leaf.parent!!
+        val grandParent = parent.parent
+        val sibling = if (parent.child1 === leaf) parent.child2!! else parent.child1!!
 
         if (grandParent != null) {
             // Destroy parent and connect sibling to grandParent.
@@ -639,7 +588,7 @@ class DynamicTree : BroadPhaseStrategy {
                 index = index.parent
             }
         } else {
-            m_root = sibling
+            root = sibling
             sibling.parent = null
             freeNode(parent)
         }
@@ -649,66 +598,54 @@ class DynamicTree : BroadPhaseStrategy {
 
     // Perform a left or right rotation if node A is imbalanced.
     // Returns the new root index.
-    private fun balance(iA: DynamicTreeNode?): DynamicTreeNode {
-        assert(iA != null)
+    private fun balance(A: DynamicTreeNode): DynamicTreeNode {
+        if (A.child1 == null || A.height < 2) return A
 
-        val A = iA
-        if (A!!.child1 == null || A.height < 2) {
-            return iA
-        }
-
-        val iB = A.child1
-        val iC = A.child2
-        assert(0 <= iB!!.id && iB.id < m_nodeCapacity)
-        assert(0 <= iC!!.id && iC.id < m_nodeCapacity)
-
-        val B = iB
-        val C = iC
+        val B = A.child1!!
+        val C = A.child2!!
+        assert(B.id in 0 until nodeCapacity)
+        assert(C.id in 0 until nodeCapacity)
 
         val balance = C.height - B.height
 
         // Rotate C up
         if (balance > 1) {
-            val iF = C.child1
-            val iG = C.child2
-            val F = iF
-            val G = iG
-            assert(F != null)
-            assert(G != null)
-            assert(0 <= iF!!.id && iF.id < m_nodeCapacity)
-            assert(0 <= iG!!.id && iG.id < m_nodeCapacity)
+            val F = C.child1!!
+            val G = C.child2!!
+            assert(F.id in 0 until nodeCapacity)
+            assert(G.id in 0 until nodeCapacity)
 
             // Swap A and C
-            C.child1 = iA
+            C.child1 = A
             C.parent = A.parent
-            A.parent = iC
+            A.parent = C
 
             // A's old parent should point to C
             if (C.parent != null) {
-                if (C.parent!!.child1 === iA) {
-                    C.parent!!.child1 = iC
+                if (C.parent!!.child1 === A) {
+                    C.parent!!.child1 = C
                 } else {
-                    assert(C.parent!!.child2 === iA)
-                    C.parent!!.child2 = iC
+                    assert(C.parent!!.child2 === A)
+                    C.parent!!.child2 = C
                 }
             } else {
-                m_root = iC
+                root = C
             }
 
             // Rotate
-            if (F!!.height > G!!.height) {
-                C.child2 = iF
-                A.child2 = iG
-                G.parent = iA
+            if (F.height > G.height) {
+                C.child2 = F
+                A.child2 = G
+                G.parent = A
                 A.aabb.combine(B.aabb, G.aabb)
                 C.aabb.combine(A.aabb, F.aabb)
 
                 A.height = 1 + MathUtils.max(B.height, G.height)
                 C.height = 1 + MathUtils.max(A.height, F.height)
             } else {
-                C.child2 = iG
-                A.child2 = iF
-                F.parent = iA
+                C.child2 = G
+                A.child2 = F
+                F.parent = A
                 A.aabb.combine(B.aabb, F.aabb)
                 C.aabb.combine(A.aabb, G.aabb)
 
@@ -716,49 +653,47 @@ class DynamicTree : BroadPhaseStrategy {
                 C.height = 1 + MathUtils.max(A.height, G.height)
             }
 
-            return iC
+            return C
         }
 
         // Rotate B up
         if (balance < -1) {
-            val iD = B.child1
-            val iE = B.child2
-            val D = iD
-            val E = iE
-            assert(0 <= iD!!.id && iD.id < m_nodeCapacity)
-            assert(0 <= iE!!.id && iE.id < m_nodeCapacity)
+            val D = B.child1!!
+            val E = B.child2!!
+            assert(0 <= D.id && D.id < nodeCapacity)
+            assert(0 <= E.id && E.id < nodeCapacity)
 
             // Swap A and B
-            B.child1 = iA
+            B.child1 = A
             B.parent = A.parent
-            A.parent = iB
+            A.parent = B
 
             // A's old parent should point to B
             if (B.parent != null) {
-                if (B.parent!!.child1 === iA) {
-                    B.parent!!.child1 = iB
+                if (B.parent!!.child1 === A) {
+                    B.parent!!.child1 = B
                 } else {
-                    assert(B.parent!!.child2 === iA)
-                    B.parent!!.child2 = iB
+                    assert(B.parent!!.child2 === A)
+                    B.parent!!.child2 = B
                 }
             } else {
-                m_root = iB
+                root = B
             }
 
             // Rotate
-            if (D!!.height > E!!.height) {
-                B.child2 = iD
-                A.child1 = iE
-                E.parent = iA
+            if (D.height > E.height) {
+                B.child2 = D
+                A.child1 = E
+                E.parent = A
                 A.aabb.combine(C.aabb, E.aabb)
                 B.aabb.combine(A.aabb, D.aabb)
 
                 A.height = 1 + MathUtils.max(C.height, E.height)
                 B.height = 1 + MathUtils.max(A.height, D.height)
             } else {
-                B.child2 = iE
-                A.child1 = iD
-                D.parent = iA
+                B.child2 = E
+                A.child1 = D
+                D.parent = A
                 A.aabb.combine(C.aabb, D.aabb)
                 B.aabb.combine(A.aabb, E.aabb)
 
@@ -766,19 +701,17 @@ class DynamicTree : BroadPhaseStrategy {
                 B.height = 1 + MathUtils.max(A.height, E.height)
             }
 
-            return iB
+            return B
         }
 
-        return iA
+        return A
     }
 
     private fun validateStructure(node: DynamicTreeNode?) {
-        if (node == null) {
-            return
-        }
-        assert(node === m_nodes!![node.id])
+        if (node == null) return
+        assert(node === nodes[node.id])
 
-        if (node === m_root) {
+        if (node === root) {
             assert(node.parent == null)
         }
 
@@ -792,8 +725,8 @@ class DynamicTree : BroadPhaseStrategy {
             return
         }
 
-        assert(child1 != null && 0 <= child1.id && child1.id < m_nodeCapacity)
-        assert(child2 != null && 0 <= child2.id && child2.id < m_nodeCapacity)
+        assert(child1 != null && child1.id in 0 until nodeCapacity)
+        assert(child2 != null && child2.id in 0 until nodeCapacity)
 
         assert(child1!!.parent === node)
         assert(child2!!.parent === node)
@@ -803,9 +736,7 @@ class DynamicTree : BroadPhaseStrategy {
     }
 
     private fun validateMetrics(node: DynamicTreeNode?) {
-        if (node == null) {
-            return
-        }
+        if (node == null) return
 
         val child1 = node.child1
         val child2 = node.child2
@@ -817,13 +748,12 @@ class DynamicTree : BroadPhaseStrategy {
             return
         }
 
-        assert(child1 != null && 0 <= child1.id && child1.id < m_nodeCapacity)
-        assert(child2 != null && 0 <= child2.id && child2.id < m_nodeCapacity)
+        assert(child1 != null && 0 <= child1.id && child1.id < nodeCapacity)
+        assert(child2 != null && 0 <= child2.id && child2.id < nodeCapacity)
 
         val height1 = child1!!.height
         val height2 = child2!!.height
-        val height: Int
-        height = 1 + MathUtils.max(height1, height2)
+        val height = 1 + MathUtils.max(height1, height2)
         assert(node.height == height)
 
         val aabb = AABB()
@@ -837,18 +767,16 @@ class DynamicTree : BroadPhaseStrategy {
     }
 
     override fun drawTree(argDraw: DebugDraw) {
-        if (m_root == null) {
-            return
-        }
+        if (root == null) return
         val height = computeHeight()
-        drawTree(argDraw, m_root!!, 0, height)
+        drawTree(argDraw, root!!, 0, height)
     }
 
     fun drawTree(argDraw: DebugDraw, node: DynamicTreeNode, spot: Int, height: Int) {
-        node.aabb.getVertices(drawVecs!!)
+        node.aabb.getVertices(drawVecs)
 
         color.set(1f, (height - spot) * 1f / height, (height - spot) * 1f / height)
-        argDraw.drawPolygon(drawVecs!! as Array<Vec2>, 4, color)
+        argDraw.drawPolygon(drawVecs, 4, color)
 
         argDraw.viewportTranform!!.getWorldToScreen(node.aabb.upperBound, textVec)
         argDraw.drawString(textVec.x, textVec.y, node.id.toString() + "-" + (spot + 1) + "/" + height, color)
@@ -862,9 +790,7 @@ class DynamicTree : BroadPhaseStrategy {
     }
 
     companion object {
-
         val MAX_STACK_SIZE = 64
-
         val NULL_NODE = -1
     }
 }

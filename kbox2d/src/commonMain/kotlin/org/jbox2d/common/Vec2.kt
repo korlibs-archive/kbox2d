@@ -37,7 +37,7 @@ data class Vec2(
     /** True if the vector represents a pair of valid, non-infinite floating point numbers.  */
     val isValid: Boolean get() = !x.isNaN() && !x.isInfinite() && !y.isNaN() && !y.isInfinite()
 
-    constructor(toCopy: Vec2) : this(toCopy.x, toCopy.y) {}
+    constructor(toCopy: Vec2) : this(toCopy.x, toCopy.y)
 
     /** Zero out this vector.  */
     fun setZero() {
@@ -46,22 +46,23 @@ data class Vec2(
     }
 
     /** Set the vector component-wise.  */
-    fun set(x: Float, y: Float): Vec2 = this.apply {
+    fun set(x: Float, y: Float): Vec2 {
         this.x = x
         this.y = y
+        return this
     }
 
     inline fun set(x: Number, y: Number): Vec2 = set(x.toFloat(), y.toFloat())
 
     /** Set this vector to another vector.  */
-    fun set(v: Vec2): Vec2 = this.apply {
+    fun set(v: Vec2): Vec2 {
         this.x = v.x
         this.y = v.y
+        return this
     }
 
     /** Return the sum of this vector and another; does not alter either one.  */
     fun add(v: Vec2): Vec2 = Vec2(x + v.x, y + v.y)
-
 
     /** Return the difference of this vector and another; does not alter either one.  */
     fun sub(v: Vec2): Vec2 = Vec2(x - v.x, y - v.y)
@@ -152,12 +153,10 @@ data class Vec2(
 
         fun abs(a: Vec2): Vec2 = Vec2(MathUtils.abs(a.x), MathUtils.abs(a.y))
 
-
         fun absToOut(a: Vec2, out: Vec2) {
             out.x = MathUtils.abs(a.x)
             out.y = MathUtils.abs(a.y)
         }
-
 
         fun dot(a: Vec2, b: Vec2): Float = a.x * b.x + a.y * b.y
         fun cross(a: Vec2, b: Vec2): Float = a.x * b.y - a.y * b.x

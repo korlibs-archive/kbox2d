@@ -28,24 +28,20 @@ import org.jbox2d.callbacks.ContactListener
 import org.jbox2d.callbacks.PairCallback
 import org.jbox2d.collision.broadphase.BroadPhase
 import org.jbox2d.dynamics.contacts.Contact
-import org.jbox2d.dynamics.contacts.ContactEdge
 
 /**
  * Delegate of World.
  *
  * @author Daniel Murphy
  */
-class ContactManager(private val pool: World, var m_broadPhase: BroadPhase) : PairCallback {
-    var m_contactList: Contact? = null
-    var m_contactCount: Int = 0
-    var m_contactFilter: ContactFilter = ContactFilter()
-    var m_contactListener: ContactListener? = null
+class ContactManager(private val pool: World, var broadPhase: BroadPhase) : PairCallback {
+    var contactList: Contact? = null
+    var contactCount: Int = 0
+    var contactFilter: ContactFilter = ContactFilter()
+    var contactListener: ContactListener? = null
 
     /**
      * Broad-phase callback.
-     *
-     * @param proxyUserDataA
-     * @param proxyUserDataB
      */
     override fun addPair(proxyUserDataA: Any?, proxyUserDataB: Any?) {
         val proxyA = proxyUserDataA as FixtureProxy?
@@ -57,24 +53,22 @@ class ContactManager(private val pool: World, var m_broadPhase: BroadPhase) : Pa
         var indexA = proxyA.childIndex
         var indexB = proxyB.childIndex
 
-        var bodyA = fixtureA!!.getBody()
-        var bodyB = fixtureB!!.getBody()
+        var bodyA = fixtureA!!.body
+        var bodyB = fixtureB!!.body
 
         // Are the fixtures on the same body?
-        if (bodyA == bodyB) {
-            return
-        }
+        if (bodyA == bodyB) return
 
         // TODO_ERIN use a hash table to remove a potential bottleneck when both
         // bodies have a lot of contacts.
         // Does a contact already exist?
-        var edge = bodyB!!.getContactList()
+        var edge = bodyB!!.contactList
         while (edge != null) {
             if (edge.other == bodyA) {
-                val fA = edge.contact!!.getFixtureA()
-                val fB = edge.contact!!.getFixtureB()
-                val iA = edge.contact!!.getChildIndexA()
-                val iB = edge.contact!!.getChildIndexB()
+                val fA = edge.contact!!.fixtureA
+                val fB = edge.contact!!.fixtureB
+                val iA = edge.contact!!.indexA
+                val iB = edge.contact!!.indexB
 
                 if (fA == fixtureA && iA == indexA && fB == fixtureB && iB == indexB) {
                     // A contact already exists.
@@ -91,12 +85,12 @@ class ContactManager(private val pool: World, var m_broadPhase: BroadPhase) : Pa
         }
 
         // Does a joint override collision? is at least one body dynamic?
-        if (bodyB.shouldCollide(bodyA!!) == false) {
+        if (!bodyB.shouldCollide(bodyA!!)) {
             return
         }
 
         // Check user filtering.
-        if (m_contactFilter != null && m_contactFilter!!.shouldCollide(fixtureA, fixtureB) == false) {
+        if (!contactFilter.shouldCollide(fixtureA, fixtureB)) {
             return
         }
 
@@ -104,44 +98,44 @@ class ContactManager(private val pool: World, var m_broadPhase: BroadPhase) : Pa
         val c = pool.popContact(fixtureA, indexA, fixtureB, indexB) ?: return
 
         // Contact creation may swap fixtures.
-        fixtureA = c.getFixtureA()
-        fixtureB = c.getFixtureB()
-        indexA = c.getChildIndexA()
-        indexB = c.getChildIndexB()
-        bodyA = fixtureA!!.getBody()
-        bodyB = fixtureB!!.getBody()
+        fixtureA = c.fixtureA
+        fixtureB = c.fixtureB
+        indexA = c.indexA
+        indexB = c.indexB
+        bodyA = fixtureA!!.body
+        bodyB = fixtureB!!.body
 
         // Insert into the world.
-        c.m_prev = null
-        c.m_next = m_contactList
-        if (m_contactList != null) {
-            m_contactList!!.m_prev = c
+        c.prev = null
+        c.next = contactList
+        if (contactList != null) {
+            contactList!!.prev = c
         }
-        m_contactList = c
+        contactList = c
 
         // Connect to island graph.
 
         // Connect to body A
-        c.m_nodeA.contact = c
-        c.m_nodeA.other = bodyB
+        c.nodeA.contact = c
+        c.nodeA.other = bodyB
 
-        c.m_nodeA.prev = null
-        c.m_nodeA.next = bodyA!!.m_contactList
-        if (bodyA.m_contactList != null) {
-            bodyA.m_contactList!!.prev = c.m_nodeA
+        c.nodeA.prev = null
+        c.nodeA.next = bodyA!!.contactList
+        if (bodyA.contactList != null) {
+            bodyA.contactList!!.prev = c.nodeA
         }
-        bodyA.m_contactList = c.m_nodeA
+        bodyA.contactList = c.nodeA
 
         // Connect to body B
-        c.m_nodeB.contact = c
-        c.m_nodeB.other = bodyA
+        c.nodeB.contact = c
+        c.nodeB.other = bodyA
 
-        c.m_nodeB.prev = null
-        c.m_nodeB.next = bodyB!!.m_contactList
-        if (bodyB.m_contactList != null) {
-            bodyB.m_contactList!!.prev = c.m_nodeB
+        c.nodeB.prev = null
+        c.nodeB.next = bodyB!!.contactList
+        if (bodyB.contactList != null) {
+            bodyB.contactList!!.prev = c.nodeB
         }
-        bodyB.m_contactList = c.m_nodeB
+        bodyB.contactList = c.nodeB
 
         // wake up the bodies
         if (!fixtureA.isSensor && !fixtureB.isSensor) {
@@ -149,65 +143,65 @@ class ContactManager(private val pool: World, var m_broadPhase: BroadPhase) : Pa
             bodyB.isAwake = true
         }
 
-        ++m_contactCount
+        ++contactCount
     }
 
     fun findNewContacts() {
-        m_broadPhase.updatePairs(this)
+        broadPhase.updatePairs(this)
     }
 
     fun destroy(c: Contact) {
-        val fixtureA = c.getFixtureA()
-        val fixtureB = c.getFixtureB()
-        val bodyA = fixtureA!!.getBody()
-        val bodyB = fixtureB!!.getBody()
+        val fixtureA = c.fixtureA
+        val fixtureB = c.fixtureB
+        val bodyA = fixtureA!!.body
+        val bodyB = fixtureB!!.body
 
-        if (m_contactListener != null && c.isTouching) {
-            m_contactListener!!.endContact(c)
+        if (contactListener != null && c.isTouching) {
+            contactListener!!.endContact(c)
         }
 
         // Remove from the world.
-        if (c.m_prev != null) {
-            c.m_prev!!.m_next = c.m_next
+        if (c.prev != null) {
+            c.prev!!.next = c.next
         }
 
-        if (c.m_next != null) {
-            c.m_next!!.m_prev = c.m_prev
+        if (c.next != null) {
+            c.next!!.prev = c.prev
         }
 
-        if (c === m_contactList) {
-            m_contactList = c.m_next
+        if (c === contactList) {
+            contactList = c.next
         }
 
         // Remove from body 1
-        if (c.m_nodeA.prev != null) {
-            c.m_nodeA.prev!!.next = c.m_nodeA.next
+        if (c.nodeA.prev != null) {
+            c.nodeA.prev!!.next = c.nodeA.next
         }
 
-        if (c.m_nodeA.next != null) {
-            c.m_nodeA.next!!.prev = c.m_nodeA.prev
+        if (c.nodeA.next != null) {
+            c.nodeA.next!!.prev = c.nodeA.prev
         }
 
-        if (c.m_nodeA == bodyA!!.m_contactList) {
-            bodyA.m_contactList = c.m_nodeA.next
+        if (c.nodeA == bodyA!!.contactList) {
+            bodyA.contactList = c.nodeA.next
         }
 
         // Remove from body 2
-        if (c.m_nodeB.prev != null) {
-            c.m_nodeB.prev!!.next = c.m_nodeB.next
+        if (c.nodeB.prev != null) {
+            c.nodeB.prev!!.next = c.nodeB.next
         }
 
-        if (c.m_nodeB.next != null) {
-            c.m_nodeB.next!!.prev = c.m_nodeB.prev
+        if (c.nodeB.next != null) {
+            c.nodeB.next!!.prev = c.nodeB.prev
         }
 
-        if (c.m_nodeB == bodyB!!.m_contactList) {
-            bodyB.m_contactList = c.m_nodeB.next
+        if (c.nodeB == bodyB!!.contactList) {
+            bodyB.contactList = c.nodeB.next
         }
 
         // Call the factory.
         pool.pushContact(c)
-        --m_contactCount
+        --contactCount
     }
 
     /**
@@ -216,61 +210,61 @@ class ContactManager(private val pool: World, var m_broadPhase: BroadPhase) : Pa
      */
     fun collide() {
         // Update awake contacts.
-        var c = m_contactList
+        var c = contactList
         while (c != null) {
-            val fixtureA = c.getFixtureA()
-            val fixtureB = c.getFixtureB()
-            val indexA = c.getChildIndexA()
-            val indexB = c.getChildIndexB()
-            val bodyA = fixtureA!!.getBody()
-            val bodyB = fixtureB!!.getBody()
+            val fixtureA = c.fixtureA
+            val fixtureB = c.fixtureB
+            val indexA = c.indexA
+            val indexB = c.indexB
+            val bodyA = fixtureA!!.body
+            val bodyB = fixtureB!!.body
 
             // is this contact flagged for filtering?
-            if (c.m_flags and Contact.FILTER_FLAG == Contact.FILTER_FLAG) {
+            if (c.flags and Contact.FILTER_FLAG == Contact.FILTER_FLAG) {
                 // Should these bodies collide?
                 if (bodyB!!.shouldCollide(bodyA!!) == false) {
                     val cNuke = c
-                    c = cNuke.getNext()
+                    c = cNuke.next
                     destroy(cNuke)
                     continue
                 }
 
                 // Check user filtering.
-                if (m_contactFilter != null && m_contactFilter!!.shouldCollide(fixtureA, fixtureB) == false) {
+                if (contactFilter != null && contactFilter!!.shouldCollide(fixtureA, fixtureB) == false) {
                     val cNuke = c
-                    c = cNuke.getNext()
+                    c = cNuke.next
                     destroy(cNuke)
                     continue
                 }
 
                 // Clear the filtering flag.
-                c.m_flags = c.m_flags and Contact.FILTER_FLAG.inv()
+                c.flags = c.flags and Contact.FILTER_FLAG.inv()
             }
 
-            val activeA = bodyA!!.isAwake && bodyA.m_type !== BodyType.STATIC
-            val activeB = bodyB!!.isAwake && bodyB.m_type !== BodyType.STATIC
+            val activeA = bodyA!!.isAwake && bodyA._type !== BodyType.STATIC
+            val activeB = bodyB!!.isAwake && bodyB._type !== BodyType.STATIC
 
             // At least one body must be awake and it must be dynamic or kinematic.
             if (activeA == false && activeB == false) {
-                c = c.getNext()
+                c = c.next
                 continue
             }
 
-            val proxyIdA = fixtureA.m_proxies!![indexA].proxyId
-            val proxyIdB = fixtureB.m_proxies!![indexB].proxyId
-            val overlap = m_broadPhase.testOverlap(proxyIdA, proxyIdB)
+            val proxyIdA = fixtureA.proxies!![indexA].proxyId
+            val proxyIdB = fixtureB.proxies!![indexB].proxyId
+            val overlap = broadPhase.testOverlap(proxyIdA, proxyIdB)
 
             // Here we destroy contacts that cease to overlap in the broad-phase.
             if (overlap == false) {
                 val cNuke = c
-                c = cNuke.getNext()
+                c = cNuke.next
                 destroy(cNuke)
                 continue
             }
 
             // The contact persists.
-            c.update(m_contactListener)
-            c = c.getNext()
+            c.update(contactListener)
+            c = c.next
         }
     }
 }

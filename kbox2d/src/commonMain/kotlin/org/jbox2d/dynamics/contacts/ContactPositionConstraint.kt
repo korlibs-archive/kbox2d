@@ -29,7 +29,7 @@ import org.jbox2d.common.Vec2
 
 class ContactPositionConstraint {
 
-    internal var localPoints = Array<Vec2>(Settings.maxManifoldPoints) { Vec2() }
+    internal var localPoints = Array(Settings.maxManifoldPoints) { Vec2() }
 
     internal val localNormal = Vec2()
 

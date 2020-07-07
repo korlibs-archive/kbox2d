@@ -32,22 +32,18 @@ import org.jbox2d.internal.*
  */
 class Sweep {
 
-    /** Local center of mass position  */
-
+    /** Local center of mass position */
     val localCenter: Vec2 = Vec2()
-    /** Center world positions  */
 
+    /** Center world positions */
     val c0: Vec2 = Vec2()
-
     val c: Vec2 = Vec2()
-    /** World angles  */
 
+    /** World angles */
     var a0: Float = 0.toFloat()
-
     var a: Float = 0.toFloat()
 
-    /** Fraction of the current time step in the range [0,1] c0 and a0 are the positions at alpha0.  */
-
+    /** Fraction of the current time step in the range [0,1] c0 and a0 are the positions at alpha0. */
     var alpha0: Float = 0.toFloat()
 
     override fun toString(): String {
@@ -77,21 +73,16 @@ class Sweep {
     /**
      * Get the interpolated transform at a specific time.
      *
-     * @param xf the result is placed here - must not be null
-     * @param t the normalized time in [0,1].
+     * @param xf the result is placed here
+     * @param beta the normalized time in [0,1].
      */
     fun getTransform(xf: Transform, beta: Float) {
-        assert(xf != null)
-        // xf->p = (1.0f - beta) * c0 + beta * c;
-        // float32 angle = (1.0f - beta) * a0 + beta * a;
-        // xf->q.Set(angle);
         xf.p.x = (1.0f - beta) * c0.x + beta * c.x
         xf.p.y = (1.0f - beta) * c0.y + beta * c.y
         val angle = (1.0f - beta) * a0 + beta * a
         xf.q.setRadians(angle)
 
         // Shift to origin
-        // xf->p -= b2Mul(xf->q, localCenter);
         val q = xf.q
         xf.p.x -= q.c * localCenter.x - q.s * localCenter.y
         xf.p.y -= q.s * localCenter.x + q.c * localCenter.y
@@ -104,10 +95,6 @@ class Sweep {
      */
     fun advance(alpha: Float) {
         assert(alpha0 < 1.0f)
-        // float32 beta = (alpha - alpha0) / (1.0f - alpha0);
-        // c0 += beta * (c - c0);
-        // a0 += beta * (a - a0);
-        // alpha0 = alpha;
         val beta = (alpha - alpha0) / (1.0f - alpha0)
         c0.x += beta * (c.x - c0.x)
         c0.y += beta * (c.y - c0.y)

@@ -46,6 +46,6 @@ class Vec2ArrayPool {
     }
 
     protected fun getInitializedArray(argLength: Int): Array<Vec2> {
-        return Array<Vec2>(argLength) { Vec2() }
+        return Array(argLength) { Vec2() }
     }
 }

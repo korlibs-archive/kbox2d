@@ -25,23 +25,15 @@ package org.jbox2d.collision
 
 import org.jbox2d.common.Vec2
 
-// updated to rev 100
 /**
  * Ray-cast input data. The ray extends from p1 to p1 + maxFraction * (p2 - p1).
  */
 class RayCastInput {
 
-    val p1: Vec2
+    val p1: Vec2 = Vec2()
+    val p2: Vec2 = Vec2()
 
-    val p2: Vec2
-
-    var maxFraction: Float = 0.toFloat()
-
-    init {
-        p1 = Vec2()
-        p2 = Vec2()
-        maxFraction = 0f
-    }
+    var maxFraction: Float = 0f
 
     fun set(rci: RayCastInput) {
         p1.set(rci.p1)

@@ -43,12 +43,10 @@
  * misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
  */
-
 package org.jbox2d.collision
 
 import org.jbox2d.common.Vec2
 
-// updated to rev 100
 /**
  * A manifold point is a contact point belonging to a contact
  * manifold. It holds details related to the geometry and dynamics
@@ -62,17 +60,17 @@ import org.jbox2d.common.Vec2
  * provide reliable contact forces, especially for high speed collisions.
  */
 class ManifoldPoint {
+
     /** usage depends on manifold type  */
-
     val localPoint: Vec2
+
     /** the non-penetration impulse  */
-
     var normalImpulse: Float = 0.toFloat()
+
     /** the friction impulse  */
-
     var tangentImpulse: Float = 0.toFloat()
-    /** uniquely identifies a contact point between two shapes  */
 
+    /** uniquely identifies a contact point between two shapes  */
     val id: ContactID
 
     /**
@@ -86,8 +84,7 @@ class ManifoldPoint {
     }
 
     /**
-     * Creates a manifold point as a copy of the given point
-     * @param cp point to copy from
+     * Creates a manifold point as a copy of the given point [cp]
      */
     constructor(cp: ManifoldPoint) {
         localPoint = cp.localPoint.clone()
@@ -97,8 +94,7 @@ class ManifoldPoint {
     }
 
     /**
-     * Sets this manifold point form the given one
-     * @param cp the point to copy from
+     * Sets this manifold point form the given point [cp]
      */
     fun set(cp: ManifoldPoint) {
         localPoint.set(cp.localPoint)

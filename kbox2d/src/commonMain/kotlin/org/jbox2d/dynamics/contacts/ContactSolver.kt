@@ -32,19 +32,20 @@ import org.jbox2d.dynamics.TimeStep
 import org.jbox2d.dynamics.contacts.ContactVelocityConstraint.VelocityConstraintPoint
 import org.jbox2d.internal.*
 
-
 /**
  * @author Daniel
  */
 class ContactSolver {
 
-    var m_step: TimeStep? = null
-    var m_positions: Array<Position>? = null
-    var m_velocities: Array<Velocity>? = null
-    var m_positionConstraints: Array<ContactPositionConstraint> = Array(INITIAL_NUM_CONSTRAINTS) { ContactPositionConstraint() }
-    var m_velocityConstraints: Array<ContactVelocityConstraint> = Array(INITIAL_NUM_CONSTRAINTS) { ContactVelocityConstraint() }
-    var m_contacts: Array<Contact>? = null
-    var m_count: Int = 0
+    var step: TimeStep? = null
+    var positions: Array<Position>? = null
+    var velocities: Array<Velocity>? = null
+    var positionConstraints: Array<ContactPositionConstraint> =
+        Array(INITIAL_NUM_CONSTRAINTS) { ContactPositionConstraint() }
+    var velocityConstraints: Array<ContactVelocityConstraint> =
+        Array(INITIAL_NUM_CONSTRAINTS) { ContactVelocityConstraint() }
+    var contacts: Array<Contact>? = null
+    var count: Int = 0
 
     // djm pooling, and from above
     private val xfA = Transform()
@@ -94,73 +95,72 @@ class ContactSolver {
     private val psolver = PositionSolverManifold()
 
     fun init(def: ContactSolverDef) {
-        // System.out.println("Initializing contact solver");
-        m_step = def.step
-        m_count = def.count
+        step = def.step
+        count = def.count
 
-        if (m_positionConstraints.size < m_count) {
-            val old = m_positionConstraints
-            m_positionConstraints = arrayOfNulls<ContactPositionConstraint>(MathUtils.max(old.size * 2, m_count)) as Array<ContactPositionConstraint>
-            arraycopy(old, 0, m_positionConstraints, 0, old.size)
-            for (i in old.size until m_positionConstraints.size) {
-                m_positionConstraints[i] = ContactPositionConstraint()
+        if (positionConstraints.size < count) {
+            val old = positionConstraints
+            positionConstraints = arrayOfNulls<ContactPositionConstraint>(MathUtils.max(old.size * 2, count))
+                as Array<ContactPositionConstraint>
+            arraycopy(old, 0, positionConstraints, 0, old.size)
+            for (i in old.size until positionConstraints.size) {
+                positionConstraints[i] = ContactPositionConstraint()
             }
         }
 
-        if (m_velocityConstraints.size < m_count) {
-            val old = m_velocityConstraints
-            m_velocityConstraints = arrayOfNulls<ContactVelocityConstraint>(MathUtils.max(old.size * 2, m_count)) as Array<ContactVelocityConstraint>
-            arraycopy(old, 0, m_velocityConstraints, 0, old.size)
-            for (i in old.size until m_velocityConstraints.size) {
-                m_velocityConstraints[i] = ContactVelocityConstraint()
+        if (velocityConstraints.size < count) {
+            val old = velocityConstraints
+            velocityConstraints = arrayOfNulls<ContactVelocityConstraint>(MathUtils.max(old.size * 2, count))
+                as Array<ContactVelocityConstraint>
+            arraycopy(old, 0, velocityConstraints, 0, old.size)
+            for (i in old.size until velocityConstraints.size) {
+                velocityConstraints[i] = ContactVelocityConstraint()
             }
         }
 
-        m_positions = def.positions
-        m_velocities = def.velocities
-        m_contacts = def.contacts
+        positions = def.positions
+        velocities = def.velocities
+        contacts = def.contacts
 
-        for (i in 0 until m_count) {
-            // System.out.println("contacts: " + m_count);
-            val contact = m_contacts!![i]
+        for (i in 0 until count) {
+            val contact = contacts!![i]
 
-            val fixtureA = contact.m_fixtureA
-            val fixtureB = contact.m_fixtureB
-            val shapeA = fixtureA!!.getShape()
-            val shapeB = fixtureB!!.getShape()
-            val radiusA = shapeA!!.m_radius
-            val radiusB = shapeB!!.m_radius
-            val bodyA = fixtureA.getBody()
-            val bodyB = fixtureB.getBody()
-            val manifold = contact.getManifold()
+            val fixtureA = contact.fixtureA
+            val fixtureB = contact.fixtureB
+            val shapeA = fixtureA!!.shape
+            val shapeB = fixtureB!!.shape
+            val radiusA = shapeA!!.radius
+            val radiusB = shapeB!!.radius
+            val bodyA = fixtureA.body
+            val bodyB = fixtureB.body
+            val manifold = contact.manifold
 
             val pointCount = manifold.pointCount
-            //assert (pointCount > 0);
 
-            val vc = m_velocityConstraints[i]
-            vc.friction = contact.m_friction
-            vc.restitution = contact.m_restitution
-            vc.tangentSpeed = contact.m_tangentSpeed
-            vc.indexA = bodyA!!.m_islandIndex
-            vc.indexB = bodyB!!.m_islandIndex
-            vc.invMassA = bodyA.m_invMass
-            vc.invMassB = bodyB.m_invMass
-            vc.invIA = bodyA.m_invI
-            vc.invIB = bodyB.m_invI
+            val vc = velocityConstraints[i]
+            vc.friction = contact.friction
+            vc.restitution = contact.restitution
+            vc.tangentSpeed = contact.tangentSpeed
+            vc.indexA = bodyA!!.islandIndex
+            vc.indexB = bodyB!!.islandIndex
+            vc.invMassA = bodyA.invMass
+            vc.invMassB = bodyB.invMass
+            vc.invIA = bodyA.invI
+            vc.invIB = bodyB.invI
             vc.contactIndex = i
             vc.pointCount = pointCount
             vc.K.setZero()
             vc.normalMass.setZero()
 
-            val pc = m_positionConstraints[i]
-            pc.indexA = bodyA.m_islandIndex
-            pc.indexB = bodyB.m_islandIndex
-            pc.invMassA = bodyA.m_invMass
-            pc.invMassB = bodyB.m_invMass
-            pc.localCenterA.set(bodyA.m_sweep.localCenter)
-            pc.localCenterB.set(bodyB.m_sweep.localCenter)
-            pc.invIA = bodyA.m_invI
-            pc.invIB = bodyB.m_invI
+            val pc = positionConstraints[i]
+            pc.indexA = bodyA.islandIndex
+            pc.indexB = bodyB.islandIndex
+            pc.invMassA = bodyA.invMass
+            pc.invMassB = bodyB.invMass
+            pc.localCenterA.set(bodyA.sweep.localCenter)
+            pc.localCenterB.set(bodyB.sweep.localCenter)
+            pc.invIA = bodyA.invI
+            pc.invIB = bodyB.invI
             pc.localNormal.set(manifold.localNormal)
             pc.localPoint.set(manifold.localPoint)
             pc.pointCount = pointCount
@@ -168,16 +168,13 @@ class ContactSolver {
             pc.radiusB = radiusB
             pc.type = manifold.type
 
-            // System.out.println("contact point count: " + pointCount);
             for (j in 0 until pointCount) {
                 val cp = manifold.points[j]
                 val vcp = vc.points[j]
 
-                if (m_step!!.warmStarting) {
-                    // assert(cp.normalImpulse == 0);
-                    // System.out.println("contact normal impulse: " + cp.normalImpulse);
-                    vcp.normalImpulse = m_step!!.dtRatio * cp.normalImpulse
-                    vcp.tangentImpulse = m_step!!.dtRatio * cp.tangentImpulse
+                if (step!!.warmStarting) {
+                    vcp.normalImpulse = step!!.dtRatio * cp.normalImpulse
+                    vcp.tangentImpulse = step!!.dtRatio * cp.tangentImpulse
                 } else {
                     vcp.normalImpulse = 0f
                     vcp.tangentImpulse = 0f
@@ -195,9 +192,8 @@ class ContactSolver {
     }
 
     fun warmStart() {
-        // Warm start.
-        for (i in 0 until m_count) {
-            val vc = m_velocityConstraints[i]
+        for (i in 0 until count) {
+            val vc = velocityConstraints[i]
 
             val indexA = vc.indexA
             val indexB = vc.indexB
@@ -207,10 +203,10 @@ class ContactSolver {
             val iB = vc.invIB
             val pointCount = vc.pointCount
 
-            val vA = m_velocities!![indexA].v
-            var wA = m_velocities!![indexA].w
-            val vB = m_velocities!![indexB].v
-            var wB = m_velocities!![indexB].w
+            val vA = velocities!![indexA].v
+            var wA = velocities!![indexA].w
+            val vB = velocities!![indexB].v
+            var wB = velocities!![indexB].w
 
             val normal = vc.normal
             val tangentx = 1.0f * normal.y
@@ -228,21 +224,20 @@ class ContactSolver {
                 vB.x += Px * mB
                 vB.y += Py * mB
             }
-            m_velocities!![indexA].w = wA
-            m_velocities!![indexB].w = wB
+            velocities!![indexA].w = wA
+            velocities!![indexB].w = wB
         }
     }
 
     fun initializeVelocityConstraints() {
-
         // Warm start.
-        for (i in 0 until m_count) {
-            val vc = m_velocityConstraints[i]
-            val pc = m_positionConstraints[i]
+        for (i in 0 until count) {
+            val vc = velocityConstraints[i]
+            val pc = positionConstraints[i]
 
             val radiusA = pc.radiusA
             val radiusB = pc.radiusB
-            val manifold = m_contacts!![vc.contactIndex].getManifold()
+            val manifold = contacts!![vc.contactIndex].manifold
 
             val indexA = vc.indexA
             val indexB = vc.indexB
@@ -254,17 +249,15 @@ class ContactSolver {
             val localCenterA = pc.localCenterA
             val localCenterB = pc.localCenterB
 
-            val cA = m_positions!![indexA].c
-            val aA = m_positions!![indexA].a
-            val vA = m_velocities!![indexA].v
-            val wA = m_velocities!![indexA].w
+            val cA = positions!![indexA].c
+            val aA = positions!![indexA].a
+            val vA = velocities!![indexA].v
+            val wA = velocities!![indexA].w
 
-            val cB = m_positions!![indexB].c
-            val aB = m_positions!![indexB].a
-            val vB = m_velocities!![indexB].v
-            val wB = m_velocities!![indexB].w
-
-            //assert (manifold.pointCount > 0);
+            val cB = positions!![indexB].c
+            val aB = positions!![indexB].a
+            val vB = velocities!![indexB].v
+            val wB = velocities!![indexB].w
 
             val xfAq = xfA.q
             val xfBq = xfB.q
@@ -348,9 +341,9 @@ class ContactSolver {
     }
 
     fun storeImpulses() {
-        for (i in 0 until m_count) {
-            val vc = m_velocityConstraints[i]
-            val manifold = m_contacts!![vc.contactIndex].getManifold()
+        for (i in 0 until count) {
+            val vc = velocityConstraints[i]
+            val manifold = contacts!![vc.contactIndex].manifold
 
             for (j in 0 until vc.pointCount) {
                 manifold.points[j].normalImpulse = vc.points[j].normalImpulse
@@ -365,8 +358,8 @@ class ContactSolver {
     fun solvePositionConstraints(): Boolean {
         var minSeparation = 0.0f
 
-        for (i in 0 until m_count) {
-            val pc = m_positionConstraints[i]
+        for (i in 0 until count) {
+            val pc = positionConstraints[i]
 
             val indexA = pc.indexA
             val indexB = pc.indexB
@@ -383,10 +376,10 @@ class ContactSolver {
             val localCenterBy = localCenterB.y
             val pointCount = pc.pointCount
 
-            val cA = m_positions!![indexA].c
-            var aA = m_positions!![indexA].a
-            val cB = m_positions!![indexB].c
-            var aB = m_positions!![indexB].a
+            val cA = positions!![indexA].c
+            var aA = positions!![indexA].a
+            val cB = positions!![indexB].c
+            var aB = positions!![indexB].a
 
             // Solve normal constraints
             for (j in 0 until pointCount) {
@@ -414,8 +407,10 @@ class ContactSolver {
                 minSeparation = MathUtils.min(minSeparation, separation)
 
                 // Prevent large corrections and allow slop.
-                val C = MathUtils.clamp(Settings.baumgarte * (separation + Settings.linearSlop),
-                        -Settings.maxLinearCorrection, 0.0f)
+                val C = MathUtils.clamp(
+                    Settings.baumgarte * (separation + Settings.linearSlop),
+                    -Settings.maxLinearCorrection, 0.0f
+                )
 
                 // Compute the effective mass.
                 val rnA = rAx * normal.y - rAy * normal.x
@@ -437,14 +432,12 @@ class ContactSolver {
                 aB += iB * (rBx * Py - rBy * Px)
             }
 
-            // m_positions[indexA].c.set(cA);
-            m_positions!![indexA].a = aA
+            positions!![indexA].a = aA
 
-            // m_positions[indexB].c.set(cB);
-            m_positions!![indexB].a = aB
+            positions!![indexB].a = aB
         }
 
-        // We can't expect minSpeparation >= -linearSlop because we don't
+        // We can't expect minSeparation >= -linearSlop because we don't
         // push the separation above -linearSlop.
         return minSeparation >= -3.0f * Settings.linearSlop
     }
@@ -453,8 +446,8 @@ class ContactSolver {
     fun solveTOIPositionConstraints(toiIndexA: Int, toiIndexB: Int): Boolean {
         var minSeparation = 0.0f
 
-        for (i in 0 until m_count) {
-            val pc = m_positionConstraints[i]
+        for (i in 0 until count) {
+            val pc = positionConstraints[i]
 
             val indexA = pc.indexA
             val indexB = pc.indexB
@@ -480,11 +473,11 @@ class ContactSolver {
                 iB = pc.invIB
             }
 
-            val cA = m_positions!![indexA].c
-            var aA = m_positions!![indexA].a
+            val cA = positions!![indexA].c
+            var aA = positions!![indexA].a
 
-            val cB = m_positions!![indexB].c
-            var aB = m_positions!![indexB].a
+            val cB = positions!![indexB].c
+            var aB = positions!![indexB].a
 
             // Solve normal constraints
             for (j in 0 until pointCount) {
@@ -513,8 +506,11 @@ class ContactSolver {
                 minSeparation = MathUtils.min(minSeparation, separation)
 
                 // Prevent large corrections and allow slop.
-                val C = MathUtils.clamp(Settings.toiBaugarte * (separation + Settings.linearSlop),
-                        -Settings.maxLinearCorrection, 0.0f)
+                val C = MathUtils.clamp(
+                    Settings.toiBaugarte * (separation + Settings.linearSlop),
+                    -Settings.maxLinearCorrection,
+                    0.0f
+                )
 
                 // Compute the effective mass.
                 val rnA = rAx * normal.y - rAy * normal.x
@@ -537,10 +533,10 @@ class ContactSolver {
             }
 
             // m_positions[indexA].c.set(cA);
-            m_positions!![indexA].a = aA
+            positions!![indexA].a = aA
 
             // m_positions[indexB].c.set(cB);
-            m_positions!![indexB].a = aB
+            positions!![indexB].a = aB
         }
 
         // We can't expect minSpeparation >= -_linearSlop because we don't
@@ -548,15 +544,14 @@ class ContactSolver {
         return minSeparation >= -1.5f * Settings.linearSlop
     }
 
-
     private var vA: Vec2? = null
     private var vB: Vec2? = null
-    private var wA: Float = 0.toFloat()
-    private var wB: Float = 0.toFloat()
+    private var wA: Float = 0f
+    private var wB: Float = 0f
 
     fun solveVelocityConstraints() {
-        for (i in 0 until m_count) {
-            val vc = m_velocityConstraints[i]
+        for (i in 0 until count) {
+            val vc = velocityConstraints[i]
 
             val indexA = vc.indexA
             val indexB = vc.indexB
@@ -567,10 +562,10 @@ class ContactSolver {
             val iB = vc.invIB
             val pointCount = vc.pointCount
 
-            vA = m_velocities!![indexA].v
-            wA = m_velocities!![indexA].w
-            vB = m_velocities!![indexB].v
-            wB = m_velocities!![indexB].w
+            vA = velocities!![indexA].v
+            wA = velocities!![indexA].w
+            vB = velocities!![indexB].v
+            wB = velocities!![indexB].w
 
             val normal = vc.normal
             val normalx = normal.x
@@ -579,7 +574,6 @@ class ContactSolver {
             val tangenty = -1.0f * vc.normal.x
             val friction = vc.friction
 
-            //assert (pointCount == 1 || pointCount == 2);
             solveVelocityConstraints0(vc, mA, mB, iA, iB, pointCount, tangentx, tangenty, friction)
 
             // Solve normal constraints
@@ -589,16 +583,17 @@ class ContactSolver {
                 solveVelocityConstraints2(vc, mA, mB, iA, iB, normal, normalx, normaly)
             }
 
-            // m_velocities[indexA].v.set(vA);
-            m_velocities!![indexA].w = wA
-            // m_velocities[indexB].v.set(vB);
-            m_velocities!![indexB].w = wB
+            velocities!![indexA].w = wA
+            velocities!![indexB].w = wB
         }
     }
 
-    private fun solveVelocityConstraints2(vc: ContactVelocityConstraint, mA: Float, mB: Float, iA: Float, iB: Float, normal: Vec2, normalx: Float, normaly: Float) {
-        // Block solver developed in collaboration with Dirk Gregorius (back in 01/07 on
-        // Box2D_Lite).
+    private fun solveVelocityConstraints2(
+        vc: ContactVelocityConstraint,
+        mA: Float, mB: Float, iA: Float, iB: Float,
+        normal: Vec2, normalx: Float, normaly: Float
+    ) {
+        // Block solver developed in collaboration with Dirk Gregorius (back in 01/07 on Box2D_Lite).
         // Build the mini LCP for this contact patch
         //
         // vn = A * x + b, vn >= 0, , vn >= 0, x >= 0 and vn_i * x_i = 0 with i = 1..2
@@ -686,7 +681,10 @@ class ContactSolver {
         xy *= -1f
 
         if (xx >= 0.0f && xy >= 0.0f) {
-            solveVelocityConstraints2a(mA, mB, iA, iB, normal, normalx, normaly, cp1, cp2, cp1rA, cp1rB, cp2rA, cp2rB, ax, ay, xx, xy)
+            solveVelocityConstraints2a(
+                mA, mB, iA, iB, normal, normalx, normaly,
+                cp1, cp2, cp1rA, cp1rB, cp2rA, cp2rB, ax, ay, xx, xy
+            )
         } else {
             //
             // Case 2: vn1 = 0 and x2 = 0
@@ -700,7 +698,10 @@ class ContactSolver {
             vn2 = vc.K.ex.y * xx + by
 
             if (xx >= 0.0f && vn2 >= 0.0f) {
-                solveVelocityConstraints2b(mA, mB, iA, iB, normal, normalx, normaly, cp1, cp2, cp1rA, cp1rB, cp2rA, cp2rB, ax, ay, xx, xy)
+                solveVelocityConstraints2b(
+                    mA, mB, iA, iB, normal, normalx, normaly,
+                    cp1, cp2, cp1rA, cp1rB, cp2rA, cp2rB, ax, ay, xx, xy
+                )
             } else {
 
                 //
@@ -715,7 +716,10 @@ class ContactSolver {
                 vn2 = 0.0f
 
                 if (xy >= 0.0f && vn1 >= 0.0f) {
-                    solveVelocityConstraints2c(mA, mB, iA, iB, normal, normalx, normaly, cp1, cp2, cp1rA, cp1rB, cp2rA, cp2rB, ax, ay, xx, xy)
+                    solveVelocityConstraints2c(
+                        mA, mB, iA, iB, normal, normalx, normaly,
+                        cp1, cp2, cp1rA, cp1rB, cp2rA, cp2rB, ax, ay, xx, xy
+                    )
                 } else {
 
                     //
@@ -729,7 +733,10 @@ class ContactSolver {
                     vn2 = by
 
                     if (vn1 >= 0.0f && vn2 >= 0.0f) {
-                        solveVelocityConstraints2d(mA, mB, iA, iB, normalx, normaly, cp1, cp2, cp1rA, cp1rB, cp2rA, cp2rB, ax, ay, xx, xy)
+                        solveVelocityConstraints2d(
+                            mA, mB, iA, iB, normalx, normaly,
+                            cp1, cp2, cp1rA, cp1rB, cp2rA, cp2rB, ax, ay, xx, xy
+                        )
                     } else {
                         // No solution, give up. This is hit sometimes, but it doesn't seem to matter.
                     }
@@ -738,18 +745,23 @@ class ContactSolver {
         }
     }
 
-    private fun solveVelocityConstraints2d(mA: Float, mB: Float, iA: Float, iB: Float, normalx: Float, normaly: Float, cp1: VelocityConstraintPoint, cp2: VelocityConstraintPoint, cp1rA: Vec2, cp1rB: Vec2, cp2rA: Vec2, cp2rB: Vec2, ax: Float, ay: Float, xx: Float, xy: Float) {
+    private fun solveVelocityConstraints2d(
+        mA: Float, mB: Float, iA: Float, iB: Float, normalx: Float, normaly: Float,
+        cp1: VelocityConstraintPoint, cp2: VelocityConstraintPoint,
+        cp1rA: Vec2, cp1rB: Vec2, cp2rA: Vec2, cp2rB: Vec2,
+        ax: Float, ay: Float, xx: Float, xy: Float
+    ) {
         // Resubstitute for the incremental impulse
         val dx = xx - ax
         val dy = xy - ay
 
         // Apply incremental impulse
         /*
-     * Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
-     * invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
-     *
-     * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
-     */
+        Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
+        invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
+
+        vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
+        */
 
         val P1x = normalx * dx
         val P1y = normaly * dx
@@ -769,18 +781,23 @@ class ContactSolver {
         cp2.normalImpulse = xy
     }
 
-    private fun solveVelocityConstraints2c(mA: Float, mB: Float, iA: Float, iB: Float, normal: Vec2, normalx: Float, normaly: Float, cp1: VelocityConstraintPoint, cp2: VelocityConstraintPoint, cp1rA: Vec2, cp1rB: Vec2, cp2rA: Vec2, cp2rB: Vec2, ax: Float, ay: Float, xx: Float, xy: Float) {
+    private fun solveVelocityConstraints2c(
+        mA: Float, mB: Float, iA: Float, iB: Float, normal: Vec2, normalx: Float, normaly: Float,
+        cp1: VelocityConstraintPoint, cp2: VelocityConstraintPoint,
+        cp1rA: Vec2, cp1rB: Vec2, cp2rA: Vec2, cp2rB: Vec2,
+        ax: Float, ay: Float, xx: Float, xy: Float
+    ) {
         val vn2: Float// Resubstitute for the incremental impulse
         val dx = xx - ax
         val dy = xy - ay
 
         // Apply incremental impulse
         /*
-     * Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
-     * invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
-     *
-     * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
-     */
+        Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
+        invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
+
+        vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
+        */
 
         val P1x = normalx * dx
         val P1y = normaly * dx
@@ -800,13 +817,13 @@ class ContactSolver {
         cp2.normalImpulse = xy
 
         /*
-     * #if B2_DEBUG_SOLVER == 1 // Postconditions dv2 = vB + Cross(wB, cp2.rB) - vA -
-     * Cross(wA, cp2.rA);
-     *
-     * // Compute normal velocity vn2 = Dot(dv2, normal);
-     *
-     * assert(Abs(vn2 - cp2.velocityBias) < k_errorTol); #endif
-     */
+        #if B2_DEBUG_SOLVER == 1 // Postconditions dv2 = vB + Cross(wB, cp2.rB) - vA -
+        Cross(wA, cp2.rA);
+
+        // Compute normal velocity vn2 = Dot(dv2, normal);
+
+        assert(Abs(vn2 - cp2.velocityBias) < k_errorTol); #endif
+        */
         if (DEBUG_SOLVER) {
             // Postconditions
             val dv2 = vB!!.add(Vec2.cross(wB, cp2rB).subLocal(vA!!).subLocal(Vec2.cross(wA, cp2rA)))
@@ -817,7 +834,12 @@ class ContactSolver {
         }
     }
 
-    private fun solveVelocityConstraints2b(mA: Float, mB: Float, iA: Float, iB: Float, normal: Vec2, normalx: Float, normaly: Float, cp1: VelocityConstraintPoint, cp2: VelocityConstraintPoint, cp1rA: Vec2, cp1rB: Vec2, cp2rA: Vec2, cp2rB: Vec2, ax: Float, ay: Float, xx: Float, xy: Float) {
+    private fun solveVelocityConstraints2b(
+        mA: Float, mB: Float, iA: Float, iB: Float, normal: Vec2, normalx: Float, normaly: Float,
+        cp1: VelocityConstraintPoint, cp2: VelocityConstraintPoint,
+        cp1rA: Vec2, cp1rB: Vec2, cp2rA: Vec2, cp2rB: Vec2,
+        ax: Float, ay: Float, xx: Float, xy: Float
+    ) {
         val vn1: Float// Get the incremental impulse
         val dx = xx - ax
         val dy = xy - ay
@@ -831,11 +853,11 @@ class ContactSolver {
         val P2y = normaly * dy
 
         /*
-     * Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
-     * invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
-     *
-     * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
-     */
+        Vec2 P1 = d.x * normal; Vec2 P2 = d.y * normal; vA -= invMassA * (P1 + P2); wA -=
+        invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
+
+        vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
+        */
 
         vA!!.x -= mA * (P1x + P2x)
         vA!!.y -= mA * (P1y + P2y)
@@ -850,13 +872,13 @@ class ContactSolver {
         cp2.normalImpulse = xy
 
         /*
-     * #if B2_DEBUG_SOLVER == 1 // Postconditions dv1 = vB + Cross(wB, cp1.rB) - vA -
-     * Cross(wA, cp1.rA);
-     *
-     * // Compute normal velocity vn1 = Dot(dv1, normal);
-     *
-     * assert(Abs(vn1 - cp1.velocityBias) < k_errorTol); #endif
-     */
+        #if B2_DEBUG_SOLVER == 1 // Postconditions dv1 = vB + Cross(wB, cp1.rB) - vA -
+        Cross(wA, cp1.rA);
+
+        // Compute normal velocity vn1 = Dot(dv1, normal);
+
+        assert(Abs(vn1 - cp1.velocityBias) < k_errorTol); #endif
+        */
         if (DEBUG_SOLVER) {
             // Postconditions
             val dv1 = vB!!.add(Vec2.cross(wB, cp1rB).subLocal(vA!!).subLocal(Vec2.cross(wA, cp1rA)))
@@ -867,7 +889,12 @@ class ContactSolver {
         }
     }
 
-    private fun solveVelocityConstraints2a(mA: Float, mB: Float, iA: Float, iB: Float, normal: Vec2, normalx: Float, normaly: Float, cp1: VelocityConstraintPoint, cp2: VelocityConstraintPoint, cp1rA: Vec2, cp1rB: Vec2, cp2rA: Vec2, cp2rB: Vec2, ax: Float, ay: Float, xx: Float, xy: Float) {
+    private fun solveVelocityConstraints2a(
+        mA: Float, mB: Float, iA: Float, iB: Float, normal: Vec2, normalx: Float, normaly: Float,
+        cp1: VelocityConstraintPoint, cp2: VelocityConstraintPoint,
+        cp1rA: Vec2, cp1rB: Vec2, cp2rA: Vec2, cp2rB: Vec2,
+        ax: Float, ay: Float, xx: Float, xy: Float
+    ) {
         val vn1: Float
         val vn2: Float// Get the incremental impulse
         // Vec2 d = x - a;
@@ -883,10 +910,10 @@ class ContactSolver {
         val P2y = dy * normaly
 
         /*
-     * vA -= invMassA * (P1 + P2); wA -= invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
-     *
-     * vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
-     */
+        vA -= invMassA * (P1 + P2); wA -= invIA * (Cross(cp1.rA, P1) + Cross(cp2.rA, P2));
+
+        vB += invMassB * (P1 + P2); wB += invIB * (Cross(cp1.rB, P1) + Cross(cp2.rB, P2));
+        */
 
         vA!!.x -= mA * (P1x + P2x)
         vA!!.y -= mA * (P1y + P2y)
@@ -901,14 +928,14 @@ class ContactSolver {
         cp2.normalImpulse = xy
 
         /*
-     * #if B2_DEBUG_SOLVER == 1 // Postconditions dv1 = vB + Cross(wB, cp1.rB) - vA -
-     * Cross(wA, cp1.rA); dv2 = vB + Cross(wB, cp2.rB) - vA - Cross(wA, cp2.rA);
-     *
-     * // Compute normal velocity vn1 = Dot(dv1, normal); vn2 = Dot(dv2, normal);
-     *
-     * assert(Abs(vn1 - cp1.velocityBias) < k_errorTol); assert(Abs(vn2 - cp2.velocityBias)
-     * < k_errorTol); #endif
-     */
+        #if B2_DEBUG_SOLVER == 1 // Postconditions dv1 = vB + Cross(wB, cp1.rB) - vA -
+        Cross(wA, cp1.rA); dv2 = vB + Cross(wB, cp2.rB) - vA - Cross(wA, cp2.rA);
+
+        // Compute normal velocity vn1 = Dot(dv1, normal); vn2 = Dot(dv2, normal);
+
+        assert(Abs(vn1 - cp1.velocityBias) < k_errorTol); assert(Abs(vn2 - cp2.velocityBias)
+        < k_errorTol); #endif
+        */
         if (DEBUG_SOLVER) {
             // Postconditions
             val dv1 = vB!!.add(Vec2.cross(wB, cp1rB).subLocal(vA!!).subLocal(Vec2.cross(wA, cp1rA)))
@@ -922,7 +949,11 @@ class ContactSolver {
         }
     }
 
-    private fun solveVelocityConstraints1(point: VelocityConstraintPoint, mA: Float, mB: Float, iA: Float, iB: Float, normalx: Float, normaly: Float) {
+    private fun solveVelocityConstraints1(
+        point: VelocityConstraintPoint,
+        mA: Float, mB: Float, iA: Float, iB: Float,
+        normalx: Float, normaly: Float
+    ) {
 
         // Relative velocity at contact
         // Vec2 dv = vB + Cross(wB, vcp.rB) - vA - Cross(wA, vcp.rA);
@@ -955,7 +986,11 @@ class ContactSolver {
         wB += iB * (point.rB.x * Py - point.rB.y * Px)
     }
 
-    private fun solveVelocityConstraints0(vc: ContactVelocityConstraint, mA: Float, mB: Float, iA: Float, iB: Float, pointCount: Int, tangentx: Float, tangenty: Float, friction: Float) {
+    private fun solveVelocityConstraints0(
+        vc: ContactVelocityConstraint,
+        mA: Float, mB: Float, iA: Float, iB: Float, pointCount: Int,
+        tangentx: Float, tangenty: Float, friction: Float
+    ) {
         // Solve tangent constraints
         for (j in 0 until pointCount) {
             val vcp = vc.points[j]
@@ -991,7 +1026,6 @@ class ContactSolver {
         }
     }
 
-
     class ContactSolverDef {
         var step: TimeStep? = null
         var contacts: Array<Contact>? = null
@@ -1001,12 +1035,12 @@ class ContactSolver {
     }
 
     companion object {
-
         val DEBUG_SOLVER = false
+
         val k_errorTol = 1e-3f
+
         /**
-         * For each solver, this is the initial number of constraints in the array, which expands as
-         * needed.
+         * For each solver, this is the initial number of constraints in the array, which expands as needed.
          */
         val INITIAL_NUM_CONSTRAINTS = 256
 
@@ -1016,5 +1050,3 @@ class ContactSolver {
         val k_maxConditionNumber = 100.0f
     }
 }
-
-

@@ -6,143 +6,112 @@ import org.jbox2d.common.Vec2
 
 class ParticleGroup {
 
-    internal var m_system: ParticleSystem? = null
+    internal var system: ParticleSystem? = null
 
-    var m_firstIndex: Int = 0
+    var firstIndex: Int = 0
+    internal var lastIndex: Int = 0
 
-    internal var m_lastIndex: Int = 0
+    var groupFlags: Int = 0
+    
+    internal var strength: Float = 1.0f
 
-    var m_groupFlags: Int = 0
+    internal var prev: ParticleGroup? = null
+    var next: ParticleGroup? = null
 
-    internal var m_strength: Float = 0.toFloat()
+    internal var timestamp: Int = -1
+    internal var _mass: Float = 0f
+    internal var _inertia: Float = 0f
 
-    internal var m_prev: ParticleGroup? = null
+    internal val _center = Vec2()
 
-    var m_next: ParticleGroup? = null
+    internal val _linearVelocity = Vec2()
+    internal var _angularVelocity: Float = 0f
 
-    fun getNext() = m_next
+    val transform = Transform().apply { setIdentity() }
 
+    internal var destroyAutomatically: Boolean = true
+    internal var toBeDestroyed: Boolean = false
+    internal var toBeSplit: Boolean = false
 
-    internal var m_timestamp: Int = 0
-
-    internal var m_mass: Float = 0.toFloat()
-
-    internal var m_inertia: Float = 0.toFloat()
-
-    internal val m_center = Vec2()
-
-    internal val m_linearVelocity = Vec2()
-
-    internal var m_angularVelocity: Float = 0.toFloat()
-
-    val m_transform = Transform()
-
-
-    internal var m_destroyAutomatically: Boolean = false
-
-    internal var m_toBeDestroyed: Boolean = false
-
-    internal var m_toBeSplit: Boolean = false
-
-
-    var m_userData: Any? = null
+    var userData: Any? = null
 
     val particleCount: Int
-        get() = m_lastIndex - m_firstIndex
+        get() = lastIndex - firstIndex
 
     val mass: Float
         get() {
             updateStatistics()
-            return m_mass
+            return _mass
         }
 
     val inertia: Float
         get() {
             updateStatistics()
-            return m_inertia
+            return _inertia
         }
 
     val center: Vec2
         get() {
             updateStatistics()
-            return m_center
+            return _center
         }
 
     val linearVelocity: Vec2
         get() {
             updateStatistics()
-            return m_linearVelocity
+            return _linearVelocity
         }
 
     val angularVelocity: Float
         get() {
             updateStatistics()
-            return m_angularVelocity
+            return _angularVelocity
         }
 
     val position: Vec2
-        get() = m_transform.p
+        get() = transform.p
 
-    val angleRadians: Float get() = m_transform.q.angleRadians
-    val angleDegrees: Float get() = m_transform.q.angleDegrees
-    val angle: Angle get() = m_transform.q.angle
-
-    init {
-        // m_system = null;
-        m_firstIndex = 0
-        m_lastIndex = 0
-        m_groupFlags = 0
-        m_strength = 1.0f
-
-        m_timestamp = -1
-        m_mass = 0f
-        m_inertia = 0f
-        m_angularVelocity = 0f
-        m_transform.setIdentity()
-
-        m_destroyAutomatically = true
-        m_toBeDestroyed = false
-        m_toBeSplit = false
-    }
-
+    val angleRadians: Float get() = transform.q.angleRadians
+    val angleDegrees: Float get() = transform.q.angleDegrees
+    val angle: Angle get() = transform.q.angle
 
     fun updateStatistics() {
-        if (m_timestamp != m_system!!.m_timestamp) {
-            val m = m_system!!.particleMass
-            m_mass = 0f
-            m_center.setZero()
-            m_linearVelocity.setZero()
-            for (i in m_firstIndex until m_lastIndex) {
-                m_mass += m
-                val pos = m_system!!.m_positionBuffer!!.data!![i]
-                m_center.x += m * pos.x
-                m_center.y += m * pos.y
-                val vel = m_system!!.m_velocityBuffer.data!![i]
-                m_linearVelocity.x += m * vel.x
-                m_linearVelocity.y += m * vel.y
+        if (timestamp != system!!.timestamp) {
+            val m = system!!.particleMass
+            _mass = 0f
+            _center.setZero()
+            _linearVelocity.setZero()
+            for (i in firstIndex until lastIndex) {
+                _mass += m
+                val pos = system!!.positionBuffer.data!![i]
+                _center.x += m * pos.x
+                _center.y += m * pos.y
+                val vel = system!!.velocityBuffer.data!![i]
+                _linearVelocity.x += m * vel.x
+                _linearVelocity.y += m * vel.y
             }
-            if (m_mass > 0) {
-                m_center.x *= 1 / m_mass
-                m_center.y *= 1 / m_mass
-                m_linearVelocity.x *= 1 / m_mass
-                m_linearVelocity.y *= 1 / m_mass
+            if (_mass > 0) {
+                _center.x *= 1 / _mass
+                _center.y *= 1 / _mass
+                _linearVelocity.x *= 1 / _mass
+                _linearVelocity.y *= 1 / _mass
             }
-            m_inertia = 0f
-            m_angularVelocity = 0f
-            for (i in m_firstIndex until m_lastIndex) {
-                val pos = m_system!!.m_positionBuffer.data!![i]
-                val vel = m_system!!.m_velocityBuffer.data!![i]
-                val px = pos.x - m_center.x
-                val py = pos.y - m_center.y
-                val vx = vel.x - m_linearVelocity.x
-                val vy = vel.y - m_linearVelocity.y
-                m_inertia += m * (px * px + py * py)
-                m_angularVelocity += m * (px * vy - py * vx)
+            _inertia = 0f
+            _angularVelocity = 0f
+            for (i in firstIndex until lastIndex) {
+                val pos = system!!.positionBuffer.data!![i]
+                val vel = system!!.velocityBuffer.data!![i]
+                val px = pos.x - _center.x
+                val py = pos.y - _center.y
+                val vx = vel.x - _linearVelocity.x
+                val vy = vel.y - _linearVelocity.y
+                _inertia += m * (px * px + py * py)
+                _angularVelocity += m * (px * vy - py * vx)
             }
-            if (m_inertia > 0) {
-                m_angularVelocity *= 1 / m_inertia
+            if (_inertia > 0) {
+                _angularVelocity *= 1 / _inertia
             }
-            m_timestamp = m_system!!.m_timestamp
+            timestamp = system!!.timestamp
         }
     }
 }
