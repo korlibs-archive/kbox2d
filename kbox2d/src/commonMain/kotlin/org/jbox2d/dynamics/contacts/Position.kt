@@ -29,5 +29,5 @@ class Position {
 
     val c = Vec2()
 
-    var a: Float = 0.toFloat()
+    var a: Float = 0f
 }

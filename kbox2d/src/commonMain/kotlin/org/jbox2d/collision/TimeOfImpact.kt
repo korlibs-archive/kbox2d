@@ -40,8 +40,10 @@ import org.jbox2d.pooling.IWorldPool
  *
  * @author daniel
  */
-class TimeOfImpact(private val pool: IWorldPool, private val stats: TimeOfImpact.Stats = TimeOfImpact.Stats()) {
-
+class TimeOfImpact(
+    private val pool: IWorldPool,
+    private val stats: Stats = Stats()
+) {
 
     // djm pooling
     private val cache = SimplexCache()
@@ -62,16 +64,14 @@ class TimeOfImpact(private val pool: IWorldPool, private val stats: TimeOfImpact
     class TOIInput {
 
         val proxyA = DistanceProxy()
-
         val proxyB = DistanceProxy()
 
         val sweepA = Sweep()
-
         val sweepB = Sweep()
+
         /**
          * defines sweep interval [0, tMax]
          */
-
         var tMax: Float = 0.toFloat()
     }
 
@@ -93,12 +93,9 @@ class TimeOfImpact(private val pool: IWorldPool, private val stats: TimeOfImpact
 
     /**
      * Compute the upper bound on time before two shapes penetrate. Time is represented as a fraction
-     * between [0,tMax]. This uses a swept separating axis and may miss some intermediate,
+     * between [0, tMax]. This uses a swept separating axis and may miss some intermediate,
      * non-tunneling collision. If you change the time interval, you should call this function again.
      * Note: use Distance to compute the contact point and normal at the time of impact.
-     *
-     * @param output
-     * @param input
      */
     fun timeOfImpact(output: TOIOutput, input: TOIInput) {
         // CCD via the local separating axis method. This seeks progression
@@ -122,7 +119,7 @@ class TimeOfImpact(private val pool: IWorldPool, private val stats: TimeOfImpact
 
         val tMax = input.tMax
 
-        val totalRadius = proxyA.m_radius + proxyB.m_radius
+        val totalRadius = proxyA.radius + proxyB.radius
         // djm: whats with all these constants?
         val target = MathUtils.max(Settings.linearSlop, totalRadius - 3.0f * Settings.linearSlop)
         val tolerance = 0.25f * Settings.linearSlop
@@ -306,21 +303,19 @@ class TimeOfImpact(private val pool: IWorldPool, private val stats: TimeOfImpact
     }
 }
 
-
 internal enum class Type {
     POINTS, FACE_A, FACE_B
 }
 
-
 internal class SeparationFunction {
 
-    lateinit var m_proxyA: DistanceProxy
-    lateinit var m_proxyB: DistanceProxy
-    lateinit var m_type: Type
-    val m_localPoint = Vec2()
-    val m_axis = Vec2()
-    lateinit var m_sweepA: Sweep
-    lateinit var m_sweepB: Sweep
+    lateinit var proxyA: DistanceProxy
+    lateinit var proxyB: DistanceProxy
+    lateinit var type: Type
+    val localPoint = Vec2()
+    val axis = Vec2()
+    lateinit var sweepA: Sweep
+    lateinit var sweepB: Sweep
 
     // djm pooling
     private val localPointA = Vec2()
@@ -341,52 +336,54 @@ internal class SeparationFunction {
 
     // TODO_ERIN might not need to return the separation
 
-    fun initialize(cache: SimplexCache, proxyA: DistanceProxy, sweepA: Sweep,
-                   proxyB: DistanceProxy, sweepB: Sweep, t1: Float): Float {
-        m_proxyA = proxyA
-        m_proxyB = proxyB
+    fun initialize(
+        cache: SimplexCache, proxyA: DistanceProxy, sweepA: Sweep,
+        proxyB: DistanceProxy, sweepB: Sweep, t1: Float
+    ): Float {
+        this.proxyA = proxyA
+        this.proxyB = proxyB
         val count = cache.count
-        assert(0 < count && count < 3)
+        assert(count in 1..2)
 
-        m_sweepA = sweepA
-        m_sweepB = sweepB
+        this.sweepA = sweepA
+        this.sweepB = sweepB
 
-        m_sweepA.getTransform(xfa, t1)
-        m_sweepB.getTransform(xfb, t1)
+        this.sweepA.getTransform(xfa, t1)
+        this.sweepB.getTransform(xfb, t1)
 
         // log.debug("initializing separation.\n" +
         // "cache: "+cache.count+"-"+cache.metric+"-"+cache.indexA+"-"+cache.indexB+"\n"
         // "distance: "+proxyA.
 
         if (count == 1) {
-            m_type = Type.POINTS
+            type = Type.POINTS
             /*
-       * Vec2 localPointA = m_proxyA.GetVertex(cache.indexA[0]); Vec2 localPointB =
-       * m_proxyB.GetVertex(cache.indexB[0]); Vec2 pointA = Mul(transformA, localPointA); Vec2
-       * pointB = Mul(transformB, localPointB); m_axis = pointB - pointA; m_axis.Normalize();
-       */
-            localPointA.set(m_proxyA.getVertex(cache.indexA[0]))
-            localPointB.set(m_proxyB.getVertex(cache.indexB[0]))
+            Vec2 localPointA = m_proxyA.GetVertex(cache.indexA[0]); Vec2 localPointB =
+            m_proxyB.GetVertex(cache.indexB[0]); Vec2 pointA = Mul(transformA, localPointA); Vec2
+            pointB = Mul(transformB, localPointB); m_axis = pointB - pointA; m_axis.Normalize();
+            */
+            localPointA.set(this.proxyA.getVertex(cache.indexA[0]))
+            localPointB.set(this.proxyB.getVertex(cache.indexB[0]))
             Transform.mulToOutUnsafe(xfa, localPointA, pointA)
             Transform.mulToOutUnsafe(xfb, localPointB, pointB)
-            m_axis.set(pointB).subLocal(pointA)
-            val s = m_axis.normalize()
+            axis.set(pointB).subLocal(pointA)
+            val s = axis.normalize()
             return s
         } else if (cache.indexA[0] == cache.indexA[1]) {
             // Two points on B and one on A.
-            m_type = Type.FACE_B
+            type = Type.FACE_B
 
-            localPointB1.set(m_proxyB.getVertex(cache.indexB[0]))
-            localPointB2.set(m_proxyB.getVertex(cache.indexB[1]))
+            localPointB1.set(this.proxyB.getVertex(cache.indexB[0]))
+            localPointB2.set(this.proxyB.getVertex(cache.indexB[1]))
 
             temp.set(localPointB2).subLocal(localPointB1)
-            Vec2.crossToOutUnsafe(temp, 1f, m_axis)
-            m_axis.normalize()
+            Vec2.crossToOutUnsafe(temp, 1f, axis)
+            axis.normalize()
 
-            Rot.mulToOutUnsafe(xfb.q, m_axis, normal)
+            Rot.mulToOutUnsafe(xfb.q, axis, normal)
 
-            m_localPoint.set(localPointB1).addLocal(localPointB2).mulLocal(.5f)
-            Transform.mulToOutUnsafe(xfb, m_localPoint, pointB)
+            localPoint.set(localPointB1).addLocal(localPointB2).mulLocal(.5f)
+            Transform.mulToOutUnsafe(xfb, localPoint, pointB)
 
             localPointA.set(proxyA.getVertex(cache.indexA[0]))
             Transform.mulToOutUnsafe(xfa, localPointA, pointA)
@@ -394,33 +391,33 @@ internal class SeparationFunction {
             temp.set(pointA).subLocal(pointB)
             var s = Vec2.dot(temp, normal)
             if (s < 0.0f) {
-                m_axis.negateLocal()
+                axis.negateLocal()
                 s = -s
             }
             return s
         } else {
             // Two points on A and one or two points on B.
-            m_type = Type.FACE_A
+            type = Type.FACE_A
 
-            localPointA1.set(m_proxyA.getVertex(cache.indexA[0]))
-            localPointA2.set(m_proxyA.getVertex(cache.indexA[1]))
+            localPointA1.set(this.proxyA.getVertex(cache.indexA[0]))
+            localPointA2.set(this.proxyA.getVertex(cache.indexA[1]))
 
             temp.set(localPointA2).subLocal(localPointA1)
-            Vec2.crossToOutUnsafe(temp, 1.0f, m_axis)
-            m_axis.normalize()
+            Vec2.crossToOutUnsafe(temp, 1.0f, axis)
+            axis.normalize()
 
-            Rot.mulToOutUnsafe(xfa.q, m_axis, normal)
+            Rot.mulToOutUnsafe(xfa.q, axis, normal)
 
-            m_localPoint.set(localPointA1).addLocal(localPointA2).mulLocal(.5f)
-            Transform.mulToOutUnsafe(xfa, m_localPoint, pointA)
+            localPoint.set(localPointA1).addLocal(localPointA2).mulLocal(.5f)
+            Transform.mulToOutUnsafe(xfa, localPoint, pointA)
 
-            localPointB.set(m_proxyB.getVertex(cache.indexB[0]))
+            localPointB.set(this.proxyB.getVertex(cache.indexB[0]))
             Transform.mulToOutUnsafe(xfb, localPointB, pointB)
 
             temp.set(pointB).subLocal(pointA)
             var s = Vec2.dot(temp, normal)
             if (s < 0.0f) {
-                m_axis.negateLocal()
+                axis.negateLocal()
                 s = -s
             }
             return s
@@ -430,54 +427,54 @@ internal class SeparationFunction {
     // float FindMinSeparation(int* indexA, int* indexB, float t) const
     fun findMinSeparation(indexes: IntArray, t: Float): Float {
 
-        m_sweepA.getTransform(xfa, t)
-        m_sweepB.getTransform(xfb, t)
+        sweepA.getTransform(xfa, t)
+        sweepB.getTransform(xfb, t)
 
-        when (m_type) {
+        when (type) {
             Type.POINTS -> {
-                Rot.mulTransUnsafe(xfa.q, m_axis, axisA)
-                Rot.mulTransUnsafe(xfb.q, m_axis.negateLocal(), axisB)
-                m_axis.negateLocal()
+                Rot.mulTransUnsafe(xfa.q, axis, axisA)
+                Rot.mulTransUnsafe(xfb.q, axis.negateLocal(), axisB)
+                axis.negateLocal()
 
-                indexes[0] = m_proxyA.getSupport(axisA)
-                indexes[1] = m_proxyB.getSupport(axisB)
+                indexes[0] = proxyA.getSupport(axisA)
+                indexes[1] = proxyB.getSupport(axisB)
 
-                localPointA.set(m_proxyA.getVertex(indexes[0]))
-                localPointB.set(m_proxyB.getVertex(indexes[1]))
+                localPointA.set(proxyA.getVertex(indexes[0]))
+                localPointB.set(proxyB.getVertex(indexes[1]))
 
                 Transform.mulToOutUnsafe(xfa, localPointA, pointA)
                 Transform.mulToOutUnsafe(xfb, localPointB, pointB)
 
-                val separation = Vec2.dot(pointB.subLocal(pointA), m_axis)
+                val separation = Vec2.dot(pointB.subLocal(pointA), axis)
                 return separation
             }
             Type.FACE_A -> {
-                Rot.mulToOutUnsafe(xfa.q, m_axis, normal)
-                Transform.mulToOutUnsafe(xfa, m_localPoint, pointA)
+                Rot.mulToOutUnsafe(xfa.q, axis, normal)
+                Transform.mulToOutUnsafe(xfa, localPoint, pointA)
 
                 Rot.mulTransUnsafe(xfb.q, normal.negateLocal(), axisB)
                 normal.negateLocal()
 
                 indexes[0] = -1
-                indexes[1] = m_proxyB.getSupport(axisB)
+                indexes[1] = proxyB.getSupport(axisB)
 
-                localPointB.set(m_proxyB.getVertex(indexes[1]))
+                localPointB.set(proxyB.getVertex(indexes[1]))
                 Transform.mulToOutUnsafe(xfb, localPointB, pointB)
 
                 val separation = Vec2.dot(pointB.subLocal(pointA), normal)
                 return separation
             }
             Type.FACE_B -> {
-                Rot.mulToOutUnsafe(xfb.q, m_axis, normal)
-                Transform.mulToOutUnsafe(xfb, m_localPoint, pointB)
+                Rot.mulToOutUnsafe(xfb.q, axis, normal)
+                Transform.mulToOutUnsafe(xfb, localPoint, pointB)
 
                 Rot.mulTransUnsafe(xfa.q, normal.negateLocal(), axisA)
                 normal.negateLocal()
 
                 indexes[1] = -1
-                indexes[0] = m_proxyA.getSupport(axisA)
+                indexes[0] = proxyA.getSupport(axisA)
 
-                localPointA.set(m_proxyA.getVertex(indexes[0]))
+                localPointA.set(proxyA.getVertex(indexes[0]))
                 Transform.mulToOutUnsafe(xfa, localPointA, pointA)
 
                 val separation = Vec2.dot(pointA.subLocal(pointB), normal)
@@ -493,34 +490,34 @@ internal class SeparationFunction {
     }
 
     fun evaluate(indexA: Int, indexB: Int, t: Float): Float {
-        m_sweepA.getTransform(xfa, t)
-        m_sweepB.getTransform(xfb, t)
+        sweepA.getTransform(xfa, t)
+        sweepB.getTransform(xfb, t)
 
-        when (m_type) {
+        when (type) {
             Type.POINTS -> {
-                localPointA.set(m_proxyA.getVertex(indexA))
-                localPointB.set(m_proxyB.getVertex(indexB))
+                localPointA.set(proxyA.getVertex(indexA))
+                localPointB.set(proxyB.getVertex(indexB))
 
                 Transform.mulToOutUnsafe(xfa, localPointA, pointA)
                 Transform.mulToOutUnsafe(xfb, localPointB, pointB)
 
-                val separation = Vec2.dot(pointB.subLocal(pointA), m_axis)
+                val separation = Vec2.dot(pointB.subLocal(pointA), axis)
                 return separation
             }
             Type.FACE_A -> {
-                Rot.mulToOutUnsafe(xfa.q, m_axis, normal)
-                Transform.mulToOutUnsafe(xfa, m_localPoint, pointA)
+                Rot.mulToOutUnsafe(xfa.q, axis, normal)
+                Transform.mulToOutUnsafe(xfa, localPoint, pointA)
 
-                localPointB.set(m_proxyB.getVertex(indexB))
+                localPointB.set(proxyB.getVertex(indexB))
                 Transform.mulToOutUnsafe(xfb, localPointB, pointB)
                 val separation = Vec2.dot(pointB.subLocal(pointA), normal)
                 return separation
             }
             Type.FACE_B -> {
-                Rot.mulToOutUnsafe(xfb.q, m_axis, normal)
-                Transform.mulToOutUnsafe(xfb, m_localPoint, pointB)
+                Rot.mulToOutUnsafe(xfb.q, axis, normal)
+                Transform.mulToOutUnsafe(xfb, localPoint, pointB)
 
-                localPointA.set(m_proxyA.getVertex(indexA))
+                localPointA.set(proxyA.getVertex(indexA))
                 Transform.mulToOutUnsafe(xfa, localPointA, pointA)
 
                 val separation = Vec2.dot(pointA.subLocal(pointB), normal)

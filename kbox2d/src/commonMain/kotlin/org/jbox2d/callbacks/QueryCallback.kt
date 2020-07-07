@@ -30,15 +30,14 @@ import org.jbox2d.dynamics.Fixture
 import org.jbox2d.dynamics.World
 
 /**
- * Callback class for AABB queries.
+ * Callback class for [AABB] queries.
  * See [World.queryAABB].
  * @author Daniel Murphy
  */
 interface QueryCallback {
 
     /**
-     * Called for each fixture found in the query AABB.
-     * @param fixture
+     * Called for each fixture found in the query [AABB].
      * @return false to terminate the query.
      */
     fun reportFixture(fixture: Fixture): Boolean

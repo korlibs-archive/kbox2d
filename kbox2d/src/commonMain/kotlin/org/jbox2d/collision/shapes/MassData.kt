@@ -48,18 +48,17 @@ package org.jbox2d.collision.shapes
 
 import org.jbox2d.common.Vec2
 
-// Updated to rev 100
-
 /** This holds the mass data computed for a shape.  */
 class MassData {
+
     /** The mass of the shape, usually in kilograms.  */
-    var mass: Float = 0.toFloat()
+    var mass: Float = 0f
+
     /** The position of the shape's centroid relative to the shape's origin.  */
-
     val center: Vec2
-    /** The rotational inertia of the shape about the local origin.  */
 
-    var I: Float = 0.toFloat()
+    /** The rotational inertia of the shape about the local origin.  */
+    var I: Float = 0f
 
     /**
      * Blank mass data
@@ -71,10 +70,7 @@ class MassData {
     }
 
     /**
-     * Copies from the given mass data
-     *
-     * @param md
-     * mass data to copy from
+     * Copies from the given mass data [md]
      */
     constructor(md: MassData) {
         mass = md.mass

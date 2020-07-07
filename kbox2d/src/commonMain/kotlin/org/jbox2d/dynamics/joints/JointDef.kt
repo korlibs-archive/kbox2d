@@ -31,33 +31,25 @@ import org.jbox2d.userdata.*
  * @author Daniel Murphy
  */
 open class JointDef(
-        /**
-         * The joint type is set automatically for concrete joint types.
-         */
 
-        var type: JointType) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+    /**
+     * The joint type is set automatically for concrete joint types.
+     */
+    var type: JointType) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
     /**
      * Use this to attach application specific data to your joints.
      */
-
     var userData: Any? = null
 
-    /**
-     * The first attached body.
-     */
-
+    /** The first attached body. */
     var bodyA: Body? = null
 
-    /**
-     * The second attached body.
-     */
-
+    /** The second attached body. */
     var bodyB: Body? = null
 
     /**
      * Set this flag to true if the attached bodies should collide.
      */
-
     var collideConnected: Boolean = false
 }

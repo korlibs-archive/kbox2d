@@ -27,20 +27,16 @@ import org.jbox2d.collision.*
 import org.jbox2d.userdata.*
 
 class DynamicTreeNode(internal val id: Int) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+
     /**
      * Enlarged AABB
      */
-
     val aabb = AABB()
-
 
     var userData: Any? = Unit
 
-
     internal var parent: DynamicTreeNode? = null
-
     internal var child1: DynamicTreeNode? = null
-
     internal var child2: DynamicTreeNode? = null
 
     internal var height: Int = 0

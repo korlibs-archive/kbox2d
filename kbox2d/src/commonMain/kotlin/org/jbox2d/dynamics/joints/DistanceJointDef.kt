@@ -43,13 +43,10 @@
  * misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
  */
-
 package org.jbox2d.dynamics.joints
 
 import org.jbox2d.common.Vec2
 import org.jbox2d.dynamics.Body
-
-//Updated to rev 56->130->142 of b2DistanceJoint.cpp/.h
 
 /**
  * Distance joint definition. This requires defining an anchor point on both bodies and the non-zero
@@ -59,28 +56,20 @@ import org.jbox2d.dynamics.Body
  * @warning Do not use a zero or short length.
  */
 class DistanceJointDef : JointDef(JointType.DISTANCE) {
-    /** The local anchor point relative to body1's origin.  */
 
+    /** The local anchor point relative to body1's origin.  */
     val localAnchorA: Vec2 = Vec2(0.0f, 0.0f)
 
     /** The local anchor point relative to body2's origin.  */
-
     val localAnchorB: Vec2 = Vec2(0.0f, 0.0f)
 
     /** The equilibrium length between the anchor points.  */
-
     var length: Float = 1f
 
-    /**
-     * The mass-spring-damper frequency in Hertz.
-     */
-
+    /** The mass-spring-damper frequency in Hertz. */
     var frequencyHz: Float = 0f
 
-    /**
-     * The damping ratio. 0 = no damping, 1 = critical damping.
-     */
-
+    /** The damping ratio. 0 = no damping, 1 = critical damping. */
     var dampingRatio: Float = 0f
 
     /**

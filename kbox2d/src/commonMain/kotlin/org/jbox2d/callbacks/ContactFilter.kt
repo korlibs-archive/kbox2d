@@ -26,10 +26,8 @@
  */
 package org.jbox2d.callbacks
 
-import org.jbox2d.dynamics.Filter
 import org.jbox2d.dynamics.Fixture
 
-// updated to rev 100
 /**
  * Implement this class to provide collision filtering. In other words, you can implement
  * this class if you want finer control over contact creation.
@@ -40,9 +38,6 @@ class ContactFilter {
     /**
      * Return true if contact calculations should be performed between these two shapes.
      * @warning for performance reasons this is only called when the AABBs begin to overlap.
-     * @param fixtureA
-     * @param fixtureB
-     * @return
      */
     fun shouldCollide(fixtureA: Fixture, fixtureB: Fixture): Boolean {
         val filterA = fixtureA.filterData

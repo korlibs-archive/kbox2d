@@ -30,18 +30,14 @@ import org.jbox2d.common.Vec2
  * @author Daniel
  */
 class DistanceOutput {
+
     /** Closest point on shapeA  */
-
     val pointA = Vec2()
-
     /** Closest point on shapeB  */
-
     val pointB = Vec2()
-
 
     var distance: Float = 0.toFloat()
 
     /** number of gjk iterations used  */
-
     var iterations: Int = 0
 }

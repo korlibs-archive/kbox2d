@@ -11,9 +11,7 @@ interface ParticleDestructionListener {
 
     /**
      * Called when a particle is about to be destroyed. The index can be used in conjunction with
-     * [World.getParticleUserDataBuffer] to determine which particle has been destroyed.
-     *
-     * @param index
+     * [World.particleUserDataBuffer] to determine which particle has been destroyed.
      */
     fun sayGoodbye(index: Int)
 }

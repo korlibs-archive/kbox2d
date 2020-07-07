@@ -3,18 +3,17 @@ package org.jbox2d.common
 import org.jbox2d.internal.*
 
 object BufferUtils {
-    /** Reallocate a buffer.  */
 
+    /** Reallocate a buffer. */
     fun <T : Any> reallocateBuffer(
-        klass: () -> T, oldBuffer: Array<T>?, oldCapacity: Int,
-        newCapacity: Int
+        generate: () -> T, oldBuffer: Array<T>?,
+        oldCapacity: Int, newCapacity: Int
     ): Array<T> {
         assert(newCapacity > oldCapacity)
-        return Array<Any>(newCapacity) { if (oldBuffer != null && it < oldCapacity) oldBuffer[it] else klass() } as Array<T>
+        return Array<Any>(newCapacity) { if (oldBuffer != null && it < oldCapacity) oldBuffer[it] else generate() } as Array<T>
     }
 
-    /** Reallocate a buffer.  */
-
+    /** Reallocate a buffer. */
     fun reallocateBuffer(oldBuffer: IntArray?, oldCapacity: Int, newCapacity: Int): IntArray {
         assert(newCapacity > oldCapacity)
         val newBuffer = IntArray(newCapacity)
@@ -24,8 +23,7 @@ object BufferUtils {
         return newBuffer
     }
 
-    /** Reallocate a buffer.  */
-
+    /** Reallocate a buffer. */
     fun reallocateBuffer(oldBuffer: FloatArray?, oldCapacity: Int, newCapacity: Int): FloatArray {
         assert(newCapacity > oldCapacity)
         val newBuffer = FloatArray(newCapacity)
@@ -39,7 +37,6 @@ object BufferUtils {
      * Reallocate a buffer. A 'deferred' buffer is reallocated only if it is not NULL. If
      * 'userSuppliedCapacity' is not zero, buffer is user supplied and must be kept.
      */
-
     fun <T : Any> reallocateBuffer(
         klass: () -> T, buffer: Array<T>?, userSuppliedCapacity: Int,
         oldCapacity: Int, newCapacity: Int, deferred: Boolean
@@ -57,10 +54,9 @@ object BufferUtils {
      * Reallocate an int buffer. A 'deferred' buffer is reallocated only if it is not NULL. If
      * 'userSuppliedCapacity' is not zero, buffer is user supplied and must be kept.
      */
-
     fun reallocateBuffer(
-        buffer: IntArray?, userSuppliedCapacity: Int, oldCapacity: Int,
-        newCapacity: Int, deferred: Boolean
+        buffer: IntArray?, userSuppliedCapacity: Int,
+        oldCapacity: Int, newCapacity: Int, deferred: Boolean
     ): IntArray {
         var buffer = buffer
         assert(newCapacity > oldCapacity)
@@ -75,10 +71,9 @@ object BufferUtils {
      * Reallocate a float buffer. A 'deferred' buffer is reallocated only if it is not NULL. If
      * 'userSuppliedCapacity' is not zero, buffer is user supplied and must be kept.
      */
-
     fun reallocateBuffer(
-        buffer: FloatArray?, userSuppliedCapacity: Int, oldCapacity: Int,
-        newCapacity: Int, deferred: Boolean
+        buffer: FloatArray?, userSuppliedCapacity: Int,
+        oldCapacity: Int, newCapacity: Int, deferred: Boolean
     ): FloatArray {
         var buffer = buffer
         assert(newCapacity > oldCapacity)
@@ -90,11 +85,10 @@ object BufferUtils {
     }
 
     /** Rotate an array, see std::rotate  */
-
     fun <T> rotate(ray: Array<T>, first: Int, new_first: Int, last: Int) {
         var first = first
-        var new_first = new_first
-        var next = new_first
+        var newFirst = new_first
+        var next = newFirst
         while (next != first) {
             val temp = ray[first]
             ray[first] = ray[next]
@@ -102,19 +96,18 @@ object BufferUtils {
             first++
             next++
             if (next == last) {
-                next = new_first
-            } else if (first == new_first) {
-                new_first = next
+                next = newFirst
+            } else if (first == newFirst) {
+                newFirst = next
             }
         }
     }
 
     /** Rotate an array, see std::rotate  */
-
     fun rotate(ray: IntArray, first: Int, new_first: Int, last: Int) {
         var first = first
-        var new_first = new_first
-        var next = new_first
+        var newFirst = new_first
+        var next = newFirst
         while (next != first) {
             val temp = ray[first]
             ray[first] = ray[next]
@@ -122,19 +115,18 @@ object BufferUtils {
             first++
             next++
             if (next == last) {
-                next = new_first
-            } else if (first == new_first) {
-                new_first = next
+                next = newFirst
+            } else if (first == newFirst) {
+                newFirst = next
             }
         }
     }
 
     /** Rotate an array, see std::rotate  */
-
     fun rotate(ray: FloatArray, first: Int, new_first: Int, last: Int) {
         var first = first
-        var new_first = new_first
-        var next = new_first
+        var newFirst = new_first
+        var next = newFirst
         while (next != first) {
             val temp = ray[first]
             ray[first] = ray[next]
@@ -142,9 +134,9 @@ object BufferUtils {
             first++
             next++
             if (next == last) {
-                next = new_first
-            } else if (first == new_first) {
-                new_first = next
+                next = newFirst
+            } else if (first == newFirst) {
+                newFirst = next
             }
         }
     }

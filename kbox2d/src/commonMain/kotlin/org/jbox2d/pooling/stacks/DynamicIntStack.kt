@@ -27,14 +27,9 @@ import org.jbox2d.internal.*
 
 class DynamicIntStack(private var size: Int) {
 
-    private var stack: IntArray? = null
+    private var stack = IntArray(size)
     var count: Int = 0
         private set
-
-    init {
-        stack = IntArray(size)
-        count = 0
-    }
 
     fun reset() {
         count = 0
@@ -42,16 +37,16 @@ class DynamicIntStack(private var size: Int) {
 
     fun pop(): Int {
         assert(count > 0)
-        return stack!![--count]
+        return stack[--count]
     }
 
     fun push(i: Int) {
         if (count == size) {
             val old = stack
             stack = IntArray(size * 2)
-            size = stack!!.size
-            arraycopy(old!!, 0, stack!!, 0, old.size)
+            size = stack.size
+            arraycopy(old, 0, stack, 0, old.size)
         }
-        stack!![count++] = i
+        stack[count++] = i
     }
 }

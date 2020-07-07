@@ -31,144 +31,87 @@ import org.jbox2d.internal.*
 import org.jbox2d.pooling.*
 import org.jbox2d.userdata.*
 
-// updated to rev 100
 /**
  * The base joint class. Joints are used to constrain two bodies together in various fashions. Some
  * joints also feature limits and motors.
  *
  * @author Daniel Murphy
  */
-abstract class Joint
-// Cache here per time step to reduce cache misses.
-// final Vec2 m_localCenterA, m_localCenterB;
-// float m_invMassA, m_invIA;
-// float m_invMassB, m_invIB;
+abstract class Joint protected constructor(
+    protected var pool: IWorldPool,
+    def: JointDef
+) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
-protected constructor( protected var pool: IWorldPool, def: JointDef) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+    init {
+        assert(def.bodyA !== def.bodyB)
+    }
 
     /**
-     * get the type of the concrete joint.
-     *
-     * @return
+     * Type of the concrete joint.
      */
+    val type: JointType = def.type
 
-    val _type: JointType
+    var prev: Joint? = null
+    var next: Joint? = null
 
-    fun getType() = _type
+    var edgeA: JointEdge = JointEdge().apply {
+        joint = null
+        other = null
+        prev = null
+        next = null
+    }
+    var edgeB: JointEdge = JointEdge().apply {
+        joint = null
+        other = null
+        prev = null
+        next = null
+    }
 
-
-    var m_prev: Joint? = null
     /**
-     * get the next joint the world joint list.
+     * The first body attached to this joint.
      */
+    var bodyA: Body? = def.bodyA
 
-    var m_next: Joint? = null
-
-    fun getNext() = m_next
-
-
-    var m_edgeA: JointEdge
-
-    var m_edgeB: JointEdge
     /**
-     * get the first body attached to this joint.
+     * The second body attached to this joint.
      */
+    var bodyB: Body? = def.bodyB
 
-    var m_bodyA: Body? = null
-    fun getBodyA() = m_bodyA
-    /**
-     * get the second body attached to this joint.
-     *
-     * @return
-     */
+    var islandFlag: Boolean = false
 
-    var m_bodyB: Body? = null
-    fun getBodyB() = m_bodyB
-
-
-    var m_islandFlag: Boolean = false
     /**
      * Get collide connected. Note: modifying the collide connect flag won't work correctly because
      * the flag is only checked when fixture AABBs begin to overlap.
      */
+    val collideConnected: Boolean = def.collideConnected
 
-    val _collideConnected: Boolean
-
-    fun getCollideConnected() = _collideConnected
-
-    /**
-     * get the user data pointer.
-     */
-    /**
-     * Set the user data pointer.
-     */
-
-    var userData: Any? = null
+    var userData: Any? = def.userData
 
     /**
-     * Short-cut function to determine if either body is inactive.
-     *
-     * @return
+     * Determine if both bodies are active.
      */
     val isActive: Boolean
-        get() = m_bodyA!!.isActive && m_bodyB!!.isActive
-
-    init {
-        assert(def.bodyA !== def.bodyB)
-        _type = def.type
-        m_prev = null
-        m_next = null
-        m_bodyA = def.bodyA
-        m_bodyB = def.bodyB
-        _collideConnected = def.collideConnected
-        m_islandFlag = false
-        userData = def.userData
-
-        m_edgeA = JointEdge()
-        m_edgeA.joint = null
-        m_edgeA.other = null
-        m_edgeA.prev = null
-        m_edgeA.next = null
-
-        m_edgeB = JointEdge()
-        m_edgeB.joint = null
-        m_edgeB.other = null
-        m_edgeB.prev = null
-        m_edgeB.next = null
-
-        // m_localCenterA = new Vec2();
-        // m_localCenterB = new Vec2();
-    }
+        get() = bodyA!!.isActive && bodyB!!.isActive
 
     /**
-     * get the anchor point on bodyA in world coordinates.
-     *
-     * @return
+     * get the anchor point on [bodyA] in world coordinates.
      */
     abstract fun getAnchorA(out: Vec2)
 
     /**
-     * get the anchor point on bodyB in world coordinates.
-     *
-     * @return
+     * get the anchor point on [bodyB] in world coordinates.
      */
     abstract fun getAnchorB(out: Vec2)
 
     /**
      * get the reaction force on body2 at the joint anchor in Newtons.
-     *
-     * @param inv_dt
-     * @return
      */
-    abstract fun getReactionForce(inv_dt: Float, out: Vec2)
+    abstract fun getReactionForce(invDt: Float, out: Vec2)
 
     /**
      * get the reaction torque on body2 in N*m.
-     *
-     * @param inv_dt
-     * @return
      */
-    abstract fun getReactionTorque(inv_dt: Float): Float
+    abstract fun getReactionTorque(invDt: Float): Float
 
     /** Internal  */
     abstract fun initVelocityConstraints(data: SolverData)
@@ -188,26 +131,21 @@ protected constructor( protected var pool: IWorldPool, def: JointDef) : Box2dTyp
 
     companion object {
 
-        fun create(world: World, def: JointDef): Joint? {
-            // Joint joint = null;
-            when (def.type) {
-                JointType.MOUSE -> return MouseJoint(world.pool, def as MouseJointDef)
-                JointType.DISTANCE -> return DistanceJoint(world.pool, def as DistanceJointDef)
-                JointType.PRISMATIC -> return PrismaticJoint(world.pool, def as PrismaticJointDef)
-                JointType.REVOLUTE -> return RevoluteJoint(world.pool, def as RevoluteJointDef)
-                JointType.WELD -> return WeldJoint(world.pool, def as WeldJointDef)
-                JointType.FRICTION -> return FrictionJoint(world.pool, def as FrictionJointDef)
-                JointType.WHEEL -> return WheelJoint(world.pool, def as WheelJointDef)
-                JointType.GEAR -> return GearJoint(world.pool, def as GearJointDef)
-                JointType.PULLEY -> return PulleyJoint(world.pool, def as PulleyJointDef)
-                JointType.CONSTANT_VOLUME -> return ConstantVolumeJoint(world, def as ConstantVolumeJointDef)
-                JointType.ROPE -> return RopeJoint(world.pool, def as RopeJointDef)
-                JointType.MOTOR -> return MotorJoint(world.pool, def as MotorJointDef)
-                JointType.UNKNOWN -> return null
-                else -> return null
-            }
+        fun create(world: World, def: JointDef): Joint? = when (def.type) {
+            JointType.MOUSE -> MouseJoint(world.pool, def as MouseJointDef)
+            JointType.DISTANCE -> DistanceJoint(world.pool, def as DistanceJointDef)
+            JointType.PRISMATIC -> PrismaticJoint(world.pool, def as PrismaticJointDef)
+            JointType.REVOLUTE -> RevoluteJoint(world.pool, def as RevoluteJointDef)
+            JointType.WELD -> WeldJoint(world.pool, def as WeldJointDef)
+            JointType.FRICTION -> FrictionJoint(world.pool, def as FrictionJointDef)
+            JointType.WHEEL -> WheelJoint(world.pool, def as WheelJointDef)
+            JointType.GEAR -> GearJoint(world.pool, def as GearJointDef)
+            JointType.PULLEY -> PulleyJoint(world.pool, def as PulleyJointDef)
+            JointType.CONSTANT_VOLUME -> ConstantVolumeJoint(world, def as ConstantVolumeJointDef)
+            JointType.ROPE -> RopeJoint(world.pool, def as RopeJointDef)
+            JointType.MOTOR -> MotorJoint(world.pool, def as MotorJointDef)
+            JointType.UNKNOWN -> null
         }
-
 
         fun destroy(joint: Joint) {
             joint.destructor()

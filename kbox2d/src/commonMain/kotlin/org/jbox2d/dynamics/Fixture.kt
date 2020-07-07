@@ -33,7 +33,7 @@ import org.jbox2d.userdata.*
 /**
  * A fixture is used to attach a shape to a body for collision detection. A fixture inherits its
  * transform from its parent. Fixtures hold additional non-geometric data such as friction,
- * collision filters, etc. Fixtures are created via Body::CreateFixture.
+ * collision filters, etc. Fixtures are created via Body::createFixture.
  *
  * @warning you cannot reuse fixtures.
  *
@@ -41,139 +41,84 @@ import org.jbox2d.userdata.*
  */
 class Fixture : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
-    var m_density: Float = 0.toFloat()
+    var _density: Float = 0f
 
     /**
-     * Get the next fixture in the parent body's fixture list.
-     *
-     * @return the next shape.
-     * @return
+     * Next fixture in the parent body's fixture list.
      */
-
-    var m_next: Fixture? = null
-
-    fun getNext() = m_next
+    var next: Fixture? = null
 
     /**
-     * Get the parent body of this fixture. This is NULL if the fixture is not attached.
-     *
-     * @return the parent body.
-     * @return
+     * Parent body of this fixture. This is null if the fixture is not attached.
      */
-    var m_body: Body? = null
-
-    fun getBody() = m_body
+    var body: Body? = null
 
     /**
-     * Get the child shape. You can modify the child shape, however you should not change the number
+     * Child shape. You can modify the child shape, however you should not change the number
      * of vertices because this will crash some collision caching mechanisms.
-     *
-     * @return
      */
-    var m_shape: Shape? = null
-
-    fun getShape() = m_shape
+    var shape: Shape? = null
 
     /**
-     * Get the coefficient of friction.
-     *
-     * @return
+     * Coefficient of friction. Changing this value will _not_ change the friction of existing contacts.
      */
+    var friction: Float = 0f
+
     /**
-     * Set the coefficient of friction. This will _not_ change the friction of existing contacts.
-     *
-     * @param friction
-     */
-    var m_friction: Float = 0.toFloat()
-    /**
-     * Get the coefficient of restitution.
-     *
-     * @return
-     */
-    /**
-     * Set the coefficient of restitution. This will _not_ change the restitution of existing
+     * Coefficient of restitution. Changing this value will _not_ change the restitution of existing
      * contacts.
-     *
-     * @param restitution
      */
-    var m_restitution: Float = 0.toFloat()
+    var restitution: Float = 0f
 
+    var proxies: Array<FixtureProxy>? = null
 
-    var m_proxies: Array<FixtureProxy>? = null
+    var proxyCount: Int = 0
 
-    var m_proxyCount: Int = 0
+    val filter: Filter = Filter()
 
-    val m_filter: Filter = Filter()
-
-
-    var m_isSensor: Boolean = false
+    var _isSensor: Boolean = false
 
     /**
-     * Get the user data that was assigned in the fixture definition. Use this to store your
+     * User data that was assigned in the fixture definition. Use this to store your
      * application specific data.
-     *
-     * @return
-     */
-    /**
-     * Set the user data. Use this to store your application specific data.
-     *
-     * @param data
      */
     var userData: Any? = null
 
     /**
-     * Get the type of the child shape. You can use this to down cast to the concrete shape.
-     *
-     * @return the shape type.
+     * Type of the child shape. You can use this to down cast to the concrete shape.
      */
     val type: ShapeType
-        get() = m_shape!!.getType()
+        get() = shape!!.type
 
     /**
-     * Is this fixture a sensor (non-solid)?
-     *
-     * @return the true if the shape is a sensor.
-     * @return
-     */
-    /**
-     * Set if this fixture is a sensor.
-     *
-     * @param sensor
+     * Whether this fixture is a sensor (non-solid)
      */
     var isSensor: Boolean
-        get() = m_isSensor
+        get() = _isSensor
         set(sensor) {
-            if (sensor != m_isSensor) {
-                m_body!!.isAwake = true
-                m_isSensor = sensor
+            if (sensor != _isSensor) {
+                body!!.isAwake = true
+                _isSensor = sensor
             }
         }
 
     /**
-     * Get the contact filtering data.
-     *
-     * @return
-     */
-    /**
-     * Set the contact filtering data. This is an expensive operation and should not be called
+     * Contact filtering data. Changing this value is an expensive operation and should not be called
      * frequently. This will not update contacts until the next time step when either parent body is
-     * awake. This automatically calls refilter.
-     *
-     * @param filter
+     * awake. This automatically calls [refilter].
      */
     var filterData: Filter
-        get() = m_filter
+        get() = filter
         set(filter) {
-            m_filter.set(filter)
-
+            this.filter.set(filter)
             refilter()
         }
 
     var density: Float
-        get() = m_density
+        get() = _density
         set(density) {
             assert(density >= 0f)
-            m_density = density
+            _density = density
         }
 
     private val pool1 = AABB()
@@ -185,39 +130,35 @@ class Fixture : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
      * ContactFilter::ShouldCollide.
      */
     fun refilter() {
-        if (m_body == null) {
-            return
-        }
+        if (body == null) return
 
         // Flag associated contacts for filtering.
-        var edge = m_body!!.getContactList()
+        var edge = body!!.contactList
         while (edge != null) {
             val contact = edge.contact
-            val fixtureA = contact!!.getFixtureA()
-            val fixtureB = contact.getFixtureB()
+            val fixtureA = contact!!.fixtureA
+            val fixtureB = contact.fixtureB
             if (fixtureA === this || fixtureB === this) {
                 contact.flagForFiltering()
             }
             edge = edge.next
         }
 
-        val world = m_body!!.world ?: return
+        val world = body!!.world
 
-// Touch each proxy so that new pairs may be created
-        val broadPhase = world.m_contactManager.m_broadPhase
-        for (i in 0 until m_proxyCount) {
-            broadPhase.touchProxy(m_proxies!![i].proxyId)
+        // Touch each proxy so that new pairs may be created
+        val broadPhase = world.contactManager.broadPhase
+        for (i in 0 until proxyCount) {
+            broadPhase.touchProxy(proxies!![i].proxyId)
         }
     }
 
     /**
-     * Test a point for containment in this fixture. This only works for convex shapes.
-     *
-     * @param p a point in world coordinates.
-     * @return
+     * Test a point (in world coordinates) for containment in this fixture.
+     * This only works for convex shapes.
      */
     fun testPoint(p: Vec2): Boolean {
-        return m_shape!!.testPoint(m_body!!.m_xf, p)
+        return shape!!.testPoint(body!!.xf, p)
     }
 
     /**
@@ -225,42 +166,35 @@ class Fixture : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
      *
      * @param output the ray-cast results.
      * @param input the ray-cast input parameters.
-     * @param output
-     * @param input
      */
     fun raycast(output: RayCastOutput, input: RayCastInput, childIndex: Int): Boolean {
-        return m_shape!!.raycast(output, input, m_body!!.m_xf, childIndex)
+        return shape!!.raycast(output, input, body!!.xf, childIndex)
     }
 
     /**
      * Get the mass data for this fixture. The mass data is based on the density and the shape. The
      * rotational inertia is about the shape's origin.
-     *
-     * @return
      */
     fun getMassData(massData: MassData) {
-        m_shape!!.computeMass(massData, m_density)
+        shape!!.computeMass(massData, _density)
     }
 
     /**
      * Get the fixture's AABB. This AABB may be enlarge and/or stale. If you need a more accurate
      * AABB, compute it using the shape and the body transform.
-     *
-     * @return
      */
     fun getAABB(childIndex: Int): AABB {
-        assert(childIndex >= 0 && childIndex < m_proxyCount)
-        return m_proxies!![childIndex].aabb
+        assert(childIndex in 0 until proxyCount)
+        return proxies!![childIndex].aabb
     }
 
     /**
      * Compute the distance from this fixture.
      *
      * @param p a point in world coordinates.
-     * @return distance
      */
     fun computeDistance(p: Vec2, childIndex: Int, normalOut: Vec2): Float {
-        return m_shape!!.computeDistanceToOut(m_body!!.getTransform(), p, childIndex, normalOut)
+        return shape!!.computeDistanceToOut(body!!.getTransform(), p, childIndex, normalOut)
     }
 
     // We need separation create/destroy functions from the constructor/destructor because
@@ -268,55 +202,54 @@ class Fixture : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
     fun create(body: Body, def: FixtureDef) {
         userData = def.userData
-        m_friction = def.friction
-        m_restitution = def.restitution
+        friction = def.friction
+        restitution = def.restitution
 
-        this.m_body = body
-        m_next = null
+        this.body = body
+        next = null
 
+        filter.set(def.filter)
 
-        m_filter.set(def.filter)
+        _isSensor = def.isSensor
 
-        m_isSensor = def.isSensor
-
-        m_shape = def.shape!!.clone()
+        shape = def.shape!!.clone()
 
         // Reserve proxy space
-        val childCount = m_shape!!.getChildCount()
-        if (m_proxies == null) {
-            m_proxies = Array(childCount) { FixtureProxy() }
+        val childCount = shape!!.getChildCount()
+        if (proxies == null) {
+            proxies = Array(childCount) { FixtureProxy() }
             for (i in 0 until childCount) {
-                m_proxies!![i].fixture = null
-                m_proxies!![i].proxyId = BroadPhase.NULL_PROXY
+                proxies!![i].fixture = null
+                proxies!![i].proxyId = BroadPhase.NULL_PROXY
             }
         }
 
-        if (m_proxies!!.size < childCount) {
-            val old = m_proxies
+        if (proxies!!.size < childCount) {
+            val old = proxies
             val newLen = MathUtils.max(old!!.size * 2, childCount)
-            m_proxies = arrayOfNulls<FixtureProxy>(newLen) as Array<FixtureProxy>
-            arraycopy(old, 0, m_proxies!!, 0, old.size)
+            proxies = arrayOfNulls<FixtureProxy>(newLen) as Array<FixtureProxy>
+            arraycopy(old, 0, proxies!!, 0, old.size)
             for (i in 0 until newLen) {
                 if (i >= old.size) {
-                    m_proxies!![i] = FixtureProxy()
+                    proxies!![i] = FixtureProxy()
                 }
-                m_proxies!![i].fixture = null
-                m_proxies!![i].proxyId = BroadPhase.NULL_PROXY
+                proxies!![i].fixture = null
+                proxies!![i].proxyId = BroadPhase.NULL_PROXY
             }
         }
-        m_proxyCount = 0
+        proxyCount = 0
 
-        m_density = def.density
+        _density = def.density
     }
 
     fun destroy() {
         // The proxies must be destroyed before calling this.
-        assert(m_proxyCount == 0)
+        assert(proxyCount == 0)
 
         // Free the child shape.
-        m_shape = null
-        m_proxies = null
-        m_next = null
+        shape = null
+        proxies = null
+        next = null
 
         // TODO pool shapes
         // TODO pool fixtures
@@ -324,14 +257,14 @@ class Fixture : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
     // These support body activation/deactivation.
     fun createProxies(broadPhase: BroadPhase, xf: Transform) {
-        assert(m_proxyCount == 0)
+        assert(proxyCount == 0)
 
         // Create proxies in the broad-phase.
-        m_proxyCount = m_shape!!.getChildCount()
+        proxyCount = shape!!.getChildCount()
 
-        for (i in 0 until m_proxyCount) {
-            val proxy = m_proxies!![i]
-            m_shape!!.computeAABB(proxy.aabb, xf, i)
+        for (i in 0 until proxyCount) {
+            val proxy = proxies!![i]
+            shape!!.computeAABB(proxy.aabb, xf, i)
             proxy.proxyId = broadPhase.createProxy(proxy.aabb, proxy)
             proxy.fixture = this
             proxy.childIndex = i
@@ -340,41 +273,32 @@ class Fixture : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
     /**
      * Internal method
-     *
-     * @param broadPhase
      */
     fun destroyProxies(broadPhase: BroadPhase) {
         // Destroy proxies in the broad-phase.
-        for (i in 0 until m_proxyCount) {
-            val proxy = m_proxies!![i]
+        for (i in 0 until proxyCount) {
+            val proxy = proxies!![i]
             broadPhase.destroyProxy(proxy.proxyId)
             proxy.proxyId = BroadPhase.NULL_PROXY
         }
 
-        m_proxyCount = 0
+        proxyCount = 0
     }
 
     /**
      * Internal method
-     *
-     * @param broadPhase
-     * @param xf1
-     * @param xf2
      */
-    fun synchronize(broadPhase: BroadPhase, transform1: Transform,
-                              transform2: Transform) {
-        if (m_proxyCount == 0) {
-            return
-        }
+    fun synchronize(broadPhase: BroadPhase, transform1: Transform, transform2: Transform) {
+        if (proxyCount == 0) return
 
-        for (i in 0 until m_proxyCount) {
-            val proxy = m_proxies!![i]
+        for (i in 0 until proxyCount) {
+            val proxy = proxies!![i]
 
             // Compute an AABB that covers the swept shape (may miss some rotation effect).
             val aabb1 = pool1
             val aab = pool2
-            m_shape!!.computeAABB(aabb1, transform1, proxy.childIndex)
-            m_shape!!.computeAABB(aab, transform2, proxy.childIndex)
+            shape!!.computeAABB(aabb1, transform1, proxy.childIndex)
+            shape!!.computeAABB(aab, transform2, proxy.childIndex)
 
             proxy.aabb.lowerBound.x = if (aabb1.lowerBound.x < aab.lowerBound.x) aabb1.lowerBound.x else aab.lowerBound.x
             proxy.aabb.lowerBound.y = if (aabb1.lowerBound.y < aab.lowerBound.y) aabb1.lowerBound.y else aab.lowerBound.y

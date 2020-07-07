@@ -26,8 +26,6 @@ package org.jbox2d.common
 import com.soywiz.korma.geom.*
 import org.jbox2d.internal.*
 
-// updated to rev 100
-
 /**
  * A transform contains translation and rotation. It is used to represent the position and
  * orientation of rigid frames.
@@ -35,11 +33,9 @@ import org.jbox2d.internal.*
 class Transform {
 
     /** The translation caused by the transform  */
-
     val p: Vec2
 
     /** A matrix representing a rotation  */
-
     val q: Rot
 
     /** The default constructor.  */
@@ -68,18 +64,12 @@ class Transform {
     }
 
     /**
-     * Set this based on the position and angle.
-     *
-     * @param p
-     * @param angle
+     * Set this based on the position [p] and [angle].
      */
     fun set(p: Vec2, angle: Angle) = this.setRadians(p, angle.radians.toFloat())
 
     /**
-     * Set this based on the position and angle in radians.
-     *
-     * @param p
-     * @param angleRadians
+     * Set this based on the position [p] and angle in radians [angleRadians].
      */
     fun setRadians(p: Vec2, angleRadians: Float) {
         this.p.set(p)
@@ -87,10 +77,7 @@ class Transform {
     }
 
     /**
-     * Set this based on the position and angle in degrees.
-     *
-     * @param p
-     * @param angle
+     * Set this based on the position [p] and angle in degrees [angleDegrees].
      */
     fun setDegrees(p: Vec2, angleDegrees: Float) = setRadians(p, angleDegrees * MathUtils.DEG2RAD)
 
@@ -113,13 +100,11 @@ class Transform {
             return Vec2(T.q.c * v.x - T.q.s * v.y + T.p.x, T.q.s * v.x + T.q.c * v.y + T.p.y)
         }
 
-
         fun mulToOut(T: Transform, v: Vec2, out: Vec2) {
             val tempy = T.q.s * v.x + T.q.c * v.y + T.p.y
             out.x = T.q.c * v.x - T.q.s * v.y + T.p.x
             out.y = tempy
         }
-
 
         fun mulToOutUnsafe(T: Transform, v: Vec2, out: Vec2) {
             assert(v !== out)
@@ -127,13 +112,11 @@ class Transform {
             out.y = T.q.s * v.x + T.q.c * v.y + T.p.y
         }
 
-
         fun mulTrans(T: Transform, v: Vec2): Vec2 {
             val px = v.x - T.p.x
             val py = v.y - T.p.y
             return Vec2(T.q.c * px + T.q.s * py, -T.q.s * px + T.q.c * py)
         }
-
 
         fun mulTransToOut(T: Transform, v: Vec2, out: Vec2) {
             val px = v.x - T.p.x
@@ -143,7 +126,6 @@ class Transform {
             out.y = tempy
         }
 
-
         fun mulTransToOutUnsafe(T: Transform, v: Vec2, out: Vec2) {
             assert(v !== out)
             val px = v.x - T.p.x
@@ -151,7 +133,6 @@ class Transform {
             out.x = T.q.c * px + T.q.s * py
             out.y = -T.q.s * px + T.q.c * py
         }
-
 
         fun mul(A: Transform, B: Transform): Transform {
             val C = Transform()
@@ -161,14 +142,12 @@ class Transform {
             return C
         }
 
-
         fun mulToOut(A: Transform, B: Transform, out: Transform) {
             assert(out !== A)
             Rot.mul(A.q, B.q, out.q)
             Rot.mulToOut(A.q, B.p, out.p)
             out.p.addLocal(A.p)
         }
-
 
         fun mulToOutUnsafe(A: Transform, B: Transform, out: Transform) {
             assert(out !== B)
@@ -186,14 +165,12 @@ class Transform {
             return C
         }
 
-
         fun mulTransToOut(A: Transform, B: Transform, out: Transform, pool: Vec2 = Vec2()) {
             assert(out !== A)
             Rot.mulTrans(A.q, B.q, out.q)
             pool.set(B.p).subLocal(A.p)
             Rot.mulTrans(A.q, pool, out.p)
         }
-
 
         fun mulTransToOutUnsafe(A: Transform, B: Transform, out: Transform, pool: Vec2 = Vec2()) {
             assert(out !== A)

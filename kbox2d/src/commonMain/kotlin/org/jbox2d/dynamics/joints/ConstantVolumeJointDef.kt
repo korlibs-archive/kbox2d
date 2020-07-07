@@ -24,7 +24,6 @@
 package org.jbox2d.dynamics.joints
 
 import org.jbox2d.dynamics.*
-import kotlin.jvm.*
 
 /**
  * Definition for a [ConstantVolumeJoint], which connects a group a bodies together so they
@@ -41,22 +40,18 @@ class ConstantVolumeJointDef : JointDef(JointType.CONSTANT_VOLUME) {
 
     init {
         collideConnected = false
-        frequencyHz = 0.0f
-        dampingRatio = 0.0f
     }
 
     /**
-     * Adds a body to the group
-     *
-     * @param argBody
+     * Adds a [body] to the group
      */
-    fun addBody(argBody: Body) {
-        bodies.add(argBody)
+    fun addBody(body: Body) {
+        bodies.add(body)
         if (bodies.size == 1) {
-            bodyA = argBody
+            bodyA = body
         }
         if (bodies.size == 2) {
-            bodyB = argBody
+            bodyB = body
         }
     }
 

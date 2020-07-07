@@ -33,16 +33,15 @@ package org.jbox2d.dynamics.joints
  * @author Daniel Murphy
  */
 class GearJointDef : JointDef(JointType.GEAR) {
+
     /**
      * The first revolute/prismatic joint attached to the gear joint.
      */
-
     var joint1: Joint? = null
 
     /**
      * The second revolute/prismatic joint attached to the gear joint.
      */
-
     var joint2: Joint? = null
 
     /**
@@ -50,6 +49,5 @@ class GearJointDef : JointDef(JointType.GEAR) {
      *
      * @see GearJoint
      */
-
     var ratio: Float = 0f
 }

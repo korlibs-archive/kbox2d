@@ -31,28 +31,25 @@ import org.jbox2d.common.Vec2
  * @author Daniel
  */
 class MouseJointDef : JointDef(JointType.MOUSE) {
+
     /**
      * The initial world target point. This is assumed to coincide with the body anchor initially.
      */
-
     val target = Vec2(0f, 0f)
 
     /**
      * The maximum constraint force that can be exerted to move the candidate body. Usually you will
      * express as some multiple of the weight (multiplier * mass * gravity).
      */
-
     var maxForce: Float = 0f
 
     /**
      * The response speed.
      */
-
     var frequencyHz: Float = .5f
 
     /**
      * The damping ratio. 0 = no damping, 1 = critical damping.
      */
-
     var dampingRatio: Float = .7f
 }

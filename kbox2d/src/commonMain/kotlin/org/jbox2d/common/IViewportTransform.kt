@@ -32,10 +32,7 @@ package org.jbox2d.common
 interface IViewportTransform {
 
     /**
-     * @return if the transform flips the y axis
-     */
-    /**
-     * @param yFlip if we flip the y axis when transforming
+     * Whether the transform flips the y axis
      */
     var isYFlip: Boolean
 
@@ -43,17 +40,10 @@ interface IViewportTransform {
      * This is the half-width and half-height. This should be the actual half-width and half-height,
      * not anything transformed or scaled. Not a copy.
      */
-    /**
-     * This sets the half-width and half-height. This should be the actual half-width and half-height,
-     * not anything transformed or scaled.
-     */
     var extents: Vec2
 
     /**
-     * center of the viewport. Not a copy.
-     */
-    /**
-     * sets the center of the viewport.
+     * Center of the viewport. Not a copy.
      */
     var center: Vec2
 
@@ -66,7 +56,7 @@ interface IViewportTransform {
     fun setExtents(halfWidth: Float, halfHeight: Float)
 
     /**
-     * sets the center of the viewport.
+     * Sets the center of the viewport.
      */
     fun setCenter(x: Float, y: Float)
 
@@ -80,28 +70,25 @@ interface IViewportTransform {
      */
     fun getWorldVectorToScreen(world: Vec2, screen: Vec2)
 
-
     /**
      * Transforms the given directional screen vector back to the world direction.
      */
     fun getScreenVectorToWorld(screen: Vec2, world: Vec2)
 
-
     /**
-     * takes the world coordinate (world) puts the corresponding screen coordinate in screen. It
+     * Takes the [world] coordinates and puts the corresponding [screen] coordinates in screen. It
      * should be safe to give the same object as both parameters.
      */
     fun getWorldToScreen(world: Vec2, screen: Vec2)
 
-
     /**
-     * takes the screen coordinates (screen) and puts the corresponding world coordinates in world. It
+     * Takes the [screen] coordinates and puts the corresponding [world] coordinates in world. It
      * should be safe to give the same object as both parameters.
      */
     fun getScreenToWorld(screen: Vec2, world: Vec2)
 
     /**
-     * Multiplies the viewport transform by the given Mat22
+     * Multiplies the viewport transform by the given Mat22 [transform]
      */
     fun mulByTransform(transform: Mat22)
 }

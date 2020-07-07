@@ -26,17 +26,14 @@ package org.jbox2d.common
 import org.jbox2d.internal.*
 
 /**
- * A 3-by-3 matrix. Stored in column-major order.
+ * A 3x3 matrix. Stored in column-major order.
  *
  * @author Daniel Murphy
  */
 class Mat33 {
 
-
     val ex: Vec3
-
     val ey: Vec3
-
     val ez: Vec3
 
     constructor() {
@@ -45,8 +42,11 @@ class Mat33 {
         ez = Vec3()
     }
 
-    constructor(exx: Float, exy: Float, exz: Float, eyx: Float, eyy: Float, eyz: Float, ezx: Float,
-                ezy: Float, ezz: Float) {
+    constructor(
+        exx: Float, exy: Float, exz: Float,
+        eyx: Float, eyy: Float, eyz: Float,
+        ezx: Float, ezy: Float, ezz: Float
+    ) {
         ex = Vec3(exx, exy, exz)
         ey = Vec3(eyx, eyy, eyz)
         ez = Vec3(ezx, ezy, ezz)
@@ -64,8 +64,11 @@ class Mat33 {
         ez.setZero()
     }
 
-    fun set(exx: Float, exy: Float, exz: Float, eyx: Float, eyy: Float, eyz: Float, ezx: Float,
-                     ezy: Float, ezz: Float) {
+    fun set(
+        exx: Float, exy: Float, exz: Float,
+        eyx: Float, eyy: Float, eyz: Float,
+        ezx: Float, ezy: Float, ezz: Float
+    ) {
         ex.x = exx
         ex.y = exy
         ex.z = exz
@@ -93,23 +96,20 @@ class Mat33 {
     }
 
     fun setIdentity() {
-        ex.x = 1.toFloat()
-        ex.y = 0.toFloat()
-        ex.z = 0.toFloat()
-        ey.x = 0.toFloat()
-        ey.y = 1.toFloat()
-        ey.z = 0.toFloat()
-        ez.x = 0.toFloat()
-        ez.y = 0.toFloat()
-        ez.z = 1.toFloat()
+        ex.x = 1f
+        ex.y = 0f
+        ex.z = 0f
+        ey.x = 0f
+        ey.y = 1f
+        ey.z = 0f
+        ez.x = 0f
+        ez.y = 0f
+        ez.z = 1f
     }
 
     /**
-     * Solve A * x = b, where b is a column vector. This is more efficient than computing the inverse
+     * Solve A * x = b, where [b] is a column vector. This is more efficient than computing the inverse
      * in one-shot cases.
-     *
-     * @param b
-     * @return
      */
     fun solve22(b: Vec2): Vec2 {
         val x = Vec2()
@@ -118,11 +118,8 @@ class Mat33 {
     }
 
     /**
-     * Solve A * x = b, where b is a column vector. This is more efficient than computing the inverse
+     * Solve A * x = b, where [b] is a column vector. This is more efficient than computing the inverse
      * in one-shot cases.
-     *
-     * @param b
-     * @return
      */
     fun solve22ToOut(b: Vec2, out: Vec2) {
         val a11 = ex.x
@@ -139,11 +136,8 @@ class Mat33 {
 
     // djm pooling from below
     /**
-     * Solve A * x = b, where b is a column vector. This is more efficient than computing the inverse
+     * Solve A * x = b, where [b] is a column vector. This is more efficient than computing the inverse
      * in one-shot cases.
-     *
-     * @param b
-     * @return
      */
     fun solve33(b: Vec3): Vec3 {
         val x = Vec3()
@@ -152,16 +146,13 @@ class Mat33 {
     }
 
     /**
-     * Solve A * x = b, where b is a column vector. This is more efficient than computing the inverse
+     * Solve A * x = b, where [b] is a column vector. This is more efficient than computing the inverse
      * in one-shot cases.
-     *
-     * @param b
-     * @param out the result
      */
     fun solve33ToOut(b: Vec3, out: Vec3) {
         assert(b !== out)
-        Vec3.crossToOutUnsafe(ey!!, ez!!, out)
-        var det = Vec3.dot(ex!!, out)
+        Vec3.crossToOutUnsafe(ey, ez, out)
+        var det = Vec3.dot(ex, out)
         if (det != 0.0f) {
             det = 1.0f / det
         }
@@ -197,7 +188,9 @@ class Mat33 {
         M.ez.z = 0.0f
     }
 
-    // / Returns the zero matrix if singular.
+    /**
+     * Returns the zero matrix if singular.
+     */
     fun getSymInverse33(M: Mat33) {
         val bx = ey.y * ez.z - ey.z * ez.y
         val by = ey.z * ez.x - ey.x * ez.z
@@ -230,26 +223,20 @@ class Mat33 {
     override fun hashCode(): Int {
         val prime = 31
         var result = 1
-        result = prime * result + (ex?.hashCode() ?: 0)
-        result = prime * result + (ey?.hashCode() ?: 0)
-        result = prime * result + (ez?.hashCode() ?: 0)
+        result = prime * result + ex.hashCode()
+        result = prime * result + ey.hashCode()
+        result = prime * result + ez.hashCode()
         return result
     }
 
-    override fun equals(obj: Any?): Boolean {
-        if (this === obj) return true
-        if (obj == null) return false
-        if (this::class != obj::class) return false
-        val other = obj as Mat33?
-        if (ex == null) {
-            if (other?.ex != null) return false
-        } else if (ex != other?.ex) return false
-        if (ey == null) {
-            if (other?.ey != null) return false
-        } else if (ey != other?.ey) return false
-        if (ez == null) {
-            if (other?.ez != null) return false
-        } else if (ez != other?.ez) return false
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null) return false
+        if (this::class != other::class) return false
+        val oth = other as Mat33?
+        if (ex != oth?.ex) return false
+        if (ey != oth?.ey) return false
+        if (ez != oth?.ez) return false
         return true
     }
 
@@ -258,17 +245,20 @@ class Mat33 {
         //@ThreadLocal
         val IDENTITY = Mat33(Vec3(1f, 0f, 0f), Vec3(0f, 1f, 0f), Vec3(0f, 0f, 1f))
 
-        // / Multiply a matrix times a vector.
-
+        /**
+         * Multiply a matrix [A] by a vector [v].
+         */
         fun mul(A: Mat33, v: Vec3): Vec3 {
-            return Vec3(v.x * A.ex.x + v.y * A.ey.x + v.z + A.ez.x, v.x * A.ex.y + v.y * A.ey.y + v.z * A.ez.y, v.x * A.ex.z + v.y * A.ey.z + v.z * A.ez.z)
+            return Vec3(
+                v.x * A.ex.x + v.y * A.ey.x + v.z + A.ez.x,
+                v.x * A.ex.y + v.y * A.ey.y + v.z * A.ez.y,
+                v.x * A.ex.z + v.y * A.ey.z + v.z * A.ez.z
+            )
         }
-
 
         fun mul22(A: Mat33, v: Vec2): Vec2 {
             return Vec2(A.ex.x * v.x + A.ey.x * v.y, A.ex.y * v.x + A.ey.y * v.y)
         }
-
 
         fun mul22ToOut(A: Mat33, v: Vec2, out: Vec2) {
             val tempx = A.ex.x * v.x + A.ey.x * v.y
@@ -276,13 +266,11 @@ class Mat33 {
             out.x = tempx
         }
 
-
         fun mul22ToOutUnsafe(A: Mat33, v: Vec2, out: Vec2) {
             assert(v !== out)
             out.y = A.ex.y * v.x + A.ey.y * v.y
             out.x = A.ex.x * v.x + A.ey.x * v.y
         }
-
 
         fun mulToOut(A: Mat33, v: Vec3, out: Vec3) {
             val tempy = v.x * A.ex.y + v.y * A.ey.y + v.z * A.ez.y
@@ -292,14 +280,12 @@ class Mat33 {
             out.z = tempz
         }
 
-
         fun mulToOutUnsafe(A: Mat33, v: Vec3, out: Vec3) {
             assert(out !== v)
             out.x = v.x * A.ex.x + v.y * A.ey.x + v.z * A.ez.x
             out.y = v.x * A.ex.y + v.y * A.ey.y + v.z * A.ez.y
             out.z = v.x * A.ex.z + v.y * A.ey.z + v.z * A.ez.z
         }
-
 
         fun setScaleTransform(scale: Float, out: Mat33) {
             out.ex.x = scale

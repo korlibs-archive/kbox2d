@@ -39,23 +39,19 @@ import org.jbox2d.dynamics.Body
  */
 class PrismaticJointDef : JointDef(JointType.PRISMATIC) {
 
-
     /**
      * The local anchor point relative to body1's origin.
      */
-
     val localAnchorA: Vec2 = Vec2()
 
     /**
      * The local anchor point relative to body2's origin.
      */
-
     val localAnchorB: Vec2 = Vec2()
 
     /**
      * The local translation axis in body1.
      */
-
     val localAxisA: Vec2 = Vec2(1.0f, 0.0f)
 
     /**
@@ -80,37 +76,31 @@ class PrismaticJointDef : JointDef(JointType.PRISMATIC) {
     /**
      * Enable/disable the joint limit.
      */
-
     var enableLimit: Boolean = false
 
     /**
      * The lower translation limit, usually in meters.
      */
-
     var lowerTranslation: Float = 0f
 
     /**
      * The upper translation limit, usually in meters.
      */
-
     var upperTranslation: Float = 0f
 
     /**
      * Enable/disable the joint motor.
      */
-
     var enableMotor: Boolean = false
 
     /**
      * The maximum motor torque, usually in N-m.
      */
-
     var maxMotorForce: Float = 0f
 
     /**
      * The desired motor speed in radians per second.
      */
-
     var motorSpeed: Float = 0f
 
     /**
