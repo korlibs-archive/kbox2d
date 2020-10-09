@@ -36,14 +36,12 @@ class EdgeAndCircleContact(argPool: IWorldPool) : Contact(argPool) {
 
     override fun init(fA: Fixture, indexA: Int, fB: Fixture, indexB: Int) {
         super.init(fA, indexA, fB, indexB)
-        assert(fixtureA!!.type === ShapeType.EDGE)
-        assert(fixtureB!!.type === ShapeType.CIRCLE)
+        assert(m_fixtureA!!.type === ShapeType.EDGE)
+        assert(m_fixtureB!!.type === ShapeType.CIRCLE)
     }
 
     override fun evaluate(manifold: Manifold, xfA: Transform, xfB: Transform) {
-        pool.collision.collideEdgeAndCircle(
-            manifold, fixtureA!!.shape as EdgeShape, xfA,
-            fixtureB!!.shape as CircleShape, xfB
-        )
+        pool.collision.collideEdgeAndCircle(manifold, m_fixtureA!!.m_shape as EdgeShape, xfA,
+                m_fixtureB!!.m_shape as CircleShape, xfB)
     }
 }

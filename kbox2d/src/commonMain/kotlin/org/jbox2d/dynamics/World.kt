@@ -43,11 +43,8 @@ import org.jbox2d.userdata.*
  *
  * @author Daniel Murphy
  */
-class World(
-    gravity: Vec2,
-    val pool: IWorldPool,
-    broadPhase: BroadPhase
-) : WorldRef, Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+open class World(gravity: Vec2, val pool: IWorldPool, broadPhase: BroadPhase) : WorldRef, Box2dTypedUserData by Box2dTypedUserData.Mixin() {
+    var customScale: Double = 1.0
 
     override val world: World get() = this
 
@@ -57,25 +54,26 @@ class World(
 
     var userData: Any? = null
 
-    var flags: Int = CLEAR_FORCES
+    var m_flags: Int = CLEAR_FORCES
 
     /**
-     * Contact manager for testing purposes
+     * Get the contact manager for testing purposes
+     *
+     * @return
      */
-    var contactManager: ContactManager = ContactManager(this, broadPhase)
+    var m_contactManager: ContactManager = ContactManager(this, broadPhase)
         protected set
 
     /**
-     * World body list. With the returned body, use Body.next to get the next body in the
+     * Get the world body list. With the returned body, use Body.getNext to get the next body in the
      * world list. A null body indicates the end of the list.
      *
      * @return the head of the world body list.
      */
     var bodyList: Body? = null
         private set
-
     /**
-     * World joint list. With the returned joint, use Joint.next to get the next joint in
+     * Get the world joint list. With the returned joint, use Joint.getNext to get the next joint in
      * the world list. A null joint indicates the end of the list.
      *
      * @return the head of the world joint list.
@@ -84,75 +82,89 @@ class World(
         private set
 
     /**
-     * Number of bodies.
+     * Get the number of bodies.
+     *
+     * @return
      */
     var bodyCount: Int = 0
         private set
-
     /**
-     * Number of joints.
+     * Get the number of joints.
+     *
+     * @return
      */
     var jointCount: Int = 0
         private set
 
     /**
-     * Global gravity vector.
+     * Get the global gravity vector.
+     *
+     * @return
+     */
+    /**
+     * Change the global gravity vector.
+     *
+     * @param gravity
      */
     var gravity = Vec2()
         set(gravity) {
             this.gravity.set(gravity)
         }
-
     var isSleepingAllowed: Boolean = true
 
+    // private Body m_groundBody;
+
     /**
-     * Destruction listener. The listener is owned by you and must remain in scope.
+     * Register a destruction listener. The listener is owned by you and must remain in scope.
+     *
+     * @param listener
      */
     var destructionListener: DestructionListener? = null
     var particleDestructionListener: ParticleDestructionListener? = null
-
-    private var debugDraw: DebugDraw? = null
+    private var m_debugDraw: DebugDraw? = null
 
     /**
      * This is used to compute the time step ratio to support a variable time step.
      */
-    private var inv_dt0: Float = 0f
+    private var m_inv_dt0: Float = 0f
 
     // these are for debugging the solver
-
     /**
      * Enable/disable warm starting. For testing.
+     *
+     * @param flag
      */
     var isWarmStarting: Boolean = true
-
     /**
      * Enable/disable continuous physics. For testing.
+     *
+     * @param flag
      */
     var isContinuousPhysics: Boolean = true
-
     var isSubStepping: Boolean = false
 
-    private var stepComplete: Boolean = true
+    private var m_stepComplete: Boolean = true
 
     val profile: Profile = Profile()
 
-    private val particleSystem: ParticleSystem = ParticleSystem(this)
+    private val m_particleSystem: ParticleSystem = ParticleSystem(this)
 
-    private val contactStacks = Array(ShapeType.values().size) {
-        arrayOfNulls<ContactRegister>(ShapeType.values().size) as Array<ContactRegister>
-    }
+
+    private val contactStacks = Array<Array<ContactRegister>>(ShapeType.values().size) { arrayOfNulls<ContactRegister>(ShapeType.values().size) as Array<ContactRegister> }
 
     var isAllowSleep: Boolean
         get() = isSleepingAllowed
         set(flag) {
-            if (flag == isSleepingAllowed) return
+            if (flag == isSleepingAllowed) {
+                return
+            }
 
             isSleepingAllowed = flag
-            if (!isSleepingAllowed) {
+            if (isSleepingAllowed == false) {
                 var b = bodyList
                 while (b != null) {
                     b.isAwake = true
-                    b = b.next
+                    b = b.m_next
                 }
             }
         }
@@ -174,7 +186,7 @@ class World(
     private val input = RayCastInput()
 
     /**
-     * World contact list. With the returned contact, use Contact.next to get the next
+     * Get the world contact list. With the returned contact, use Contact.getNext to get the next
      * contact in the world list. A null contact indicates the end of the list.
      *
      * @return the head of the world contact list.
@@ -182,56 +194,73 @@ class World(
      * to avoid missing contacts.
      */
     val contactList: Contact
-        get() = contactManager.contactList!!
+        get() = m_contactManager!!.m_contactList!!
 
 
     /**
-     * Number of broad-phase proxies.
+     * Get the number of broad-phase proxies.
+     *
+     * @return
      */
     val proxyCount: Int
-        get() = contactManager.broadPhase.proxyCount
+        get() = m_contactManager.m_broadPhase.proxyCount
 
     /**
-     * Number of contacts (each may have 0 or more contact points).
+     * Get the number of contacts (each may have 0 or more contact points).
+     *
+     * @return
      */
     val contactCount: Int
-        get() = contactManager.contactCount
+        get() = m_contactManager.m_contactCount
 
     /**
-     * Height of the dynamic tree
+     * Gets the height of the dynamic tree
+     *
+     * @return
      */
     val treeHeight: Int
-        get() = contactManager.broadPhase.treeHeight
+        get() = m_contactManager.m_broadPhase.treeHeight
 
     /**
-     * Balance of the dynamic tree
+     * Gets the balance of the dynamic tree
+     *
+     * @return
      */
     val treeBalance: Int
-        get() = contactManager.broadPhase.treeBalance
+        get() = m_contactManager.m_broadPhase.treeBalance
 
     /**
-     * Quality of the dynamic tree
+     * Gets the quality of the dynamic tree
+     *
+     * @return
      */
     val treeQuality: Float
-        get() = contactManager.broadPhase.treeQuality
+        get() = m_contactManager.m_broadPhase.treeQuality
 
     /**
-     * Whether the world is locked (in the middle of a time step).
+     * Is the world locked (in the middle of a time step).
+     *
+     * @return
      */
     val isLocked: Boolean
-        get() = flags and LOCKED == LOCKED
+        get() = m_flags and LOCKED == LOCKED
 
     /**
-     * Flag that controls automatic clearing of forces after each time step.
+     * Get the flag that controls automatic clearing of forces after each time step.
+     *
+     * @return
+     */
+    /**
+     * Set flag to control automatic clearing of forces after each time step.
+     *
+     * @param flag
      */
     var autoClearForces: Boolean
-        get() = flags and CLEAR_FORCES == CLEAR_FORCES
-        set(flag) {
-            flags = if (flag) {
-                flags or CLEAR_FORCES
-            } else {
-                flags and CLEAR_FORCES.inv()
-            }
+        get() = m_flags and CLEAR_FORCES == CLEAR_FORCES
+        set(flag) = if (flag) {
+            m_flags = m_flags or CLEAR_FORCES
+        } else {
+            m_flags = m_flags and CLEAR_FORCES.inv()
         }
 
     private val island = Island()
@@ -258,111 +287,159 @@ class World(
     private val tlvertices = Vec2ArrayPool()
 
     /**
-     * Get the world particle group list. With the returned group, use ParticleGroup::next to get
+     * Get the world particle group list. With the returned group, use ParticleGroup::GetNext to get
      * the next group in the world list. A NULL group indicates the end of the list.
      *
      * @return the head of the world particle group list.
      */
     val particleGroupList: Array<ParticleGroup?>
-        get() = particleSystem.getParticleGroupList()!!
+        get() = m_particleSystem.getParticleGroupList()!!
 
     /**
      * Get the number of particle groups.
+     *
+     * @return
      */
     val particleGroupCount: Int
-        get() = particleSystem.particleGroupCount
+        get() = m_particleSystem.particleGroupCount
 
     /**
      * Get the number of particles.
+     *
+     * @return
      */
     val particleCount: Int
-        get() = particleSystem.particleCount
+        get() = m_particleSystem.particleCount
 
     /**
-     * Maximum number of particles.
+     * Get the maximum number of particles.
+     *
+     * @return
+     */
+    /**
+     * Set the maximum number of particles.
+     *
+     * @param count
      */
     var particleMaxCount: Int
-        get() = particleSystem.particleMaxCount
+        get() = m_particleSystem.particleMaxCount
         set(count) {
-            particleSystem.particleMaxCount = count
-        }
-
-    var particleDensity: Float
-        get() = particleSystem.particleDensity
-        set(density) {
-            particleSystem.particleDensity = density
+            m_particleSystem.particleMaxCount = count
         }
 
     /**
-     * Particle gravity scale. Adjusts the effect of the global gravity vector on
+     * Get the particle density.
+     *
+     * @return
+     */
+    /**
+     * Change the particle density.
+     *
+     * @param density
+     */
+    var particleDensity: Float
+        get() = m_particleSystem.particleDensity
+        set(density) {
+            m_particleSystem.particleDensity = density
+        }
+
+    /**
+     * Get the particle gravity scale.
+     *
+     * @return
+     */
+    /**
+     * Change the particle gravity scale. Adjusts the effect of the global gravity vector on
      * particles. Default value is 1.0f.
+     *
+     * @param gravityScale
      */
     var particleGravityScale: Float
-        get() = particleSystem.particleGravityScale
+        get() = m_particleSystem.particleGravityScale
         set(gravityScale) {
-            particleSystem.particleGravityScale = gravityScale
+            m_particleSystem.particleGravityScale = gravityScale
 
         }
 
     /**
-     * Damping for particles. Damping is used to reduce the velocity of particles.
-     * The damping parameter can be larger than  1.0f but the damping effect becomes
-     * sensitive to the time step when the damping parameter is large.
+     * Get damping for particles
+     *
+     * @return
+     */
+    /**
+     * Damping is used to reduce the velocity of particles. The damping parameter can be larger than
+     * 1.0f but the damping effect becomes sensitive to the time step when the damping parameter is
+     * large.
+     *
+     * @param damping
      */
     var particleDamping: Float
-        get() = particleSystem.particleDamping
+        get() = m_particleSystem.particleDamping
         set(damping) {
-            particleSystem.particleDamping = damping
+            m_particleSystem.particleDamping = damping
         }
 
     /**
-     * Particle radius. You should set this only once, on world start. If you change the
+     * Get the particle radius.
+     *
+     * @return
+     */
+    /**
+     * Change the particle radius. You should set this only once, on world start. If you change the
      * radius during execution, existing particles may explode, shrink, or behave unexpectedly.
+     *
+     * @param radius
      */
     var particleRadius: Float
-        get() = particleSystem.particleRadius
+        get() = m_particleSystem.particleRadius
         set(radius) {
-            particleSystem.particleRadius = radius
+            m_particleSystem.particleRadius = radius
         }
 
     /**
-     * Particle data. Returns the pointer to the head of the particle data.
+     * Get the particle data. @return the pointer to the head of the particle data.
+     *
+     * @return
      */
     val particleFlagsBuffer: IntArray
-        get() = particleSystem.particleFlagsBuffer!!
+        get() = m_particleSystem!!.particleFlagsBuffer!!
 
     val particlePositionBuffer: Array<Vec2>
-        get() = particleSystem.particlePositionBuffer!!
+        get() = m_particleSystem!!.particlePositionBuffer!!
 
     val particleVelocityBuffer: Array<Vec2>
-        get() = particleSystem.particleVelocityBuffer!!
+        get() = m_particleSystem.particleVelocityBuffer!!
 
     val particleColorBuffer: Array<ParticleColor>
-        get() = particleSystem.particleColorBuffer!!
+        get() = m_particleSystem.particleColorBuffer!!
 
     val particleGroupBuffer: Array<ParticleGroup?>
-        get() = particleSystem.particleGroupBuffer
+        get() = m_particleSystem.particleGroupBuffer!!
 
     val particleUserDataBuffer: Array<Any>
-        get() = particleSystem.particleUserDataBuffer!!
+        get() = m_particleSystem.particleUserDataBuffer!!
 
     /**
-     * Contacts between particles
+     * Get contacts between particles
+     *
+     * @return
      */
     val particleContacts: Array<ParticleContact>
-        get() = particleSystem.contactBuffer
+        get() = m_particleSystem.m_contactBuffer
 
     val particleContactCount: Int
-        get() = particleSystem.contactCount
+        get() = m_particleSystem.m_contactCount
 
     /**
-     * Contacts between particles and bodies
+     * Get contacts between particles and bodies
+     *
+     * @return
      */
     val particleBodyContacts: Array<ParticleBodyContact>
-        get() = particleSystem.bodyContactBuffer
+        get() = m_particleSystem.m_bodyContactBuffer
 
     val particleBodyContactCount: Int
-        get() = particleSystem.bodyContactCount
+        get() = m_particleSystem.m_bodyContactCount
 
 
     constructor(
@@ -370,6 +447,13 @@ class World(
         pool: IWorldPool = DefaultWorldPool(WORLD_POOL_SIZE, WORLD_POOL_CONTAINER_SIZE),
         strategy: BroadPhaseStrategy = DynamicTree()
     ) : this(gravity, pool, DefaultBroadPhaseBuffer(strategy))
+
+    constructor(
+        gravityX: Number = 0f,
+        gravityY: Number = 9.8f,
+        pool: IWorldPool = DefaultWorldPool(WORLD_POOL_SIZE, WORLD_POOL_CONTAINER_SIZE),
+        strategy: BroadPhaseStrategy = DynamicTree()
+    ) : this(Vec2(gravityX.toFloat(), gravityY.toFloat()), pool, DefaultBroadPhaseBuffer(strategy))
 
     init {
         this.gravity.set(gravity)
@@ -421,12 +505,12 @@ class World(
     }
 
     fun pushContact(contact: Contact) {
-        val fixtureA = contact.fixtureA
-        val fixtureB = contact.fixtureB
+        val fixtureA = contact.getFixtureA()
+        val fixtureB = contact.getFixtureB()
 
-        if (contact.manifold.pointCount > 0 && !fixtureA!!.isSensor && !fixtureB!!.isSensor) {
-            fixtureA.body!!.isAwake = true
-            fixtureB.body!!.isAwake = true
+        if (contact.m_manifold.pointCount > 0 && !fixtureA!!.isSensor && !fixtureB!!.isSensor) {
+            fixtureA.getBody()!!.isAwake = true
+            fixtureB.getBody()!!.isAwake = true
         }
 
         val type1 = fixtureA!!.type
@@ -439,40 +523,50 @@ class World(
     /**
      * Register a contact filter to provide specific control over collision. Otherwise the default
      * filter is used (_defaultFilter). The listener is owned by you and must remain in scope.
+     *
+     * @param filter
      */
     fun setContactFilter(filter: ContactFilter) {
-        contactManager.contactFilter = filter
+        m_contactManager.m_contactFilter = filter
     }
 
     /**
      * Register a contact event listener. The listener is owned by you and must remain in scope.
+     *
+     * @param listener
      */
     fun setContactListener(listener: ContactListener) {
-        contactManager.contactListener = listener
+        m_contactManager.m_contactListener = listener
     }
 
     /**
      * Register a routine for debug drawing. The debug draw functions are called inside with
      * World.DrawDebugData method. The debug draw object is owned by you and must remain in scope.
+     *
+     * @param debugDraw
      */
     fun setDebugDraw(debugDraw: DebugDraw) {
-        this.debugDraw = debugDraw
+        m_debugDraw = debugDraw
     }
 
     /**
-     * Create a rigid body given a definition. No reference to the definition is retained.
+     * create a rigid body given a definition. No reference to the definition is retained.
      *
      * @warning This function is locked during callbacks.
+     * @param def
+     * @return
      */
     fun createBody(def: BodyDef): Body {
-        assert(!isLocked)
-        if (isLocked) error("World is locked")
+        assert(isLocked == false)
+        if (isLocked) {
+            error("World is locked")
+        }
         // TODO djm pooling
         val b = Body(def, this)
 
         // add to world doubly linked list
         b.prev = null
-        b.next = bodyList
+        b.m_next = bodyList
         if (bodyList != null) {
             bodyList!!.prev = b
         }
@@ -483,19 +577,22 @@ class World(
     }
 
     /**
-     * Destroy a rigid body given a definition. No reference to the definition is retained. This
+     * destroy a rigid body given a definition. No reference to the definition is retained. This
      * function is locked during callbacks.
      *
      * @warning This automatically deletes all associated shapes and joints.
      * @warning This function is locked during callbacks.
+     * @param body
      */
     fun destroyBody(body: Body) {
         assert(bodyCount > 0)
-        assert(!isLocked)
-        if (isLocked) return
+        assert(isLocked == false)
+        if (isLocked) {
+            return
+        }
 
         // Delete the attached joints.
-        var je = body.jointList
+        var je = body.m_jointList
         while (je != null) {
             val je0 = je
             je = je.next
@@ -505,48 +602,48 @@ class World(
 
             destroyJoint(je0.joint)
 
-            body.jointList = je
+            body.m_jointList = je
         }
-        body.jointList = null
+        body.m_jointList = null
 
         // Delete the attached contacts.
-        var ce = body.contactList
+        var ce = body.m_contactList
         while (ce != null) {
             val ce0 = ce
             ce = ce.next
-            contactManager.destroy(ce0.contact!!)
+            m_contactManager.destroy(ce0.contact!!)
         }
-        body.contactList = null
+        body.m_contactList = null
 
-        var f = body.fixtureList
+        var f = body.m_fixtureList
         while (f != null) {
             val f0 = f
-            f = f.next
+            f = f.m_next
 
             if (destructionListener != null) {
                 destructionListener!!.sayGoodbye(f0)
             }
 
-            f0.destroyProxies(contactManager.broadPhase)
+            f0.destroyProxies(m_contactManager.m_broadPhase)
             f0.destroy()
             // TODO djm recycle fixtures (here or in that destroy method)
-            body.fixtureList = f
-            body.fixtureCount -= 1
+            body.m_fixtureList = f
+            body.m_fixtureCount -= 1
         }
-        body.fixtureList = null
-        body.fixtureCount = 0
+        body.m_fixtureList = null
+        body.m_fixtureCount = 0
 
         // Remove world body list.
         if (body.prev != null) {
-            body.prev!!.next = body.next
+            body.prev!!.m_next = body.m_next
         }
 
-        if (body.next != null) {
-            body.next!!.prev = body.prev
+        if (body.m_next != null) {
+            body.m_next!!.prev = body.prev
         }
 
         if (body == bodyList) {
-            bodyList = body.next
+            bodyList = body.m_next
         }
 
         --bodyCount
@@ -554,14 +651,18 @@ class World(
     }
 
     /**
-     * Create a joint to constrain bodies together. No reference to the definition is retained. This
+     * create a joint to constrain bodies together. No reference to the definition is retained. This
      * may cause the connected bodies to cease colliding.
      *
      * @warning This function is locked during callbacks.
+     * @param def
+     * @return
      */
     fun createJoint(def: JointDef): Joint? {
-        assert(!isLocked)
-        if (isLocked) return null
+        assert(isLocked == false)
+        if (isLocked) {
+            return null
+        }
 
         val j = Joint.create(this, def)
 
@@ -578,27 +679,27 @@ class World(
         j.edgeA.joint = j
         j.edgeA.other = j.bodyB
         j.edgeA.prev = null
-        j.edgeA.next = j.bodyA!!.jointList
-        if (j.bodyA!!.jointList != null) {
-            j.bodyA!!.jointList!!.prev = j.edgeA
+        j.edgeA.next = j.bodyA!!.m_jointList
+        if (j.bodyA!!.m_jointList != null) {
+            j.bodyA!!.m_jointList!!.prev = j.edgeA
         }
-        j.bodyA!!.jointList = j.edgeA
+        j.bodyA!!.m_jointList = j.edgeA
 
         j.edgeB.joint = j
         j.edgeB.other = j.bodyA
         j.edgeB.prev = null
-        j.edgeB.next = j.bodyB!!.jointList
-        if (j.bodyB!!.jointList != null) {
-            j.bodyB!!.jointList!!.prev = j.edgeB
+        j.edgeB.next = j.bodyB!!.m_jointList
+        if (j.bodyB!!.m_jointList != null) {
+            j.bodyB!!.m_jointList!!.prev = j.edgeB
         }
-        j.bodyB!!.jointList = j.edgeB
+        j.bodyB!!.m_jointList = j.edgeB
 
         val bodyA = def.bodyA
         val bodyB = def.bodyB
 
         // If the joint prevents collisions, then flag any contacts for filtering.
-        if (!def.collideConnected) {
-            var edge = bodyB!!.contactList
+        if (def.collideConnected == false) {
+            var edge = bodyB!!.getContactList()
             while (edge != null) {
                 if (edge.other == bodyA) {
                     // Flag the contact for filtering at the next time step (where either
@@ -619,14 +720,15 @@ class World(
      * destroy a joint. This may cause the connected bodies to begin colliding.
      *
      * @warning This function is locked during callbacks.
+     * @param joint
      */
     fun destroyJoint(j: Joint?) {
-        assert(!isLocked)
+        assert(isLocked == false)
         if (isLocked) {
             return
         }
 
-        val collideConnected = j!!.collideConnected
+        val collideConnected = j!!.getCollideConnected()
 
         // Remove from the doubly linked list.
         if (j.prev != null) {
@@ -658,8 +760,8 @@ class World(
             j.edgeA.next!!.prev = j.edgeA.prev
         }
 
-        if (j.edgeA == bodyA.jointList) {
-            bodyA.jointList = j.edgeA.next
+        if (j.edgeA == bodyA.m_jointList) {
+            bodyA.m_jointList = j.edgeA.next
         }
 
         j.edgeA.prev = null
@@ -674,8 +776,8 @@ class World(
             j.edgeB.next!!.prev = j.edgeB.prev
         }
 
-        if (j.edgeB == bodyB.jointList) {
-            bodyB.jointList = j.edgeB.next
+        if (j.edgeB == bodyB.m_jointList) {
+            bodyB.m_jointList = j.edgeB.next
         }
 
         j.edgeB.prev = null
@@ -687,8 +789,8 @@ class World(
         --jointCount
 
         // If the joint prevents collisions, then flag any contacts for filtering.
-        if (!collideConnected) {
-            var edge = bodyB.contactList
+        if (collideConnected == false) {
+            var edge = bodyB.getContactList()
             while (edge != null) {
                 if (edge.other == bodyA) {
                     // Flag the contact for filtering at the next time step (where either
@@ -713,37 +815,37 @@ class World(
         tempTimer.reset()
         // log.debug("Starting step");
         // If new fixtures were added, we need to find the new contacts.
-        if (flags and NEW_FIXTURE == NEW_FIXTURE) {
+        if (m_flags and NEW_FIXTURE == NEW_FIXTURE) {
             // log.debug("There's a new fixture, lets look for new contacts");
-            contactManager.findNewContacts()
-            flags = flags and NEW_FIXTURE.inv()
+            m_contactManager.findNewContacts()
+            m_flags = m_flags and NEW_FIXTURE.inv()
         }
 
-        flags = flags or LOCKED
+        m_flags = m_flags or LOCKED
 
         step.dt = dt
         step.velocityIterations = velocityIterations
         step.positionIterations = positionIterations
         if (dt > 0.0f) {
-            step.invDt = 1.0f / dt
+            step.inv_dt = 1.0f / dt
         } else {
-            step.invDt = 0.0f
+            step.inv_dt = 0.0f
         }
 
-        step.dtRatio = inv_dt0 * dt
+        step.dtRatio = m_inv_dt0 * dt
 
         step.warmStarting = isWarmStarting
         profile.stepInit.record(tempTimer.milliseconds)
 
         // Update contacts. This is where some contacts are destroyed.
         tempTimer.reset()
-        contactManager.collide()
+        m_contactManager.collide()
         profile.collide.record(tempTimer.milliseconds)
 
         // Integrate velocities, solve velocity constraints, and integrate positions.
-        if (stepComplete && step.dt > 0.0f) {
+        if (m_stepComplete && step.dt > 0.0f) {
             tempTimer.reset()
-            particleSystem.solve(step) // Particle Simulation
+            m_particleSystem.solve(step) // Particle Simulation
             profile.solveParticleSystem.record(tempTimer.milliseconds)
             tempTimer.reset()
             solve(step)
@@ -758,14 +860,14 @@ class World(
         }
 
         if (step.dt > 0.0f) {
-            inv_dt0 = step.invDt
+            m_inv_dt0 = step.inv_dt
         }
 
-        if (flags and CLEAR_FORCES == CLEAR_FORCES) {
+        if (m_flags and CLEAR_FORCES == CLEAR_FORCES) {
             clearForces()
         }
 
-        flags = flags and LOCKED.inv()
+        m_flags = m_flags and LOCKED.inv()
         // log.debug("ending step");
 
         profile.step.record(stepTimer.milliseconds)
@@ -776,14 +878,14 @@ class World(
      * each call to Step, unless you are performing sub-steps. By default, forces will be
      * automatically cleared, so you don't need to call this function.
      *
-     * @see autoClearForces
+     * @see setAutoClearForces
      */
     fun clearForces() {
         var body = bodyList
         while (body != null) {
             body.force.setZero()
             body.torque = 0.0f
-            body = body.next
+            body = body.getNext()
         }
     }
 
@@ -791,16 +893,19 @@ class World(
      * Call this to draw shapes and other debug draw data.
      */
     fun drawDebugData() {
-        if (debugDraw == null) return
+        if (m_debugDraw == null) {
+            return
+        }
 
-        val flags = debugDraw!!.flags
-        val wireframe = flags and DebugDraw.wireframeDrawingBit != 0
 
-        if (flags and DebugDraw.shapeBit != 0) {
+        val flags = m_debugDraw!!.flags
+        val wireframe = flags and DebugDraw.e_wireframeDrawingBit != 0
+
+        if (flags and DebugDraw.e_shapeBit != 0) {
             var b = bodyList
             while (b != null) {
-                xf.set(b.getTransform())
-                var f = b.fixtureList
+                xf.set(b.transform)
+                var f = b.getFixtureList()
                 while (f != null) {
                     if (!b.isActive) {
                         color.set(0.5f, 0.5f, 0.3f)
@@ -818,14 +923,14 @@ class World(
                         color.set(0.9f, 0.7f, 0.7f)
                         drawShape(f, xf, color, wireframe)
                     }
-                    f = f.next
+                    f = f.getNext()
                 }
-                b = b.next
+                b = b.getNext()
             }
-            drawParticleSystem(particleSystem)
+            drawParticleSystem(m_particleSystem)
         }
 
-        if (flags and DebugDraw.jointBit != 0) {
+        if (flags and DebugDraw.e_jointBit != 0) {
             var j = jointList
             while (j != null) {
                 drawJoint(j)
@@ -833,64 +938,64 @@ class World(
             }
         }
 
-        if (flags and DebugDraw.pairBit != 0) {
+        if (flags and DebugDraw.e_pairBit != 0) {
             color.set(0.3f, 0.9f, 0.9f)
-            var c: Contact? = contactManager.contactList
+            var c: Contact? = m_contactManager.m_contactList
             while (c != null) {
-                val fixtureA = c.fixtureA
-                val fixtureB = c.fixtureB
-                fixtureA!!.getAABB(c.indexA).getCenterToOut(cA)
-                fixtureB!!.getAABB(c.indexB).getCenterToOut(cB)
-                debugDraw!!.drawSegment(cA, cB, color)
-                c = c.next
+                val fixtureA = c.getFixtureA()
+                val fixtureB = c.getFixtureB()
+                fixtureA!!.getAABB(c.getChildIndexA()).getCenterToOut(cA)
+                fixtureB!!.getAABB(c.getChildIndexB()).getCenterToOut(cB)
+                m_debugDraw!!.drawSegment(cA, cB, color)
+                c = c.getNext()
             }
         }
 
-        if (flags and DebugDraw.aabbBit != 0) {
+        if (flags and DebugDraw.e_aabbBit != 0) {
             color.set(0.9f, 0.3f, 0.9f)
 
             var b = bodyList
             while (b != null) {
-                if (b.isActive == false) {
-                    b = b.next
+                if (!b.isActive) {
+                    b = b.getNext()
                     continue
                 }
 
-                var f = b.fixtureList
+                var f = b.getFixtureList()
                 while (f != null) {
-                    for (i in 0 until f.proxyCount) {
-                        val proxy = f.proxies!![i]
-                        val aabb = contactManager.broadPhase.getFatAABB(proxy.proxyId)
+                    for (i in 0 until f.m_proxyCount) {
+                        val proxy = f.m_proxies!![i]
+                        val aabb = m_contactManager.m_broadPhase.getFatAABB(proxy.proxyId)
                         if (aabb != null) {
                             val vs = avs[4]
                             vs[0].set(aabb.lowerBound.x, aabb.lowerBound.y)
                             vs[1].set(aabb.upperBound.x, aabb.lowerBound.y)
                             vs[2].set(aabb.upperBound.x, aabb.upperBound.y)
                             vs[3].set(aabb.lowerBound.x, aabb.upperBound.y)
-                            debugDraw!!.drawPolygon(vs, 4, color)
+                            m_debugDraw!!.drawPolygon(vs, 4, color)
                         }
                     }
-                    f = f.next
+                    f = f.getNext()
                 }
-                b = b.next
+                b = b.getNext()
             }
         }
 
-        if (flags and DebugDraw.centerOfMassBit != 0) {
+        if (flags and DebugDraw.e_centerOfMassBit != 0) {
             var b = bodyList
             while (b != null) {
-                xf.set(b.getTransform())
+                xf.set(b.transform)
                 xf.p.set(b.worldCenter)
-                debugDraw!!.drawTransform(xf)
-                b = b.next
+                m_debugDraw!!.drawTransform(xf)
+                b = b.getNext()
             }
         }
 
-        if (flags and DebugDraw.dynamicTreeBit != 0) {
-            contactManager.broadPhase.drawTree(debugDraw!!)
+        if (flags and DebugDraw.e_dynamicTreeBit != 0) {
+            m_contactManager.m_broadPhase.drawTree(m_debugDraw!!)
         }
 
-        debugDraw!!.flush()
+        m_debugDraw!!.flush()
     }
 
     /**
@@ -900,9 +1005,9 @@ class World(
      * @param aabb the query box.
      */
     fun queryAABB(callback: QueryCallback, aabb: AABB) {
-        wqwrapper.broadPhase = contactManager.broadPhase
+        wqwrapper.broadPhase = m_contactManager.m_broadPhase
         wqwrapper.callback = callback
-        contactManager.broadPhase.query(wqwrapper, aabb)
+        m_contactManager.m_broadPhase.query(wqwrapper, aabb)
     }
 
     /**
@@ -913,10 +1018,10 @@ class World(
      * @param aabb the query box.
      */
     fun queryAABB(callback: QueryCallback, particleCallback: ParticleQueryCallback, aabb: AABB) {
-        wqwrapper.broadPhase = contactManager.broadPhase
+        wqwrapper.broadPhase = m_contactManager.m_broadPhase
         wqwrapper.callback = callback
-        contactManager.broadPhase.query(wqwrapper, aabb)
-        particleSystem.queryAABB(particleCallback, aabb)
+        m_contactManager.m_broadPhase.query(wqwrapper, aabb)
+        m_particleSystem.queryAABB(particleCallback, aabb)
     }
 
     /**
@@ -926,7 +1031,7 @@ class World(
      * @param aabb the query box.
      */
     fun queryAABB(particleCallback: ParticleQueryCallback, aabb: AABB) {
-        particleSystem.queryAABB(particleCallback, aabb)
+        m_particleSystem.queryAABB(particleCallback, aabb)
     }
 
     /**
@@ -939,12 +1044,12 @@ class World(
      * @param point2 the ray ending point
      */
     fun raycast(callback: RayCastCallback, point1: Vec2, point2: Vec2) {
-        wrcwrapper.broadPhase = contactManager.broadPhase
+        wrcwrapper.broadPhase = m_contactManager.m_broadPhase
         wrcwrapper.callback = callback
         input.maxFraction = 1.0f
         input.p1.set(point1)
         input.p2.set(point2)
-        contactManager.broadPhase.raycast(wrcwrapper, input)
+        m_contactManager.m_broadPhase.raycast(wrcwrapper, input)
     }
 
     /**
@@ -957,17 +1062,15 @@ class World(
      * @param point1 the ray starting point
      * @param point2 the ray ending point
      */
-    fun raycast(
-        callback: RayCastCallback, particleCallback: ParticleRaycastCallback,
-        point1: Vec2, point2: Vec2
-    ) {
-        wrcwrapper.broadPhase = contactManager.broadPhase
+    fun raycast(callback: RayCastCallback, particleCallback: ParticleRaycastCallback,
+                point1: Vec2, point2: Vec2) {
+        wrcwrapper.broadPhase = m_contactManager.m_broadPhase
         wrcwrapper.callback = callback
         input.maxFraction = 1.0f
         input.p1.set(point1)
         input.p2.set(point2)
-        contactManager.broadPhase.raycast(wrcwrapper, input)
-        particleSystem.raycast(particleCallback, point1, point2)
+        m_contactManager.m_broadPhase.raycast(wrcwrapper, input)
+        m_particleSystem.raycast(particleCallback, point1, point2)
     }
 
     /**
@@ -979,7 +1082,7 @@ class World(
      * @param point2 the ray ending point
      */
     fun raycast(particleCallback: ParticleRaycastCallback, point1: Vec2, point2: Vec2) {
-        particleSystem.raycast(particleCallback, point1, point2)
+        m_particleSystem.raycast(particleCallback, point1, point2)
     }
 
     private fun solve(step: TimeStep) {
@@ -992,28 +1095,25 @@ class World(
             var b = bodyList
             while (b != null) {
                 b!!.xf0.set(b!!.xf)
-                b = b!!.next
+                b = b!!.m_next
             }
         }
 
         // Size the island for the worst case.
-        island.init(
-            bodyCount, contactManager.contactCount, jointCount,
-            contactManager.contactListener
-        )
+        island.init(bodyCount, m_contactManager.m_contactCount, jointCount, m_contactManager.m_contactListener)
 
         // Clear all the island flags.
         run {
             var b = bodyList
             while (b != null) {
-                b!!.flags = b!!.flags and Body.islandFlag.inv()
-                b = b!!.next
+                b!!.flags = b!!.flags and Body.e_islandFlag.inv()
+                b = b!!.m_next
             }
         }
-        var c: Contact? = contactManager.contactList
+        var c: Contact? = m_contactManager.m_contactList
         while (c != null) {
-            c.flags = c.flags and Contact.ISLAND_FLAG.inv()
-            c = c.next
+            c.m_flags = c.m_flags and Contact.ISLAND_FLAG.inv()
+            c = c.m_next
         }
         var j = jointList
         while (j != null) {
@@ -1028,19 +1128,19 @@ class World(
         }
         var seed = bodyList
         while (seed != null) {
-            if (seed.flags and Body.islandFlag == Body.islandFlag) {
-                seed = seed.next
+            if (seed.flags and Body.e_islandFlag == Body.e_islandFlag) {
+                seed = seed.m_next
                 continue
             }
 
             if (seed.isAwake == false || seed.isActive == false) {
-                seed = seed.next
+                seed = seed.m_next
                 continue
             }
 
             // The seed can be dynamic or kinematic.
             if (seed.type === BodyType.STATIC) {
-                seed = seed.next
+                seed = seed.m_next
                 continue
             }
 
@@ -1048,7 +1148,7 @@ class World(
             island.clear()
             var stackCount = 0
             stack[stackCount++] = seed
-            seed.flags = seed.flags or Body.islandFlag
+            seed.flags = seed.flags or Body.e_islandFlag
 
             // Perform a depth first search (DFS) on the constraint graph.
             while (stackCount > 0) {
@@ -1067,12 +1167,12 @@ class World(
                 }
 
                 // Search all contacts connected to this body.
-                var ce = b.contactList
+                var ce = b.m_contactList
                 while (ce != null) {
                     val contact = ce.contact
 
                     // Has this contact already been added to an island?
-                    if (contact!!.flags and Contact.ISLAND_FLAG == Contact.ISLAND_FLAG) {
+                    if (contact!!.m_flags and Contact.ISLAND_FLAG == Contact.ISLAND_FLAG) {
                         ce = ce.next
                         continue
                     }
@@ -1084,34 +1184,34 @@ class World(
                     }
 
                     // Skip sensors.
-                    val sensorA = contact.fixtureA!!._isSensor
-                    val sensorB = contact.fixtureB!!._isSensor
+                    val sensorA = contact.m_fixtureA!!.m_isSensor
+                    val sensorB = contact.m_fixtureB!!.m_isSensor
                     if (sensorA || sensorB) {
                         ce = ce.next
                         continue
                     }
 
                     island.add(contact)
-                    contact.flags = contact.flags or Contact.ISLAND_FLAG
+                    contact.m_flags = contact.m_flags or Contact.ISLAND_FLAG
 
                     val other = ce.other
 
                     // Was the other body already added to this island?
-                    if (other!!.flags and Body.islandFlag == Body.islandFlag) {
+                    if (other!!.flags and Body.e_islandFlag == Body.e_islandFlag) {
                         ce = ce.next
                         continue
                     }
 
                     assert(stackCount < stackSize)
                     stack[stackCount++] = other
-                    other.flags = other.flags or Body.islandFlag
+                    other.flags = other.flags or Body.e_islandFlag
                     ce = ce.next
                 }
 
                 // Search all joints connect to this body.
-                var je = b.jointList
+                var je = b.m_jointList
                 while (je != null) {
-                    if (je.joint!!.islandFlag) {
+                    if (je.joint!!.islandFlag == true) {
                         je = je.next
                         continue
                     }
@@ -1119,7 +1219,7 @@ class World(
                     val other = je.other
 
                     // Don't simulate joints connected to inactive bodies.
-                    if (!other!!.isActive) {
+                    if (other!!.isActive == false) {
                         je = je.next
                         continue
                     }
@@ -1127,28 +1227,28 @@ class World(
                     island.add(je.joint!!)
                     je.joint!!.islandFlag = true
 
-                    if (other.flags and Body.islandFlag == Body.islandFlag) {
+                    if (other.flags and Body.e_islandFlag == Body.e_islandFlag) {
                         je = je.next
                         continue
                     }
 
                     assert(stackCount < stackSize)
                     stack[stackCount++] = other
-                    other.flags = other.flags or Body.islandFlag
+                    other.flags = other.flags or Body.e_islandFlag
                     je = je.next
                 }
             }
             island.solve(profile, step, gravity, isSleepingAllowed)
 
             // Post solve cleanup.
-            for (i in 0 until island.bodyCount) {
+            for (i in 0 until island.m_bodyCount) {
                 // Allow static bodies to participate in other islands.
-                val b = island.bodies!![i]
+                val b = island.m_bodies!![i]
                 if (b.type === BodyType.STATIC) {
-                    b.flags = b.flags and Body.islandFlag.inv()
+                    b.flags = b.flags and Body.e_islandFlag.inv()
                 }
             }
-            seed = seed.next
+            seed = seed.m_next
         }
         profile.solveInit.endAccum()
         profile.solveVelocity.endAccum()
@@ -1159,47 +1259,45 @@ class World(
         var b = bodyList
         while (b != null) {
             // If a body was not in an island then it did not move.
-            if (b!!.flags and Body.islandFlag == 0) {
-                b = b!!.next
+            if (b!!.flags and Body.e_islandFlag == 0) {
+                b = b!!.getNext()
                 continue
             }
 
             if (b!!.type === BodyType.STATIC) {
-                b = b!!.next
+                b = b!!.getNext()
                 continue
             }
 
             // Update fixtures (for broad-phase).
             b!!.synchronizeFixtures()
-            b = b!!.next
+            b = b!!.getNext()
         }
 
         // Look for new contacts.
-        contactManager.findNewContacts()
+        m_contactManager.findNewContacts()
         profile.broadphase.record(broadphaseTimer.milliseconds)
     }
 
     private fun solveTOI(step: TimeStep) {
+
         val island = toiIsland
-        island.init(
-            2 * Settings.maxTOIContacts, Settings.maxTOIContacts, 0,
-            contactManager.contactListener
-        )
-        if (stepComplete) {
+        island.init(2 * Settings.maxTOIContacts, Settings.maxTOIContacts, 0, m_contactManager.m_contactListener)
+        if (m_stepComplete) {
             var b = bodyList
             while (b != null) {
-                b.flags = b.flags and Body.islandFlag.inv()
+                b.flags = b.flags and Body.e_islandFlag.inv()
                 b.sweep.alpha0 = 0.0f
-                b = b.next
+                b = b.m_next
             }
 
-            var c: Contact? = contactManager.contactList
+            var c: Contact? = m_contactManager.m_contactList
             while (c != null) {
                 // Invalidate TOI
-                c.flags = c.flags and (Contact.TOI_FLAG or Contact.ISLAND_FLAG).inv()
-                c.toiCount = 0f
-                c.toi = 1.0f
-                c = c.next
+                c.m_flags = c.m_flags and (Contact.TOI_FLAG or Contact.ISLAND_FLAG).inv()
+                c.m_toiCount = 0f
+                c.m_toi = 1.0f
+                c = c.m_next
             }
         }
 
@@ -1209,36 +1307,36 @@ class World(
             var minContact: Contact? = null
             var minAlpha = 1.0f
 
-            var c: Contact? = contactManager.contactList
+            var c: Contact? = m_contactManager.m_contactList
             while (c != null) {
                 // Is this contact disabled?
                 if (c.isEnabled == false) {
-                    c = c.next
+                    c = c.m_next
                     continue
                 }
 
                 // Prevent excessive sub-stepping.
-                if (c.toiCount > Settings.maxSubSteps) {
-                    c = c.next
+                if (c.m_toiCount > Settings.maxSubSteps) {
+                    c = c.m_next
                     continue
                 }
 
                 var alpha = 1.0f
-                if (c.flags and Contact.TOI_FLAG != 0) {
+                if (c.m_flags and Contact.TOI_FLAG != 0) {
                     // This contact has a valid cached TOI.
-                    alpha = c.toi
+                    alpha = c.m_toi
                 } else {
-                    val fA = c.fixtureA
-                    val fB = c.fixtureB
+                    val fA = c.getFixtureA()
+                    val fB = c.getFixtureB()
 
                     // Is there a sensor?
                     if (fA!!.isSensor || fB!!.isSensor) {
-                        c = c.next
+                        c = c.m_next
                         continue
                     }
 
-                    val bA = fA.body
-                    val bB = fB.body
+                    val bA = fA.getBody()
+                    val bB = fB.getBody()
 
                     val typeA = bA!!._type
                     val typeB = bB!!._type
@@ -1249,7 +1347,7 @@ class World(
 
                     // Is at least one body active (awake and dynamic or kinematic)?
                     if (activeA == false && activeB == false) {
-                        c = c.next
+                        c = c.m_next
                         continue
                     }
 
@@ -1258,7 +1356,7 @@ class World(
 
                     // Are these two non-bullet dynamic bodies?
                     if (collideA == false && collideB == false) {
-                        c = c.next
+                        c = c.m_next
                         continue
                     }
 
@@ -1276,13 +1374,13 @@ class World(
 
                     assert(alpha0 < 1.0f)
 
-                    val indexA = c.indexA
-                    val indexB = c.indexB
+                    val indexA = c.getChildIndexA()
+                    val indexB = c.getChildIndexB()
 
                     // Compute the time of impact in interval [0, minTOI]
                     val input = toiInput
-                    input.proxyA.set(fA.shape!!, indexA)
-                    input.proxyB.set(fB.shape!!, indexB)
+                    input.proxyA.set(fA.getShape()!!, indexA)
+                    input.proxyB.set(fB.getShape()!!, indexB)
                     input.sweepA.set(bA.sweep)
                     input.sweepB.set(bB.sweep)
                     input.tMax = 1.0f
@@ -1297,8 +1395,8 @@ class World(
                         alpha = 1.0f
                     }
 
-                    c.toi = alpha
-                    c.flags = c.flags or Contact.TOI_FLAG
+                    c.m_toi = alpha
+                    c.m_flags = c.m_flags or Contact.TOI_FLAG
                 }
 
                 if (alpha < minAlpha) {
@@ -1306,20 +1404,20 @@ class World(
                     minContact = c
                     minAlpha = alpha
                 }
-                c = c.next
+                c = c.m_next
             }
 
             if (minContact == null || 1.0f - 10.0f * Settings.EPSILON < minAlpha) {
                 // No more TOI events. Done!
-                stepComplete = true
+                m_stepComplete = true
                 break
             }
 
             // Advance the bodies to the TOI.
-            val fA = minContact.fixtureA
-            val fB = minContact.fixtureB
-            val bA = fA!!.body
-            val bB = fB!!.body
+            val fA = minContact.getFixtureA()
+            val fB = minContact.getFixtureB()
+            val bA = fA!!.getBody()
+            val bB = fB!!.getBody()
 
             backup1.set(bA!!.sweep)
             backup2.set(bB!!.sweep)
@@ -1328,9 +1426,9 @@ class World(
             bB.advance(minAlpha)
 
             // The TOI contact likely has some new contact points.
-            minContact.update(contactManager.contactListener)
-            minContact.flags = minContact.flags and Contact.TOI_FLAG.inv()
-            ++minContact.toiCount
+            minContact.update(m_contactManager.m_contactListener)
+            minContact.m_flags = minContact.m_flags and Contact.TOI_FLAG.inv()
+            ++minContact.m_toiCount
 
             // Is the contact solid?
             if (minContact.isEnabled == false || minContact.isTouching == false) {
@@ -1352,9 +1450,9 @@ class World(
             island.add(bB)
             island.add(minContact)
 
-            bA.flags = bA.flags or Body.islandFlag
-            bB.flags = bB.flags or Body.islandFlag
-            minContact.flags = minContact.flags or Contact.ISLAND_FLAG
+            bA.flags = bA.flags or Body.e_islandFlag
+            bB.flags = bB.flags or Body.e_islandFlag
+            minContact.m_flags = minContact.m_flags or Contact.ISLAND_FLAG
 
             // Get contacts on bodyA and bodyB.
             tempBodies[0] = bA
@@ -1362,34 +1460,34 @@ class World(
             for (i in 0..1) {
                 val body = tempBodies[i]!!
                 if (body._type === BodyType.DYNAMIC) {
-                    var ce = body.contactList
+                    var ce = body.m_contactList
                     while (ce != null) {
-                        if (island.bodyCount == island.bodyCapacity) {
+                        if (island.m_bodyCount == island.m_bodyCapacity) {
                             break
                         }
 
-                        if (island.contactCount == island.contactCapacity) {
+                        if (island.m_contactCount == island.m_contactCapacity) {
                             break
                         }
 
                         val contact = ce.contact
 
                         // Has this contact already been added to the island?
-                        if (contact!!.flags and Contact.ISLAND_FLAG != 0) {
+                        if (contact!!.m_flags and Contact.ISLAND_FLAG != 0) {
                             ce = ce.next
                             continue
                         }
 
                         // Only add static, kinematic, or bullet bodies.
                         val other = ce.other
-                        if (other!!._type === BodyType.DYNAMIC && !body.isBullet && !other!!.isBullet) {
+                        if (other!!._type === BodyType.DYNAMIC && body.isBullet == false && other!!.isBullet == false) {
                             ce = ce.next
                             continue
                         }
 
                         // Skip sensors.
-                        val sensorA = contact.fixtureA!!._isSensor
-                        val sensorB = contact.fixtureB!!._isSensor
+                        val sensorA = contact.m_fixtureA!!.m_isSensor
+                        val sensorB = contact.m_fixtureB!!.m_isSensor
                         if (sensorA || sensorB) {
                             ce = ce.next
                             continue
@@ -1397,15 +1495,15 @@ class World(
 
                         // Tentatively advance the body to the TOI.
                         backup1.set(other!!.sweep)
-                        if (other.flags and Body.islandFlag == 0) {
+                        if (other.flags and Body.e_islandFlag == 0) {
                             other.advance(minAlpha)
                         }
 
                         // Update the contact points
-                        contact.update(contactManager.contactListener)
+                        contact.update(m_contactManager.m_contactListener)
 
                         // Was the contact disabled by the user?
-                        if (!contact.isEnabled) {
+                        if (contact.isEnabled == false) {
                             other.sweep.set(backup1)
                             other.synchronizeTransform()
                             ce = ce.next
@@ -1413,7 +1511,7 @@ class World(
                         }
 
                         // Are there contact points?
-                        if (!contact.isTouching) {
+                        if (contact.isTouching == false) {
                             other.sweep.set(backup1)
                             other.synchronizeTransform()
                             ce = ce.next
@@ -1421,17 +1519,17 @@ class World(
                         }
 
                         // Add the contact to the island
-                        contact.flags = contact.flags or Contact.ISLAND_FLAG
+                        contact.m_flags = contact.m_flags or Contact.ISLAND_FLAG
                         island.add(contact)
 
                         // Has the other body already been added to the island?
-                        if (other.flags and Body.islandFlag != 0) {
+                        if (other.flags and Body.e_islandFlag != 0) {
                             ce = ce.next
                             continue
                         }
 
                         // Add the other body to the island.
-                        other.flags = other.flags or Body.islandFlag
+                        other.flags = other.flags or Body.e_islandFlag
 
                         if (other._type !== BodyType.STATIC) {
                             other.isAwake = true
@@ -1444,7 +1542,7 @@ class World(
             }
 
             subStep.dt = (1.0f - minAlpha) * step.dt
-            subStep.invDt = 1.0f / subStep.dt
+            subStep.inv_dt = 1.0f / subStep.dt
             subStep.dtRatio = 1.0f
             subStep.positionIterations = 20
             subStep.velocityIterations = step.velocityIterations
@@ -1452,9 +1550,9 @@ class World(
             island.solveTOI(subStep, bA.islandIndex, bB.islandIndex)
 
             // Reset island flags and synchronize broad-phase proxies.
-            for (i in 0 until island.bodyCount) {
-                val body = island.bodies!![i]
-                body.flags = body.flags and Body.islandFlag.inv()
+            for (i in 0 until island.m_bodyCount) {
+                val body = island.m_bodies!![i]
+                body.flags = body.flags and Body.e_islandFlag.inv()
 
                 if (body._type !== BodyType.DYNAMIC) {
                     continue
@@ -1463,19 +1561,19 @@ class World(
                 body.synchronizeFixtures()
 
                 // Invalidate all contact TOIs on this displaced body.
-                var ce = body.contactList
+                var ce = body.m_contactList
                 while (ce != null) {
-                    ce.contact!!.flags = ce.contact!!.flags and (Contact.TOI_FLAG or Contact.ISLAND_FLAG).inv()
+                    ce.contact!!.m_flags = ce.contact!!.m_flags and (Contact.TOI_FLAG or Contact.ISLAND_FLAG).inv()
                     ce = ce.next
                 }
             }
 
             // Commit fixture proxy movements to the broad-phase so that new contacts are created.
             // Also, some contacts can be destroyed.
-            contactManager.findNewContacts()
+            m_contactManager.findNewContacts()
 
             if (isSubStepping) {
-                stepComplete = false
+                m_stepComplete = false
                 break
             }
         }
@@ -1484,8 +1582,8 @@ class World(
     private fun drawJoint(joint: Joint) {
         val bodyA = joint.bodyA
         val bodyB = joint.bodyB
-        val xf1 = bodyA!!.getTransform()
-        val xf2 = bodyB!!.getTransform()
+        val xf1 = bodyA!!.transform
+        val xf2 = bodyB!!.transform
         val x1 = xf1.p
         val x2 = xf2.p
         val p1 = pool.popVec2()
@@ -1497,21 +1595,22 @@ class World(
 
         when (joint.type) {
             // TODO djm write after writing joints
-            JointType.DISTANCE -> debugDraw!!.drawSegment(p1, p2, color)
+            JointType.DISTANCE -> m_debugDraw!!.drawSegment(p1, p2, color)
 
             JointType.PULLEY -> {
                 val pulley = joint as PulleyJoint
-                val s1 = pulley.groundAnchorA
-                val s2 = pulley.groundAnchorB
-                debugDraw!!.drawSegment(s1, p1, color)
-                debugDraw!!.drawSegment(s2, p2, color)
-                debugDraw!!.drawSegment(s1, s2, color)
+                val s1 = pulley.getGroundAnchorA()
+                val s2 = pulley.getGroundAnchorB()
+                m_debugDraw!!.drawSegment(s1, p1, color)
+                m_debugDraw!!.drawSegment(s2, p2, color)
+                m_debugDraw!!.drawSegment(s1, s2, color)
             }
-            JointType.CONSTANT_VOLUME, JointType.MOUSE -> Unit
+            JointType.CONSTANT_VOLUME, JointType.MOUSE -> {
+            }
             else -> {
-                debugDraw!!.drawSegment(x1, p1, color)
-                debugDraw!!.drawSegment(p1, p2, color)
-                debugDraw!!.drawSegment(x2, p2, color)
+                m_debugDraw!!.drawSegment(x1, p1, color)
+                m_debugDraw!!.drawSegment(p1, p2, color)
+                m_debugDraw!!.drawSegment(x2, p2, color)
             }
         }// don't draw this
         pool.pushVec2(2)
@@ -1520,15 +1619,15 @@ class World(
     private fun drawShape(fixture: Fixture, xf: Transform, color: Color3f, wireframe: Boolean) {
         when (fixture.type) {
             ShapeType.CIRCLE -> {
-                val circle = fixture.shape as CircleShape
+                val circle = fixture.getShape() as CircleShape?
 
                 // Vec2 center = Mul(xf, circle.m_p);
-                Transform.mulToOutUnsafe(xf, circle.p, center)
+                Transform.mulToOutUnsafe(xf, circle!!.p, center)
                 val radius = circle.radius
                 xf.q.getXAxis(axis)
 
                 if (fixture.userData != null && fixture.userData == LIQUID_INT) {
-                    val b = fixture.body
+                    val b = fixture.getBody()
                     liquidOffset.set(b!!._linearVelocity)
                     val linVelLength = b._linearVelocity.length()
                     if (averageLinearVel == -1f) {
@@ -1539,19 +1638,19 @@ class World(
                     liquidOffset.mulLocal(liquidLength / averageLinearVel / 2f)
                     circCenterMoved.set(center).addLocal(liquidOffset)
                     center.subLocal(liquidOffset)
-                    debugDraw!!.drawSegment(center, circCenterMoved, liquidColor)
+                    m_debugDraw!!.drawSegment(center, circCenterMoved, liquidColor)
                     return
                 }
                 if (wireframe) {
-                    debugDraw!!.drawCircle(center, radius, axis, color)
+                    m_debugDraw!!.drawCircle(center, radius, axis, color)
                 } else {
-                    debugDraw!!.drawSolidCircle(center, radius, axis, color)
+                    m_debugDraw!!.drawSolidCircle(center, radius, axis, color)
                 }
             }
 
             ShapeType.POLYGON -> {
-                val poly = fixture.shape as PolygonShape
-                val vertexCount = poly.vertexCount
+                val poly = fixture.getShape() as PolygonShape?
+                val vertexCount = poly!!.count
                 assert(vertexCount <= Settings.maxPolygonVertices)
                 val vertices = tlvertices[Settings.maxPolygonVertices]
 
@@ -1560,27 +1659,27 @@ class World(
                     Transform.mulToOutUnsafe(xf, poly.vertices[i], vertices[i])
                 }
                 if (wireframe) {
-                    debugDraw!!.drawPolygon(vertices, vertexCount, color)
+                    m_debugDraw!!.drawPolygon(vertices, vertexCount, color)
                 } else {
-                    debugDraw!!.drawSolidPolygon(vertices, vertexCount, color)
+                    m_debugDraw!!.drawSolidPolygon(vertices, vertexCount, color)
                 }
             }
             ShapeType.EDGE -> {
-                val edge = fixture.shape as EdgeShape
-                Transform.mulToOutUnsafe(xf, edge.vertex1, v1)
+                val edge = fixture.getShape() as EdgeShape?
+                Transform.mulToOutUnsafe(xf, edge!!.vertex1, v1)
                 Transform.mulToOutUnsafe(xf, edge.vertex2, v2)
-                debugDraw!!.drawSegment(v1, v2, color)
+                m_debugDraw!!.drawSegment(v1, v2, color)
             }
             ShapeType.CHAIN -> {
-                val chain = fixture.shape as ChainShape
-                val count = chain.count
+                val chain = fixture.getShape() as ChainShape?
+                val count = chain!!.count
                 val vertices = chain.vertices
 
                 Transform.mulToOutUnsafe(xf, vertices!![0], v1)
                 for (i in 1 until count) {
                     Transform.mulToOutUnsafe(xf, vertices[i], v2)
-                    debugDraw!!.drawSegment(v1, v2, color)
-                    debugDraw!!.drawCircle(v1, 0.05f, color)
+                    m_debugDraw!!.drawSegment(v1, v2, color)
+                    m_debugDraw!!.drawCircle(v1, 0.05f, color)
                     v1.set(v2)
                 }
             }
@@ -1590,22 +1689,19 @@ class World(
     }
 
     private fun drawParticleSystem(system: ParticleSystem) {
-        val wireframe = debugDraw!!.flags and DebugDraw.wireframeDrawingBit != 0
+        val wireframe = m_debugDraw!!.flags and DebugDraw.e_wireframeDrawingBit != 0
         val particleCount = system.particleCount
         if (particleCount != 0) {
             val particleRadius = system.particleRadius
             val positionBuffer = system.particlePositionBuffer
             var colorBuffer: Array<ParticleColor>? = null
-            if (system.colorBuffer.data != null) {
+            if (system.m_colorBuffer.data != null) {
                 colorBuffer = system.particleColorBuffer
             }
             if (wireframe) {
-                debugDraw!!.drawParticlesWireframe(
-                    positionBuffer!!, particleRadius, colorBuffer!!,
-                    particleCount
-                )
+                m_debugDraw!!.drawParticlesWireframe(positionBuffer!!, particleRadius, colorBuffer!!, particleCount)
             } else {
-                debugDraw!!.drawParticles(positionBuffer!!, particleRadius, colorBuffer!!, particleCount)
+                m_debugDraw!!.drawParticles(positionBuffer!!, particleRadius, colorBuffer!!, particleCount)
             }
         }
     }
@@ -1620,9 +1716,11 @@ class World(
      * @return the index of the particle.
      */
     fun createParticle(def: ParticleDef): Int {
-        assert(!isLocked)
-        if (isLocked) return 0
-        val p = particleSystem.createParticle(def)
+        assert(isLocked == false)
+        if (isLocked) {
+            return 0
+        }
+        val p = m_particleSystem.createParticle(def)
         return p
     }
 
@@ -1632,8 +1730,9 @@ class World(
      * @param Index of the particle to destroy.
      * @param Whether to call the destruction listener just before the particle is destroyed.
      */
+
     fun destroyParticle(index: Int, callDestructionListener: Boolean = false) {
-        particleSystem.destroyParticle(index, callDestructionListener)
+        m_particleSystem.destroyParticle(index, callDestructionListener)
     }
 
     /**
@@ -1647,11 +1746,12 @@ class World(
      * @warning This function is locked during callbacks.
      * @return Number of particles destroyed.
      */
+
     fun destroyParticlesInShape(shape: Shape, xf: Transform, callDestructionListener: Boolean = false): Int {
-        assert(!isLocked)
+        assert(isLocked == false)
         return if (isLocked) {
             0
-        } else particleSystem.destroyParticlesInShape(shape, xf, callDestructionListener)
+        } else m_particleSystem.destroyParticlesInShape(shape, xf, callDestructionListener)
     }
 
     /**
@@ -1661,11 +1761,11 @@ class World(
      * @warning This function is locked during callbacks.
      */
     fun createParticleGroup(def: ParticleGroupDef): ParticleGroup? {
-        assert(!isLocked)
+        assert(isLocked == false)
         if (isLocked) {
             return null
         }
-        val g = particleSystem.createParticleGroup(def)
+        val g = m_particleSystem.createParticleGroup(def)
         return g
     }
 
@@ -1677,11 +1777,11 @@ class World(
      * @warning This function is locked during callbacks.
      */
     fun joinParticleGroups(groupA: ParticleGroup, groupB: ParticleGroup) {
-        assert(!isLocked)
+        assert(isLocked == false)
         if (isLocked) {
             return
         }
-        particleSystem.joinParticleGroups(groupA, groupB)
+        m_particleSystem.joinParticleGroups(groupA, groupB)
     }
 
     /**
@@ -1691,10 +1791,13 @@ class World(
      * @param Whether to call the world b2DestructionListener for each particle is destroyed.
      * @warning This function is locked during callbacks.
      */
+
     fun destroyParticlesInGroup(group: ParticleGroup, callDestructionListener: Boolean = false) {
-        assert(!isLocked)
-        if (isLocked) return
-        particleSystem.destroyParticlesInGroup(group, callDestructionListener)
+        assert(isLocked == false)
+        if (isLocked) {
+            return
+        }
+        m_particleSystem.destroyParticlesInGroup(group, callDestructionListener)
     }
 
     /**
@@ -1704,56 +1807,94 @@ class World(
      * @param size is the number of values in the block.
      */
     fun setParticleFlagsBuffer(buffer: IntArray, capacity: Int) {
-        particleSystem.setParticleFlagsBuffer(buffer, capacity)
+        m_particleSystem.setParticleFlagsBuffer(buffer, capacity)
     }
 
     fun setParticlePositionBuffer(buffer: Array<Vec2>, capacity: Int) {
-        particleSystem.setParticlePositionBuffer(buffer, capacity)
+        m_particleSystem.setParticlePositionBuffer(buffer, capacity)
+
     }
 
     fun setParticleVelocityBuffer(buffer: Array<Vec2>, capacity: Int) {
-        particleSystem.setParticleVelocityBuffer(buffer, capacity)
+        m_particleSystem.setParticleVelocityBuffer(buffer, capacity)
+
     }
 
     fun setParticleColorBuffer(buffer: Array<ParticleColor>, capacity: Int) {
-        particleSystem.setParticleColorBuffer(buffer, capacity)
+        m_particleSystem.setParticleColorBuffer(buffer, capacity)
+
     }
 
     fun setParticleUserDataBuffer(buffer: Array<Any>, capacity: Int) {
-        particleSystem.setParticleUserDataBuffer(buffer, capacity)
+        m_particleSystem.setParticleUserDataBuffer(buffer, capacity)
     }
 
     /**
      * Compute the kinetic energy that can be lost by damping force
+     *
+     * @return
      */
     fun computeParticleCollisionEnergy(): Float {
-        return particleSystem.computeParticleCollisionEnergy()
+        return m_particleSystem.computeParticleCollisionEnergy()
     }
 
     companion object {
-        const val WORLD_POOL_SIZE = 100
-        const val WORLD_POOL_CONTAINER_SIZE = 10
+        val WORLD_POOL_SIZE = 100
+        val WORLD_POOL_CONTAINER_SIZE = 10
 
-        const val NEW_FIXTURE = 0x0001
-        const val LOCKED = 0x0002
-        const val CLEAR_FORCES = 0x0004
+        val NEW_FIXTURE = 0x0001
+        val LOCKED = 0x0002
+        val CLEAR_FORCES = 0x0004
 
         // NOTE this corresponds to the liquid test, so the debugdraw can draw
         // the liquid particles correctly. They should be the same.
-        private const val LIQUID_INT = 1234598372
+        private val LIQUID_INT = 1234598372
     }
 }
+/**
+ * Construct a world object.
+ *
+ * @param gravity the world gravity vector.
+ */
+/**
+ * Construct a world object.
+ *
+ * @param gravity the world gravity vector.
+ */
+/**
+ * Destroy a particle. The particle is removed after the next step.
+ *
+ * @param index
+ */
+/**
+ * Destroy particles inside a shape without enabling the destruction callback for destroyed
+ * particles. This function is locked during callbacks. For more information see
+ * DestroyParticleInShape(Shape&, Transform&,bool).
+ *
+ * @param Shape which encloses particles that should be destroyed.
+ * @param Transform applied to the shape.
+ * @warning This function is locked during callbacks.
+ * @return Number of particles destroyed.
+ */
+/**
+ * Destroy particles in a group without enabling the destruction callback for destroyed particles.
+ * This function is locked during callbacks.
+ *
+ * @param The particle group to destroy.
+ * @warning This function is locked during callbacks.
+ */
+
 
 internal class WorldQueryWrapper : TreeCallback {
 
     var broadPhase: BroadPhase? = null
     var callback: QueryCallback? = null
-
-    override fun treeCallback(proxyId: Int): Boolean {
-        val proxy = broadPhase!!.getUserData(proxyId) as FixtureProxy?
+    override fun treeCallback(nodeId: Int): Boolean {
+        val proxy = broadPhase!!.getUserData(nodeId) as FixtureProxy?
         return callback!!.reportFixture(proxy!!.fixture!!)
     }
 }
+
 
 internal class WorldRayCastWrapper : TreeRayCastCallback {
 

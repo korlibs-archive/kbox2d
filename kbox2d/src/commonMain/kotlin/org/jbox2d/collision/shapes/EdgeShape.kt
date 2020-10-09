@@ -37,29 +37,48 @@ import org.jbox2d.common.Vec2
  *
  * @author Daniel
  */
-class EdgeShape : Shape(ShapeType.EDGE) {
+class EdgeShape() : Shape(ShapeType.EDGE) {
 
-    /** edge vertex 1 */
+    /**
+     * edge vertex 1
+     */
+
     val vertex1 = Vec2()
-    /** edge vertex 2 */
+    /**
+     * edge vertex 2
+     */
+
     val vertex2 = Vec2()
 
-    /** optional adjacent vertex 1. Used for smooth collision */
+    /**
+     * optional adjacent vertex 1. Used for smooth collision
+     */
+
     val vertex0 = Vec2()
-    /** optional adjacent vertex 2. Used for smooth collision */
+    /**
+     * optional adjacent vertex 2. Used for smooth collision
+     */
+
     val vertex3 = Vec2()
 
     var hasVertex0 = false
+
     var hasVertex3 = false
 
     // for pooling
     private val normal = Vec2()
 
+    constructor(x1: Number, y1: Number, x2: Number, y2: Number) : this() {
+        set(Vec2(x1.toFloat(), y1.toFloat()), Vec2(x2.toFloat(), y2.toFloat()))
+    }
+
     init {
         radius = Settings.polygonRadius
     }
 
-    override fun getChildCount() = 1
+    override fun getChildCount(): Int {
+        return 1
+    }
 
     fun set(v1: Vec2, v2: Vec2) {
         vertex1.set(v1)
@@ -154,10 +173,14 @@ class EdgeShape : Shape(ShapeType.EDGE) {
         val numerator = normalx * tempx + normaly * tempy
         val denominator = normalx * dx + normaly * dy
 
-        if (denominator == 0.0f) return false
+        if (denominator == 0.0f) {
+            return false
+        }
 
         val t = numerator / denominator
-        if (t < 0.0f || 1.0f < t) return false
+        if (t < 0.0f || 1.0f < t) {
+            return false
+        }
 
         // Vec2 q = p1 + t * d;
         val qx = p1x + t * dx
@@ -169,13 +192,16 @@ class EdgeShape : Shape(ShapeType.EDGE) {
         val rx = v2.x - v1.x
         val ry = v2.y - v1.y
         val rr = rx * rx + ry * ry
-        if (rr == 0.0f) return false
-
+        if (rr == 0.0f) {
+            return false
+        }
         tempx = qx - v1.x
         tempy = qy - v1.y
         // float s = Vec2.dot(pool5, r) / rr;
         val s = (tempx * rx + tempy * ry) / rr
-        if (s < 0.0f || 1.0f < s) return false
+        if (s < 0.0f || 1.0f < s) {
+            return false
+        }
 
         output.fraction = t
         if (numerator > 0.0f) {

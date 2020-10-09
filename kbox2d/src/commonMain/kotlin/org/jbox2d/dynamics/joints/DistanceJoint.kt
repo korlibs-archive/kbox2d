@@ -53,78 +53,99 @@ import org.jbox2d.common.Vec2
 import org.jbox2d.dynamics.SolverData
 import org.jbox2d.pooling.IWorldPool
 
+//C = norm(p2 - p1) - L
+//u = (p2 - p1) / norm(p2 - p1)
+//Cdot = dot(u, v2 + cross(w2, r2) - v1 - cross(w1, r1))
+//J = [-u -cross(r1, u) u cross(r2, u)]
+//K = J * invM * JT
+//= invMass1 + invI1 * cross(r1, u)^2 + invMass2 + invI2 * cross(r2, u)^2
+
 /**
  * A distance joint constrains two points on two bodies to remain at a fixed distance from each
  * other. You can view this as a massless, rigid rod.
  */
 class DistanceJoint(argWorld: IWorldPool, def: DistanceJointDef) : Joint(argWorld, def) {
 
-    var frequency: Float = def.frequencyHz
-    var dampingRatio: Float = def.dampingRatio
-    private var bias: Float = 0f
+    var frequency: Float = 0.toFloat()
+    var dampingRatio: Float = 0.toFloat()
+    private var m_bias: Float = 0.toFloat()
 
     // Solver shared
-    val localAnchorA: Vec2 = def.localAnchorA.clone()
-    val localAnchorB: Vec2 = def.localAnchorB.clone()
-    private var gamma: Float = 0f
-    private var impulse: Float = 0f
-    var length: Float = def.length
+    val localAnchorA: Vec2
+    val localAnchorB: Vec2
+    private var m_gamma: Float = 0.toFloat()
+    private var m_impulse: Float = 0.toFloat()
+    var length: Float = 0.toFloat()
 
     // Solver temp
-    private var indexA: Int = 0
-    private var indexB: Int = 0
-    private val u = Vec2()
-    private val rA = Vec2()
-    private val rB = Vec2()
-    private val localCenterA = Vec2()
-    private val localCenterB = Vec2()
-    private var invMassA: Float = 0f
-    private var invMassB: Float = 0f
-    private var invIA: Float = 0f
-    private var invIB: Float = 0f
-    private var mass: Float = 0f
+    private var m_indexA: Int = 0
+    private var m_indexB: Int = 0
+    private val m_u = Vec2()
+    private val m_rA = Vec2()
+    private val m_rB = Vec2()
+    private val m_localCenterA = Vec2()
+    private val m_localCenterB = Vec2()
+    private var m_invMassA: Float = 0.toFloat()
+    private var m_invMassB: Float = 0.toFloat()
+    private var m_invIA: Float = 0.toFloat()
+    private var m_invIB: Float = 0.toFloat()
+    private var m_mass: Float = 0.toFloat()
 
-    override fun getAnchorA(out: Vec2) {
-        bodyA!!.getWorldPointToOut(localAnchorA, out)
+    init {
+        localAnchorA = def.localAnchorA.clone()
+        localAnchorB = def.localAnchorB.clone()
+        length = def.length
+        m_impulse = 0.0f
+        frequency = def.frequencyHz
+        dampingRatio = def.dampingRatio
+        m_gamma = 0.0f
+        m_bias = 0.0f
     }
 
-    override fun getAnchorB(out: Vec2) {
-        bodyB!!.getWorldPointToOut(localAnchorB, out)
+    override fun getAnchorA(argOut: Vec2) {
+        bodyA!!.getWorldPointToOut(localAnchorA, argOut)
+    }
+
+    override fun getAnchorB(argOut: Vec2) {
+        bodyB!!.getWorldPointToOut(localAnchorB, argOut)
     }
 
     /**
      * Get the reaction force given the inverse time step. Unit is N.
      */
-    override fun getReactionForce(invDt: Float, out: Vec2) {
-        out.x = impulse * u.x * invDt
-        out.y = impulse * u.y * invDt
+    override fun getReactionForce(inv_dt: Float, argOut: Vec2) {
+        argOut.x = m_impulse * m_u.x * inv_dt
+        argOut.y = m_impulse * m_u.y * inv_dt
     }
 
     /**
      * Get the reaction torque given the inverse time step. Unit is N*m. This is always zero for a
      * distance joint.
      */
-    override fun getReactionTorque(invDt: Float) = 0f
+    override fun getReactionTorque(inv_dt: Float): Float {
+        return 0.0f
+    }
 
     override fun initVelocityConstraints(data: SolverData) {
-        indexA = bodyA!!.islandIndex
-        indexB = bodyB!!.islandIndex
-        localCenterA.set(bodyA!!.sweep.localCenter)
-        localCenterB.set(bodyB!!.sweep.localCenter)
-        invMassA = bodyA!!.invMass
-        invMassB = bodyB!!.invMass
-        invIA = bodyA!!.invI
-        invIB = bodyB!!.invI
 
-        val cA = data.positions!![indexA].c
-        val aA = data.positions!![indexA].a
-        val vA = data.velocities!![indexA].v
-        var wA = data.velocities!![indexA].w
+        m_indexA = bodyA!!.islandIndex
+        m_indexB = bodyB!!.islandIndex
+        m_localCenterA.set(bodyA!!.sweep.localCenter)
+        m_localCenterB.set(bodyB!!.sweep.localCenter)
+        m_invMassA = bodyA!!.m_invMass
+        m_invMassB = bodyB!!.m_invMass
+        m_invIA = bodyA!!.m_invI
+        m_invIB = bodyB!!.m_invI
 
-        val cB = data.positions!![indexB].c
-        val aB = data.positions!![indexB].a
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+        val cA = data.positions!![m_indexA].c
+        val aA = data.positions!![m_indexA].a
+        val vA = data.velocities!![m_indexA].v
+        var wA = data.velocities!![m_indexA].w
+
+        val cB = data.positions!![m_indexB].c
+        val aB = data.positions!![m_indexB].a
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
         val qA = pool.popRot()
         val qB = pool.popRot()
@@ -133,27 +154,28 @@ class DistanceJoint(argWorld: IWorldPool, def: DistanceJointDef) : Joint(argWorl
         qB.setRadians(aB)
 
         // use m_u as temporary variable
-        Rot.mulToOutUnsafe(qA, u.set(localAnchorA).subLocal(localCenterA), rA)
-        Rot.mulToOutUnsafe(qB, u.set(localAnchorB).subLocal(localCenterB), rB)
-        u.set(cB).addLocal(rB).subLocal(cA).subLocal(rA)
+        Rot.mulToOutUnsafe(qA, m_u.set(localAnchorA).subLocal(m_localCenterA), m_rA)
+        Rot.mulToOutUnsafe(qB, m_u.set(localAnchorB).subLocal(m_localCenterB), m_rB)
+        m_u.set(cB).addLocal(m_rB).subLocal(cA).subLocal(m_rA)
 
         pool.pushRot(2)
 
         // Handle singularity.
-        val length = u.length()
+        val length = m_u.length()
         if (length > Settings.linearSlop) {
-            u.x *= 1.0f / length
-            u.y *= 1.0f / length
+            m_u.x *= 1.0f / length
+            m_u.y *= 1.0f / length
         } else {
-            u.set(0.0f, 0.0f)
+            m_u.set(0.0f, 0.0f)
         }
 
-        val crAu = Vec2.cross(rA, u)
-        val crBu = Vec2.cross(rB, u)
-        var invMass = invMassA + invIA * crAu * crAu + invMassB + invIB * crBu * crBu
+
+        val crAu = Vec2.cross(m_rA, m_u)
+        val crBu = Vec2.cross(m_rB, m_u)
+        var invMass = m_invMassA + m_invIA * crAu * crAu + m_invMassB + m_invIB * crBu * crBu
 
         // Compute the effective mass matrix.
-        mass = if (invMass != 0.0f) 1.0f / invMass else 0.0f
+        m_mass = if (invMass != 0.0f) 1.0f / invMass else 0.0f
 
         if (frequency > 0.0f) {
             val C = length - this.length
@@ -162,99 +184,107 @@ class DistanceJoint(argWorld: IWorldPool, def: DistanceJointDef) : Joint(argWorl
             val omega = 2.0f * MathUtils.PI * frequency
 
             // Damping coefficient
-            val d = 2.0f * mass * dampingRatio * omega
+            val d = 2.0f * m_mass * dampingRatio * omega
 
             // Spring stiffness
-            val k = mass * omega * omega
+            val k = m_mass * omega * omega
 
             // magic formulas
             val h = data.step!!.dt
-            gamma = h * (d + h * k)
-            gamma = if (gamma != 0.0f) 1.0f / gamma else 0.0f
-            bias = C * h * k * gamma
+            m_gamma = h * (d + h * k)
+            m_gamma = if (m_gamma != 0.0f) 1.0f / m_gamma else 0.0f
+            m_bias = C * h * k * m_gamma
 
-            invMass += gamma
-            mass = if (invMass != 0.0f) 1.0f / invMass else 0.0f
+            invMass += m_gamma
+            m_mass = if (invMass != 0.0f) 1.0f / invMass else 0.0f
         } else {
-            gamma = 0.0f
-            bias = 0.0f
+            m_gamma = 0.0f
+            m_bias = 0.0f
         }
         if (data.step!!.warmStarting) {
+
             // Scale the impulse to support a variable time step.
-            impulse *= data.step!!.dtRatio
+            m_impulse *= data.step!!.dtRatio
 
             val P = pool.popVec2()
-            P.set(u).mulLocal(impulse)
+            P.set(m_u).mulLocal(m_impulse)
 
-            vA.x -= invMassA * P.x
-            vA.y -= invMassA * P.y
-            wA -= invIA * Vec2.cross(rA, P)
+            vA.x -= m_invMassA * P.x
+            vA.y -= m_invMassA * P.y
+            wA -= m_invIA * Vec2.cross(m_rA, P)
 
-            vB.x += invMassB * P.x
-            vB.y += invMassB * P.y
-            wB += invIB * Vec2.cross(rB, P)
+            vB.x += m_invMassB * P.x
+            vB.y += m_invMassB * P.y
+            wB += m_invIB * Vec2.cross(m_rB, P)
 
             pool.pushVec2(1)
         } else {
-            impulse = 0.0f
+            m_impulse = 0.0f
         }
-        data.velocities!![indexA].w = wA
-        data.velocities!![indexB].w = wB
+        //    data.velocities[m_indexA].v.set(vA);
+        data.velocities!![m_indexA].w = wA
+        //    data.velocities[m_indexB].v.set(vB);
+        data.velocities!![m_indexB].w = wB
     }
 
     override fun solveVelocityConstraints(data: SolverData) {
-        val vA = data.velocities!![indexA].v
-        var wA = data.velocities!![indexA].w
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+        val vA = data.velocities!![m_indexA].v
+        var wA = data.velocities!![m_indexA].w
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
         val vpA = pool.popVec2()
         val vpB = pool.popVec2()
 
-        Vec2.crossToOutUnsafe(wA, rA, vpA)
+        // Cdot = dot(u, v + cross(w, r))
+        Vec2.crossToOutUnsafe(wA, m_rA, vpA)
         vpA.addLocal(vA)
-        Vec2.crossToOutUnsafe(wB, rB, vpB)
+        Vec2.crossToOutUnsafe(wB, m_rB, vpB)
         vpB.addLocal(vB)
-        val Cdot = Vec2.dot(u, vpB.subLocal(vpA))
+        val Cdot = Vec2.dot(m_u, vpB.subLocal(vpA))
 
-        val impulse = -mass * (Cdot + bias + gamma * impulse)
-        this.impulse += impulse
+        val impulse = -m_mass * (Cdot + m_bias + m_gamma * m_impulse)
+        m_impulse += impulse
 
 
-        val Px = impulse * u.x
-        val Py = impulse * u.y
+        val Px = impulse * m_u.x
+        val Py = impulse * m_u.y
 
-        vA.x -= invMassA * Px
-        vA.y -= invMassA * Py
-        wA -= invIA * (rA.x * Py - rA.y * Px)
-        vB.x += invMassB * Px
-        vB.y += invMassB * Py
-        wB += invIB * (rB.x * Py - rB.y * Px)
+        vA.x -= m_invMassA * Px
+        vA.y -= m_invMassA * Py
+        wA -= m_invIA * (m_rA.x * Py - m_rA.y * Px)
+        vB.x += m_invMassB * Px
+        vB.y += m_invMassB * Py
+        wB += m_invIB * (m_rB.x * Py - m_rB.y * Px)
 
-        data.velocities!![indexA].w = wA
-        data.velocities!![indexB].w = wB
+        //    data.velocities[m_indexA].v.set(vA);
+        data.velocities!![m_indexA].w = wA
+        //    data.velocities[m_indexB].v.set(vB);
+        data.velocities!![m_indexB].w = wB
 
         pool.pushVec2(2)
     }
 
     override fun solvePositionConstraints(data: SolverData): Boolean {
-        if (frequency > 0.0f) return true
+        if (frequency > 0.0f) {
+            return true
+        }
         val qA = pool.popRot()
         val qB = pool.popRot()
         val rA = pool.popVec2()
         val rB = pool.popVec2()
         val u = pool.popVec2()
 
-        val cA = data.positions!![indexA].c
-        var aA = data.positions!![indexA].a
-        val cB = data.positions!![indexB].c
-        var aB = data.positions!![indexB].a
+        val cA = data.positions!![m_indexA].c
+        var aA = data.positions!![m_indexA].a
+        val cB = data.positions!![m_indexB].c
+        var aB = data.positions!![m_indexB].a
 
         qA.setRadians(aA)
         qB.setRadians(aB)
 
-        Rot.mulToOutUnsafe(qA, u.set(localAnchorA).subLocal(localCenterA), rA)
-        Rot.mulToOutUnsafe(qB, u.set(localAnchorB).subLocal(localCenterB), rB)
+        Rot.mulToOutUnsafe(qA, u.set(localAnchorA).subLocal(m_localCenterA), rA)
+        Rot.mulToOutUnsafe(qB, u.set(localAnchorB).subLocal(m_localCenterB), rB)
         u.set(cB).addLocal(rB).subLocal(cA).subLocal(rA)
 
 
@@ -262,19 +292,21 @@ class DistanceJoint(argWorld: IWorldPool, def: DistanceJointDef) : Joint(argWorl
         var C = length - this.length
         C = MathUtils.clamp(C, -Settings.maxLinearCorrection, Settings.maxLinearCorrection)
 
-        val impulse = -mass * C
+        val impulse = -m_mass * C
         val Px = impulse * u.x
         val Py = impulse * u.y
 
-        cA.x -= invMassA * Px
-        cA.y -= invMassA * Py
-        aA -= invIA * (rA.x * Py - rA.y * Px)
-        cB.x += invMassB * Px
-        cB.y += invMassB * Py
-        aB += invIB * (rB.x * Py - rB.y * Px)
+        cA.x -= m_invMassA * Px
+        cA.y -= m_invMassA * Py
+        aA -= m_invIA * (rA.x * Py - rA.y * Px)
+        cB.x += m_invMassB * Px
+        cB.y += m_invMassB * Py
+        aB += m_invIB * (rB.x * Py - rB.y * Px)
 
-        data.positions!![indexA].a = aA
-        data.positions!![indexB].a = aB
+        //    data.positions[m_indexA].c.set(cA);
+        data.positions!![m_indexA].a = aA
+        //    data.positions[m_indexB].c.set(cB);
+        data.positions!![m_indexB].a = aB
 
         pool.pushVec2(3)
         pool.pushRot(2)

@@ -31,24 +31,30 @@ import org.jbox2d.pooling.normal.DefaultWorldPool
 
 /** An axis-aligned bounding box.  */
 class AABB {
+    /** Bottom left vertex of bounding box.  */
 
-    /** Bottom left vertex of bounding box. */
     val lowerBound: Vec2
+    /** Top right vertex of bounding box.  */
 
-    /** Top right vertex of bounding box. */
     val upperBound: Vec2
 
-    /** Verify that the bounds are sorted */
+    /** Verify that the bounds are sorted  */
     val isValid: Boolean
         get() {
             val dx = upperBound.x - lowerBound.x
-            if (dx < 0) return false
+            if (dx < 0f) {
+                return false
+            }
             val dy = upperBound.y - lowerBound.y
-            return if (dy < 0) false else lowerBound.isValid && upperBound.isValid
+            return if (dy < 0) {
+                false
+            } else lowerBound.isValid && upperBound.isValid
         }
 
     /**
-     * Center of the AABB
+     * Get the center of the AABB
+     *
+     * @return
      */
     val center: Vec2
         get() {
@@ -59,7 +65,9 @@ class AABB {
         }
 
     /**
-     * Extents of the AABB (half-widths).
+     * Get the extents of the AABB (half-widths).
+     *
+     * @return
      */
     val extents: Vec2
         get() {
@@ -70,26 +78,33 @@ class AABB {
         }
 
     /**
-     * Perimeter length
+     * Gets the perimeter length
+     *
+     * @return
      */
     val perimeter: Float
         get() = 2.0f * (upperBound.x - lowerBound.x + upperBound.y - lowerBound.y)
 
     /**
-     * Creates a default object, with vertices at 0,0 and 0,0.
+     * Creates the default object, with vertices at 0,0 and 0,0.
      */
-    constructor() : this(Vec2(), Vec2())
+    constructor() {
+        lowerBound = Vec2()
+        upperBound = Vec2()
+    }
 
     /**
-     * Copies from the [copy] object
+     * Copies from the given object
+     *
+     * @param copy the object to copy from
      */
-    constructor(copy: AABB) : this(copy.lowerBound, copy.upperBound)
+    constructor(copy: AABB) : this(copy.lowerBound, copy.upperBound) {}
 
     /**
      * Creates an AABB object using the given bounding vertices.
      *
      * @param lowerVertex the bottom left vertex of the bounding box
-     * @param upperVertex the top right vertex of the bounding box
+     * @param maxVertex the top right vertex of the bounding box
      */
     constructor(lowerVertex: Vec2, upperVertex: Vec2) {
         this.lowerBound = lowerVertex.clone() // clone to be safe
@@ -97,7 +112,9 @@ class AABB {
     }
 
     /**
-     * Sets this object from the [aabb] object
+     * Sets this object from the given object
+     *
+     * @param aabb the object to copy from
      */
     fun set(aabb: AABB) {
         val v = aabb.lowerBound
@@ -129,6 +146,9 @@ class AABB {
 
     /**
      * Combine two AABBs into this one.
+     *
+     * @param aabb1
+     * @param aab
      */
     fun combine(aabb1: AABB, aab: AABB) {
         lowerBound.x = if (aabb1.lowerBound.x < aab.lowerBound.x) aabb1.lowerBound.x else aab.lowerBound.x
@@ -138,7 +158,9 @@ class AABB {
     }
 
     /**
-     * Combines another [aabb] with this one
+     * Combines another aabb with this one
+     *
+     * @param aabb
      */
     fun combine(aabb: AABB) {
         lowerBound.x = if (lowerBound.x < aabb.lowerBound.x) lowerBound.x else aabb.lowerBound.x
@@ -148,21 +170,31 @@ class AABB {
     }
 
     /**
-     * Whether this AABB contain the provided [aabb].
+     * Does this aabb contain the provided AABB.
+     *
+     * @return
      */
     operator fun contains(aabb: AABB): Boolean {
-        return lowerBound.x <= aabb.lowerBound.x && lowerBound.y <= aabb.lowerBound.y
-            && aabb.upperBound.x <= upperBound.x && aabb.upperBound.y <= upperBound.y
+        /*
+     * boolean result = true; result = result && lowerBound.x <= aabb.lowerBound.x; result = result
+     * && lowerBound.y <= aabb.lowerBound.y; result = result && aabb.upperBound.x <= upperBound.x;
+     * result = result && aabb.upperBound.y <= upperBound.y; return result;
+     */
+        // djm: faster putting all of them together, as if one is false we leave the logic
+        // early
+        return (lowerBound.x <= aabb.lowerBound.x && lowerBound.y <= aabb.lowerBound.y
+                && aabb.upperBound.x <= upperBound.x && aabb.upperBound.y <= upperBound.y)
     }
 
     /**
      * From Real-time Collision Detection, p179.
+     *
+     * @param output
+     * @param input
      */
-    fun raycast(
-        output: RayCastOutput,
-        input: RayCastInput,
-        argPool: IWorldPool = DefaultWorldPool(4, 4)
-    ): Boolean {
+
+    fun raycast(output: RayCastOutput, input: RayCastInput,
+                argPool: IWorldPool = DefaultWorldPool(4, 4)): Boolean {
         var tmin = -Float.MAX_VALUE
         var tmax = Float.MAX_VALUE
 
@@ -265,14 +297,26 @@ class AABB {
         return true
     }
 
-    override fun toString() = "AABB[$lowerBound . $upperBound]"
+    override fun toString(): String {
+        val s = "AABB[$lowerBound . $upperBound]"
+        return s
+    }
 
     companion object {
         fun testOverlap(a: AABB, b: AABB): Boolean {
             if (b.lowerBound.x - a.upperBound.x > 0.0f || b.lowerBound.y - a.upperBound.y > 0.0f) {
                 return false
             }
-            return !(a.lowerBound.x - b.upperBound.x > 0.0f || a.lowerBound.y - b.upperBound.y > 0.0f)
+
+            return if (a.lowerBound.x - b.upperBound.x > 0.0f || a.lowerBound.y - b.upperBound.y > 0.0f) {
+                false
+            } else true
+
         }
     }
 }
+/**
+ * @param output
+ * @param input
+ * @return
+ */

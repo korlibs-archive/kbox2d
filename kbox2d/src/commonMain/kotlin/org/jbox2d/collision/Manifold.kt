@@ -51,17 +51,22 @@ import org.jbox2d.common.Vec2
 class Manifold {
 
     /** The points of contact.  */
+
     val points: Array<ManifoldPoint>
 
     /** not use for Type::e_points  */
+
     val localNormal: Vec2
 
     /** usage depends on manifold type  */
+
     val localPoint: Vec2
+
 
     var type: ManifoldType = ManifoldType.CIRCLES
 
     /** The number of manifold points.  */
+
     var pointCount: Int = 0
 
     enum class ManifoldType {
@@ -69,7 +74,7 @@ class Manifold {
     }
 
     /**
-     * creates a manifold with 0 points, with its points array full of instantiated ManifoldPoints.
+     * creates a manifold with 0 points, with it's points array full of instantiated ManifoldPoints.
      */
     constructor() {
         points = Array(Settings.maxManifoldPoints) { ManifoldPoint() }
@@ -79,7 +84,9 @@ class Manifold {
     }
 
     /**
-     * Creates this manifold as a copy of the [other]
+     * Creates this manifold as a copy of the other
+     *
+     * @param other
      */
     constructor(other: Manifold) {
         localNormal = other.localNormal.clone()
@@ -91,7 +98,9 @@ class Manifold {
     }
 
     /**
-     * copies this manifold from the given manifold [cp]
+     * copies this manifold from the given one
+     *
+     * @param cp manifold to copy from
      */
     fun set(cp: Manifold) {
         for (i in 0 until cp.pointCount) {

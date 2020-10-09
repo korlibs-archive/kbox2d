@@ -38,11 +38,17 @@ import org.jbox2d.particle.ParticleColor
  *
  * @author Daniel Murphy
  */
-abstract class DebugDraw(viewport: IViewportTransform? = null) {
+abstract class DebugDraw  constructor(viewport: IViewportTransform? = null) {
+
 
     var flags: Int = 0
-    var viewportTranform: IViewportTransform? = viewport
+    var viewportTranform: IViewportTransform? = null
         protected set
+
+    init {
+        flags = 0
+        viewportTranform = viewport
+    }
 
     fun setViewportTransform(viewportTransform: IViewportTransform) {
         this.viewportTranform = viewportTransform
@@ -58,7 +64,11 @@ abstract class DebugDraw(viewport: IViewportTransform? = null) {
 
     /**
      * Draw a closed polygon provided in CCW order. This implementation uses
-     * [drawSegment] to draw each side of the polygon.
+     * [.drawSegment] to draw each side of the polygon.
+     *
+     * @param vertices
+     * @param vertexCount
+     * @param color
      */
     fun drawPolygon(vertices: Array<Vec2>, vertexCount: Int, color: Color3f) {
         if (vertexCount == 1) {
@@ -79,34 +89,79 @@ abstract class DebugDraw(viewport: IViewportTransform? = null) {
 
     abstract fun drawPoint(argPoint: Vec2, argRadiusOnScreen: Float, argColor: Color3f)
 
-    /** Draw a solid closed polygon provided in CCW order. */
+    /**
+     * Draw a solid closed polygon provided in CCW order.
+     *
+     * @param vertices
+     * @param vertexCount
+     * @param color
+     */
     abstract fun drawSolidPolygon(vertices: Array<Vec2>, vertexCount: Int, color: Color3f)
 
-    /** Draw a circle. */
+    /**
+     * Draw a circle.
+     *
+     * @param center
+     * @param radius
+     * @param color
+     */
     abstract fun drawCircle(center: Vec2, radius: Float, color: Color3f)
 
-    /** Draws a circle with an axis.  */
+    /** Draws a circle with an axis  */
     fun drawCircle(center: Vec2, radius: Float, axis: Vec2, color: Color3f) {
         drawCircle(center, radius, color)
     }
 
-    /** Draw a solid circle. */
+    /**
+     * Draw a solid circle.
+     *
+     * @param center
+     * @param radius
+     * @param axis
+     * @param color
+     */
     abstract fun drawSolidCircle(center: Vec2, radius: Float, axis: Vec2, color: Color3f)
 
-    /** Draw a line segment. */
+    /**
+     * Draw a line segment.
+     *
+     * @param p1
+     * @param p2
+     * @param color
+     */
     abstract fun drawSegment(p1: Vec2, p2: Vec2, color: Color3f)
 
-    /** Draw a transform. Choose your own length scale */
+    /**
+     * Draw a transform. Choose your own length scale
+     *
+     * @param xf
+     */
     abstract fun drawTransform(xf: Transform)
 
-    /** Draw a string. */
+    /**
+     * Draw a string.
+     *
+     * @param x
+     * @param y
+     * @param s
+     * @param color
+     */
     abstract fun drawString(x: Float, y: Float, s: String, color: Color3f)
 
-    /** Draw a particle array */
-    abstract fun drawParticles(centers: Array<Vec2>, radius: Float, colors: Array<ParticleColor>?, count: Int)
+    /**
+     * Draw a particle array
+     *
+     * @param colors can be null
+     */
+    abstract fun drawParticles(centers: Array<Vec2>, radius: Float, colors: Array<ParticleColor>, count: Int)
 
-    /** Draw a particle array */
-    abstract fun drawParticlesWireframe(centers: Array<Vec2>, radius: Float, colors: Array<ParticleColor>?, count: Int)
+    /**
+     * Draw a particle array
+     *
+     * @param colors can be null
+     */
+    abstract fun drawParticlesWireframe(centers: Array<Vec2>, radius: Float, colors: Array<ParticleColor>,
+                                        count: Int)
 
     /** Called at the end of drawing a world  */
     fun flush() {}
@@ -115,16 +170,28 @@ abstract class DebugDraw(viewport: IViewportTransform? = null) {
         drawString(pos.x, pos.y, s, color)
     }
 
+    /**
+     * @param argScreen
+     * @param argWorld
+     */
     fun getScreenToWorldToOut(argScreen: Vec2, argWorld: Vec2) {
         viewportTranform!!.getScreenToWorld(argScreen, argWorld)
     }
 
+    /**
+     * @param argWorld
+     * @param argScreen
+     */
     fun getWorldToScreenToOut(argWorld: Vec2, argScreen: Vec2) {
         viewportTranform!!.getWorldToScreen(argWorld, argScreen)
     }
 
     /**
      * Takes the world coordinates and puts the corresponding screen coordinates in argScreen.
+     *
+     * @param worldX
+     * @param worldY
+     * @param argScreen
      */
     fun getWorldToScreenToOut(worldX: Float, worldY: Float, argScreen: Vec2) {
         argScreen.set(worldX, worldY)
@@ -132,7 +199,9 @@ abstract class DebugDraw(viewport: IViewportTransform? = null) {
     }
 
     /**
-     * Takes the world coordinate ([argWorld]) and returns the screen coordinates.
+     * takes the world coordinate (argWorld) and returns the screen coordinates.
+     *
+     * @param argWorld
      */
     fun getWorldToScreen(argWorld: Vec2): Vec2 {
         val screen = Vec2()
@@ -142,6 +211,9 @@ abstract class DebugDraw(viewport: IViewportTransform? = null) {
 
     /**
      * Takes the world coordinates and returns the screen coordinates.
+     *
+     * @param worldX
+     * @param worldY
      */
     fun getWorldToScreen(worldX: Float, worldY: Float): Vec2 {
         val argScreen = Vec2(worldX, worldY)
@@ -150,7 +222,11 @@ abstract class DebugDraw(viewport: IViewportTransform? = null) {
     }
 
     /**
-     * Takes the screen coordinates and puts the corresponding world coordinates in the [argWorld].
+     * takes the screen coordinates and puts the corresponding world coordinates in argWorld.
+     *
+     * @param screenX
+     * @param screenY
+     * @param argWorld
      */
     fun getScreenToWorldToOut(screenX: Float, screenY: Float, argWorld: Vec2) {
         argWorld.set(screenX, screenY)
@@ -158,7 +234,9 @@ abstract class DebugDraw(viewport: IViewportTransform? = null) {
     }
 
     /**
-     * Takes the screen coordinates ([argScreen]) and returns the world coordinates
+     * takes the screen coordinates (argScreen) and returns the world coordinates
+     *
+     * @param argScreen
      */
     fun getScreenToWorld(argScreen: Vec2): Vec2 {
         val world = Vec2()
@@ -167,7 +245,10 @@ abstract class DebugDraw(viewport: IViewportTransform? = null) {
     }
 
     /**
-     * Takes the screen coordinates and returns the world coordinates.
+     * takes the screen coordinates and returns the world coordinates.
+     *
+     * @param screenX
+     * @param screenY
      */
     fun getScreenToWorld(screenX: Float, screenY: Float): Vec2 {
         val screen = Vec2(screenX, screenY)
@@ -176,19 +257,20 @@ abstract class DebugDraw(viewport: IViewportTransform? = null) {
     }
 
     companion object {
+
         /** Draw shapes  */
-        val shapeBit = 1 shl 1
+        val e_shapeBit = 1 shl 1
         /** Draw joint connections  */
-        val jointBit = 1 shl 2
+        val e_jointBit = 1 shl 2
         /** Draw axis aligned bounding boxes  */
-        val aabbBit = 1 shl 3
+        val e_aabbBit = 1 shl 3
         /** Draw pairs of connected objects  */
-        val pairBit = 1 shl 4
+        val e_pairBit = 1 shl 4
         /** Draw center of mass frame  */
-        val centerOfMassBit = 1 shl 5
+        val e_centerOfMassBit = 1 shl 5
         /** Draw dynamic tree  */
-        val dynamicTreeBit = 1 shl 6
+        val e_dynamicTreeBit = 1 shl 6
         /** Draw only the wireframe for drawing performance  */
-        val wireframeDrawingBit = 1 shl 7
+        val e_wireframeDrawingBit = 1 shl 7
     }
 }

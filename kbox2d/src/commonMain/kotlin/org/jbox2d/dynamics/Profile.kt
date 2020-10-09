@@ -27,23 +27,38 @@ import org.jbox2d.common.MathUtils
 
 class Profile {
 
+
     val step = ProfileEntry()
+
     val stepInit = ProfileEntry()
+
     val collide = ProfileEntry()
+
     val solveParticleSystem = ProfileEntry()
+
     val solve = ProfileEntry()
+
     val solveInit = ProfileEntry()
+
     val solveVelocity = ProfileEntry()
+
     val solvePosition = ProfileEntry()
+
     val broadphase = ProfileEntry()
+
     val solveTOI = ProfileEntry()
 
     class ProfileEntry {
-        internal var longAvg: Float = 0f
-        internal var shortAvg: Float = 0f
-        internal var min: Float = Float.MAX_VALUE
-        internal var max: Float = -Float.MAX_VALUE
-        internal var accum: Float = 0f
+        internal var longAvg: Float = 0.toFloat()
+        internal var shortAvg: Float = 0.toFloat()
+        internal var min: Float = 0.toFloat()
+        internal var max: Float = 0.toFloat()
+        internal var accum: Float = 0.toFloat()
+
+        init {
+            min = Float.MAX_VALUE
+            max = -Float.MAX_VALUE
+        }
 
         fun record(value: Float) {
             longAvg = longAvg * (1 - LONG_FRACTION) + value * LONG_FRACTION
@@ -84,9 +99,9 @@ class Profile {
     }
 
     companion object {
-        private const val LONG_AVG_NUMS = 20
-        private const val LONG_FRACTION = 1f / LONG_AVG_NUMS
-        private const val SHORT_AVG_NUMS = 5
-        private const val SHORT_FRACTION = 1f / SHORT_AVG_NUMS
+        private val LONG_AVG_NUMS = 20
+        private val LONG_FRACTION = 1f / LONG_AVG_NUMS
+        private val SHORT_AVG_NUMS = 5
+        private val SHORT_FRACTION = 1f / SHORT_AVG_NUMS
     }
 }

@@ -32,16 +32,16 @@ import org.jbox2d.dynamics.World
 import org.jbox2d.dynamics.contacts.Position
 
 class ConstantVolumeJoint(
-    private val world: World,
-    def: ConstantVolumeJointDef
+         private val world: World,
+        def: ConstantVolumeJointDef
 ) : Joint(world.pool, def) {
 
     val bodies: Array<Body>
     private val targetLengths: FloatArray
-    private var targetVolume: Float = 0f
+    private var targetVolume: Float = 0.toFloat()
 
     private val normals: Array<Vec2>
-    private var impulse = 0.0f
+    private var m_impulse = 0.0f
 
     var joints: Array<DistanceJoint>; private set
 
@@ -62,7 +62,8 @@ class ConstantVolumeJoint(
 
     init {
         if (def.bodies.size <= 2) {
-            throw IllegalArgumentException("You cannot create a constant volume joint with less than three bodies.")
+            throw IllegalArgumentException(
+                    "You cannot create a constant volume joint with less than three bodies.")
         }
         bodies = def.bodies.toTypedArray()
 
@@ -75,7 +76,8 @@ class ConstantVolumeJoint(
         targetVolume = bodyArea
 
         if (def.joints != null && def.joints!!.size != def.bodies.size) {
-            throw IllegalArgumentException("Incorrect joint definition. Joints have to correspond to the bodies")
+            throw IllegalArgumentException(
+                    "Incorrect joint definition.  Joints have to correspond to the bodies")
         }
         if (def.joints == null) {
             val djd = DistanceJointDef()
@@ -85,10 +87,8 @@ class ConstantVolumeJoint(
                 djd.frequencyHz = def.frequencyHz// 20.0f;
                 djd.dampingRatio = def.dampingRatio// 50.0f;
                 djd.collideConnected = def.collideConnected
-                djd.initialize(
-                    bodies[i], bodies[next], bodies[i].worldCenter,
-                    bodies[next].worldCenter
-                )
+                djd.initialize(bodies[i], bodies[next], bodies[i].worldCenter,
+                        bodies[next].worldCenter)
                 joints[i] = world.createJoint(djd) as DistanceJoint
             }
         } else {
@@ -99,8 +99,8 @@ class ConstantVolumeJoint(
     }
 
     override fun destructor() {
-        for (i in joints.indices) {
-            world.destroyJoint(joints[i])
+        for (i in joints!!.indices) {
+            world.destroyJoint(joints!![i])
         }
     }
 
@@ -108,8 +108,7 @@ class ConstantVolumeJoint(
         var area = 0.0f
         for (i in bodies.indices) {
             val next = if (i == bodies.size - 1) 0 else i + 1
-            area += (positions[bodies[i].islandIndex].c.x * positions[bodies[next].islandIndex].c.y
-                - positions[bodies[next].islandIndex].c.x * positions[bodies[i].islandIndex].c.y)
+            area += positions[bodies[i].islandIndex].c.x * positions[bodies[next].islandIndex].c.y - positions[bodies[next].islandIndex].c.x * positions[bodies[i].islandIndex].c.y
         }
         area *= .5f
         return area
@@ -119,7 +118,7 @@ class ConstantVolumeJoint(
         var perimeter = 0.0f
         for (i in bodies.indices) {
             val next = if (i == bodies.size - 1) 0 else i + 1
-            val dx = positions[bodies[next].islandIndex].c.x - positions[bodies[i].islandIndex].c.x
+            val dx = positions!![bodies[next].islandIndex].c.x - positions[bodies[i].islandIndex].c.x
             val dy = positions[bodies[next].islandIndex].c.y - positions[bodies[i].islandIndex].c.y
             var dist = MathUtils.sqrt(dx * dx + dy * dy)
             if (dist < Settings.EPSILON) {
@@ -147,8 +146,8 @@ class ConstantVolumeJoint(
             if (normSqrd > Settings.linearSlop * Settings.linearSlop) {
                 done = false
             }
-            positions[bodies[next].islandIndex].c.x += delta.x
-            positions[bodies[next].islandIndex].c.y += delta.y
+            positions!![bodies[next].islandIndex].c.x += delta.x
+            positions!![bodies[next].islandIndex].c.y += delta.y
             // bodies[next].m_linearVelocity.x += delta.x * step.inv_dt;
             // bodies[next].m_linearVelocity.y += delta.y * step.inv_dt;
         }
@@ -171,31 +170,31 @@ class ConstantVolumeJoint(
         }
 
         if (step.step!!.warmStarting) {
-            impulse *= step.step!!.dtRatio
+            m_impulse *= step.step!!.dtRatio
             // float lambda = -2.0f * crossMassSum / dotMassSum;
             // System.out.println(crossMassSum + " " +dotMassSum);
             // lambda = MathUtils.clamp(lambda, -Settings.maxLinearCorrection,
             // Settings.maxLinearCorrection);
-            // impulse = lambda;
+            // m_impulse = lambda;
             for (i in bodies.indices) {
-                velocities!![bodies[i].islandIndex].v.x += bodies[i].invMass * d[i].y * .5f * impulse
-                velocities!![bodies[i].islandIndex].v.y += bodies[i].invMass * -d[i].x * .5f * impulse
+                velocities!![bodies[i].islandIndex].v.x += bodies[i].m_invMass * d[i].y * .5f * m_impulse
+                velocities!![bodies[i].islandIndex].v.y += bodies[i].m_invMass * -d[i].x * .5f * m_impulse
             }
         } else {
-            impulse = 0.0f
+            m_impulse = 0.0f
         }
     }
 
-    override fun solvePositionConstraints(data: SolverData): Boolean {
-        return constrainEdges(data.positions!!)
+    override fun solvePositionConstraints(step: SolverData): Boolean {
+        return constrainEdges(step.positions!!)
     }
 
-    override fun solveVelocityConstraints(data: SolverData) {
+    override fun solveVelocityConstraints(step: SolverData) {
         var crossMassSum = 0.0f
         var dotMassSum = 0.0f
 
-        val velocities = data.velocities
-        val positions = data.positions
+        val velocities = step.velocities
+        val positions = step.positions
         val d = pool.getVec2Array(bodies.size)
 
         for (i in bodies.indices) {
@@ -203,30 +202,32 @@ class ConstantVolumeJoint(
             val next = if (i == bodies.size - 1) 0 else i + 1
             d[i].set(positions!![bodies[next].islandIndex].c)
             d[i].subLocal(positions[bodies[prev].islandIndex].c)
-            dotMassSum += d[i].lengthSquared() / bodies[i].mass
+            dotMassSum += d[i].lengthSquared() / bodies[i].m_mass
             crossMassSum += Vec2.cross(velocities!![bodies[i].islandIndex].v, d[i])
         }
         val lambda = -2.0f * crossMassSum / dotMassSum
         // System.out.println(crossMassSum + " " +dotMassSum);
         // lambda = MathUtils.clamp(lambda, -Settings.maxLinearCorrection,
         // Settings.maxLinearCorrection);
-        impulse += lambda
+        m_impulse += lambda
         // System.out.println(m_impulse);
         for (i in bodies.indices) {
-            velocities!![bodies[i].islandIndex].v.x += bodies[i].invMass * d[i].y * .5f * lambda
-            velocities!![bodies[i].islandIndex].v.y += bodies[i].invMass * -d[i].x * .5f * lambda
+            velocities!![bodies[i].islandIndex].v.x += bodies[i].m_invMass * d[i].y * .5f * lambda
+            velocities!![bodies[i].islandIndex].v.y += bodies[i].m_invMass * -d[i].x * .5f * lambda
         }
     }
 
     /** No-op  */
-    override fun getAnchorA(out: Vec2) {}
+    override fun getAnchorA(argOut: Vec2) {}
 
     /** No-op  */
-    override fun getAnchorB(out: Vec2) {}
+    override fun getAnchorB(argOut: Vec2) {}
 
     /** No-op  */
-    override fun getReactionForce(invDt: Float, out: Vec2) {}
+    override fun getReactionForce(inv_dt: Float, argOut: Vec2) {}
 
     /** No-op  */
-    override fun getReactionTorque(invDt: Float) = 0f
+    override fun getReactionTorque(inv_dt: Float): Float {
+        return 0f
+    }
 }

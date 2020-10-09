@@ -13,16 +13,19 @@ class RopeJointDef : JointDef(JointType.ROPE) {
     /**
      * The local anchor point relative to bodyA's origin.
      */
+
     val localAnchorA = Vec2(-1f, 0f)
 
     /**
      * The local anchor point relative to bodyB's origin.
      */
+
     val localAnchorB = Vec2(1f, 0f)
 
     /**
      * The maximum length of the rope. Warning: this must be larger than b2_linearSlop or the joint
      * will have no effect.
      */
+
     var maxLength: Float = 0f
 }

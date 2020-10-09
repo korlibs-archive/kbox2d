@@ -6,7 +6,7 @@ inline fun WorldRef.forEachBody(callback: (body: Body) -> Unit) {
     var node = world.bodyList
     while (node != null) {
         callback(node)
-        node = node.next
+        node = node.m_next
     }
 }
 

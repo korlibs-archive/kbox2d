@@ -163,22 +163,33 @@ import org.jbox2d.internal.*
  */
 class Island {
 
-    var listener: ContactListener? = null
+    var m_listener: ContactListener? = null
 
-    var bodies: Array<Body>? = null
-    var contacts: Array<Contact>? = null
-    var joints: Array<Joint>? = null
 
-    var positions: Array<Position>? = null
-    var velocities: Array<Velocity>? = null
+    var m_bodies: Array<Body>? = null
 
-    var bodyCount: Int = 0
-    var jointCount: Int = 0
-    var contactCount: Int = 0
+    var m_contacts: Array<Contact>? = null
 
-    var bodyCapacity: Int = 0
-    var contactCapacity: Int = 0
-    var jointCapacity: Int = 0
+    var m_joints: Array<Joint>? = null
+
+
+    var m_positions: Array<Position>? = null
+
+    var m_velocities: Array<Velocity>? = null
+
+
+    var m_bodyCount: Int = 0
+
+    var m_jointCount: Int = 0
+
+    var m_contactCount: Int = 0
+
+
+    var m_bodyCapacity: Int = 0
+
+    var m_contactCapacity: Int = 0
+
+    var m_jointCapacity: Int = 0
 
     private val contactSolver = ContactSolver()
     private val timer = Timer()
@@ -190,61 +201,63 @@ class Island {
 
     private val impulse = ContactImpulse()
 
-    fun init(bodyCapacity: Int, contactCapacity: Int, jointCapacity: Int, listener: ContactListener?) {
+    fun init(bodyCapacity: Int, contactCapacity: Int, jointCapacity: Int,
+             listener: ContactListener?) {
         // System.out.println("Initializing Island");
-        this.bodyCapacity = bodyCapacity
-        this.contactCapacity = contactCapacity
-        this.jointCapacity = jointCapacity
-        bodyCount = 0
-        contactCount = 0
-        jointCount = 0
+        m_bodyCapacity = bodyCapacity
+        m_contactCapacity = contactCapacity
+        m_jointCapacity = jointCapacity
+        m_bodyCount = 0
+        m_contactCount = 0
+        m_jointCount = 0
 
-        this.listener = listener
+        m_listener = listener
 
-        if (bodies == null || this.bodyCapacity > bodies!!.size) {
-            bodies = arrayOfNulls<Body>(this.bodyCapacity) as Array<Body>
+        if (m_bodies == null || m_bodyCapacity > m_bodies!!.size) {
+            m_bodies = arrayOfNulls<Body>(m_bodyCapacity) as Array<Body>
         }
-        if (joints == null || this.jointCapacity > joints!!.size) {
-            joints = arrayOfNulls<Joint>(this.jointCapacity) as Array<Joint>
+        if (m_joints == null || m_jointCapacity > m_joints!!.size) {
+            m_joints = arrayOfNulls<Joint>(m_jointCapacity) as Array<Joint>
         }
-        if (contacts == null || this.contactCapacity > contacts!!.size) {
-            contacts = arrayOfNulls<Contact>(this.contactCapacity) as Array<Contact>
+        if (m_contacts == null || m_contactCapacity > m_contacts!!.size) {
+            m_contacts = arrayOfNulls<Contact>(m_contactCapacity) as Array<Contact>
         }
 
         // dynamic array
-        if (velocities == null || this.bodyCapacity > velocities!!.size) {
-            val old = if (velocities == null) emptyArray<Velocity>() else velocities
-            velocities = arrayOfNulls<Velocity>(this.bodyCapacity) as Array<Velocity>
-            arraycopy(old!!, 0, velocities!!, 0, old!!.size)
-            for (i in old!!.size until velocities!!.size) {
-                velocities!![i] = Velocity()
+        if (m_velocities == null || m_bodyCapacity > m_velocities!!.size) {
+            val old = if (m_velocities == null) emptyArray<Velocity>() else m_velocities
+            m_velocities = arrayOfNulls<Velocity>(m_bodyCapacity) as Array<Velocity>
+            arraycopy(old!!, 0, m_velocities!!, 0, old!!.size)
+            for (i in old!!.size until m_velocities!!.size) {
+                m_velocities!![i] = Velocity()
             }
         }
 
         // dynamic array
-        if (positions == null || this.bodyCapacity > positions!!.size) {
-            val old = if (positions == null) emptyArray() else positions
-            positions = arrayOfNulls<Position>(this.bodyCapacity) as Array<Position>
-            arraycopy(old!!, 0, positions!!, 0, old.size)
-            for (i in old.size until positions!!.size) {
-                positions!![i] = Position()
+        if (m_positions == null || m_bodyCapacity > m_positions!!.size) {
+            val old = if (m_positions == null) emptyArray<Position>() else m_positions
+            m_positions = arrayOfNulls<Position>(m_bodyCapacity) as Array<Position>
+            arraycopy(old!!, 0, m_positions!!, 0, old!!.size)
+            for (i in old!!.size until m_positions!!.size) {
+                m_positions!![i] = Position()
             }
         }
     }
 
     fun clear() {
-        bodyCount = 0
-        contactCount = 0
-        jointCount = 0
+        m_bodyCount = 0
+        m_contactCount = 0
+        m_jointCount = 0
     }
 
     fun solve(profile: Profile, step: TimeStep, gravity: Vec2, allowSleep: Boolean) {
+
         // System.out.println("Solving Island");
         val h = step.dt
 
         // Integrate velocities and apply damping. Initialize the body state.
-        for (i in 0 until bodyCount) {
-            val b = bodies!![i]
+        for (i in 0 until m_bodyCount) {
+            val b = m_bodies!![i]
             val bm_sweep = b.sweep
             val c = bm_sweep.c
             val a = bm_sweep.a
@@ -258,9 +271,9 @@ class Island {
             if (b._type === BodyType.DYNAMIC) {
                 // Integrate velocities.
                 // v += h * (b.m_gravityScale * gravity + b.m_invMass * b.m_force);
-                v.x += h * (b.gravityScale * gravity.x + b.invMass * b.force.x)
-                v.y += h * (b.gravityScale * gravity.y + b.invMass * b.force.y)
-                w += h * b.invI * b.torque
+                v.x += h * (b.gravityScale * gravity.x + b.m_invMass * b.force.x)
+                v.y += h * (b.gravityScale * gravity.y + b.m_invMass * b.force.y)
+                w += h * b.m_invI * b.torque
 
                 // Apply damping.
                 // ODE: dv/dt + c * v = 0
@@ -270,32 +283,32 @@ class Island {
                 // v2 = exp(-c * dt) * v1
                 // Pade approximation:
                 // v2 = v1 * 1 / (1 + c * dt)
-                v.x *= 1.0f / (1.0f + h * b.linearDamping)
-                v.y *= 1.0f / (1.0f + h * b.linearDamping)
-                w *= 1.0f / (1.0f + h * b.angularDamping)
+                v.x *= 1.0f / (1.0f + h * b.m_linearDamping)
+                v.y *= 1.0f / (1.0f + h * b.m_linearDamping)
+                w *= 1.0f / (1.0f + h * b.m_angularDamping)
             }
 
-            positions!![i].c.x = c.x
-            positions!![i].c.y = c.y
-            positions!![i].a = a
-            velocities!![i].v.x = v.x
-            velocities!![i].v.y = v.y
-            velocities!![i].w = w
+            m_positions!![i].c.x = c.x
+            m_positions!![i].c.y = c.y
+            m_positions!![i].a = a
+            m_velocities!![i].v.x = v.x
+            m_velocities!![i].v.y = v.y
+            m_velocities!![i].w = w
         }
 
         timer.reset()
 
         // Solver data
         solverData.step = step
-        solverData.positions = positions
-        solverData.velocities = velocities
+        solverData.positions = m_positions
+        solverData.velocities = m_velocities
 
         // Initialize velocity constraints.
         solverDef.step = step
-        solverDef.contacts = contacts
-        solverDef.count = contactCount
-        solverDef.positions = positions
-        solverDef.velocities = velocities
+        solverDef.contacts = m_contacts
+        solverDef.count = m_contactCount
+        solverDef.positions = m_positions
+        solverDef.velocities = m_velocities
 
         contactSolver.init(solverDef)
         // System.out.println("island init vel");
@@ -306,8 +319,8 @@ class Island {
             contactSolver.warmStart()
         }
 
-        for (i in 0 until jointCount) {
-            joints!![i].initVelocityConstraints(solverData)
+        for (i in 0 until m_jointCount) {
+            m_joints!![i].initVelocityConstraints(solverData)
         }
 
         profile.solveInit.accum(timer.milliseconds)
@@ -316,8 +329,8 @@ class Island {
         timer.reset()
         // System.out.println("island solving velocities");
         for (i in 0 until step.velocityIterations) {
-            for (j in 0 until jointCount) {
-                joints!![j].solveVelocityConstraints(solverData)
+            for (j in 0 until m_jointCount) {
+                m_joints!![j].solveVelocityConstraints(solverData)
             }
 
             contactSolver.solveVelocityConstraints()
@@ -328,19 +341,18 @@ class Island {
         profile.solveVelocity.accum(timer.milliseconds)
 
         // Integrate positions
-        for (i in 0 until bodyCount) {
-            val c = positions!![i].c
-            var a = positions!![i].a
-            val v = velocities!![i].v
-            var w = velocities!![i].w
+        for (i in 0 until m_bodyCount) {
+            val c = m_positions!![i].c
+            var a = m_positions!![i].a
+            val v = m_velocities!![i].v
+            var w = m_velocities!![i].w
 
             // Check for large velocities
             val translationx = v.x * h
             val translationy = v.y * h
 
             if (translationx * translationx + translationy * translationy > Settings.maxTranslationSquared) {
-                val ratio =
-                    Settings.maxTranslation / MathUtils.sqrt(translationx * translationx + translationy * translationy)
+                val ratio = Settings.maxTranslation / MathUtils.sqrt(translationx * translationx + translationy * translationy)
                 v.x *= ratio
                 v.y *= ratio
             }
@@ -356,8 +368,8 @@ class Island {
             c.y += h * v.y
             a += h * w
 
-            positions!![i].a = a
-            velocities!![i].w = w
+            m_positions!![i].a = a
+            m_velocities!![i].w = w
         }
 
         // Solve position constraints
@@ -367,8 +379,8 @@ class Island {
             val contactsOkay = contactSolver.solvePositionConstraints()
 
             var jointsOkay = true
-            for (j in 0 until jointCount) {
-                val jointOkay = joints!![j].solvePositionConstraints(solverData)
+            for (j in 0 until m_jointCount) {
+                val jointOkay = m_joints!![j].solvePositionConstraints(solverData)
                 jointsOkay = jointsOkay && jointOkay
             }
 
@@ -380,20 +392,20 @@ class Island {
         }
 
         // Copy state buffers back to the bodies
-        for (i in 0 until bodyCount) {
-            val body = bodies!![i]
-            body.sweep.c.x = positions!![i].c.x
-            body.sweep.c.y = positions!![i].c.y
-            body.sweep.a = positions!![i].a
-            body._linearVelocity.x = velocities!![i].v.x
-            body._linearVelocity.y = velocities!![i].v.y
-            body._angularVelocity = velocities!![i].w
+        for (i in 0 until m_bodyCount) {
+            val body = m_bodies!![i]
+            body.sweep.c.x = m_positions!![i].c.x
+            body.sweep.c.y = m_positions!![i].c.y
+            body.sweep.a = m_positions!![i].a
+            body._linearVelocity.x = m_velocities!![i].v.x
+            body._linearVelocity.y = m_velocities!![i].v.y
+            body._angularVelocity = m_velocities!![i].w
             body.synchronizeTransform()
         }
 
         profile.solvePosition.accum(timer.milliseconds)
 
-        report(contactSolver.velocityConstraints)
+        report(contactSolver.m_velocityConstraints)
 
         if (allowSleep) {
             var minSleepTime = Float.MAX_VALUE
@@ -401,27 +413,26 @@ class Island {
             val linTolSqr = Settings.linearSleepTolerance * Settings.linearSleepTolerance
             val angTolSqr = Settings.angularSleepTolerance * Settings.angularSleepTolerance
 
-            for (i in 0 until bodyCount) {
-                val b = bodies!![i]
+            for (i in 0 until m_bodyCount) {
+                val b = m_bodies!![i]
                 if (b.type === BodyType.STATIC) {
                     continue
                 }
 
-                if (b.flags and Body.autoSleepFlag == 0
-                    || b._angularVelocity * b._angularVelocity > angTolSqr
-                    || Vec2.dot(b._linearVelocity, b._linearVelocity) > linTolSqr
-                ) {
-                    b.sleepTime = 0.0f
+                if (b.flags and Body.e_autoSleepFlag == 0
+                        || b._angularVelocity * b._angularVelocity > angTolSqr
+                        || Vec2.dot(b._linearVelocity, b._linearVelocity) > linTolSqr) {
+                    b.m_sleepTime = 0.0f
                     minSleepTime = 0.0f
                 } else {
-                    b.sleepTime += h
-                    minSleepTime = MathUtils.min(minSleepTime, b.sleepTime)
+                    b.m_sleepTime += h
+                    minSleepTime = MathUtils.min(minSleepTime, b.m_sleepTime)
                 }
             }
 
             if (minSleepTime >= Settings.timeToSleep && positionSolved) {
-                for (i in 0 until bodyCount) {
-                    val b = bodies!![i]
+                for (i in 0 until m_bodyCount) {
+                    val b = m_bodies!![i]
                     b.isAwake = false
                 }
             }
@@ -429,24 +440,24 @@ class Island {
     }
 
     fun solveTOI(subStep: TimeStep, toiIndexA: Int, toiIndexB: Int) {
-        assert(toiIndexA < bodyCount)
-        assert(toiIndexB < bodyCount)
+        assert(toiIndexA < m_bodyCount)
+        assert(toiIndexB < m_bodyCount)
 
         // Initialize the body state.
-        for (i in 0 until bodyCount) {
-            positions!![i].c.x = bodies!![i].sweep.c.x
-            positions!![i].c.y = bodies!![i].sweep.c.y
-            positions!![i].a = bodies!![i].sweep.a
-            velocities!![i].v.x = bodies!![i]._linearVelocity.x
-            velocities!![i].v.y = bodies!![i]._linearVelocity.y
-            velocities!![i].w = bodies!![i]._angularVelocity
+        for (i in 0 until m_bodyCount) {
+            m_positions!![i].c.x = m_bodies!![i].sweep.c.x
+            m_positions!![i].c.y = m_bodies!![i].sweep.c.y
+            m_positions!![i].a = m_bodies!![i].sweep.a
+            m_velocities!![i].v.x = m_bodies!![i]._linearVelocity.x
+            m_velocities!![i].v.y = m_bodies!![i]._linearVelocity.y
+            m_velocities!![i].w = m_bodies!![i]._angularVelocity
         }
 
-        toiSolverDef.contacts = contacts
-        toiSolverDef.count = contactCount
+        toiSolverDef.contacts = m_contacts
+        toiSolverDef.count = m_contactCount
         toiSolverDef.step = subStep
-        toiSolverDef.positions = positions
-        toiSolverDef.velocities = velocities
+        toiSolverDef.positions = m_positions
+        toiSolverDef.velocities = m_velocities
         toiContactSolver.init(toiSolverDef)
 
         // Solve position constraints.
@@ -490,11 +501,11 @@ class Island {
         // #endif
 
         // Leap of faith to new safe state.
-        bodies!![toiIndexA].sweep.c0.x = positions!![toiIndexA].c.x
-        bodies!![toiIndexA].sweep.c0.y = positions!![toiIndexA].c.y
-        bodies!![toiIndexA].sweep.a0 = positions!![toiIndexA].a
-        bodies!![toiIndexB].sweep.c0.set(positions!![toiIndexB].c)
-        bodies!![toiIndexB].sweep.a0 = positions!![toiIndexB].a
+        m_bodies!![toiIndexA].sweep.c0.x = m_positions!![toiIndexA].c.x
+        m_bodies!![toiIndexA].sweep.c0.y = m_positions!![toiIndexA].c.y
+        m_bodies!![toiIndexA].sweep.a0 = m_positions!![toiIndexA].a
+        m_bodies!![toiIndexB].sweep.c0.set(m_positions!![toiIndexB].c)
+        m_bodies!![toiIndexB].sweep.a0 = m_positions!![toiIndexB].a
 
         // No warm starting is needed for TOI events because warm
         // starting impulses were applied in the discrete solver.
@@ -511,18 +522,17 @@ class Island {
         val h = subStep.dt
 
         // Integrate positions
-        for (i in 0 until bodyCount) {
-            val c = positions!![i].c
-            var a = positions!![i].a
-            val v = velocities!![i].v
-            var w = velocities!![i].w
+        for (i in 0 until m_bodyCount) {
+            val c = m_positions!![i].c
+            var a = m_positions!![i].a
+            val v = m_velocities!![i].v
+            var w = m_velocities!![i].w
 
             // Check for large velocities
             val translationx = v.x * h
             val translationy = v.y * h
             if (translationx * translationx + translationy * translationy > Settings.maxTranslationSquared) {
-                val ratio =
-                    Settings.maxTranslation / MathUtils.sqrt(translationx * translationx + translationy * translationy)
+                val ratio = Settings.maxTranslation / MathUtils.sqrt(translationx * translationx + translationy * translationy)
                 v.mulLocal(ratio)
             }
 
@@ -537,15 +547,15 @@ class Island {
             c.y += v.y * h
             a += h * w
 
-            positions!![i].c.x = c.x
-            positions!![i].c.y = c.y
-            positions!![i].a = a
-            velocities!![i].v.x = v.x
-            velocities!![i].v.y = v.y
-            velocities!![i].w = w
+            m_positions!![i].c.x = c.x
+            m_positions!![i].c.y = c.y
+            m_positions!![i].a = a
+            m_velocities!![i].v.x = v.x
+            m_velocities!![i].v.y = v.y
+            m_velocities!![i].w = w
 
             // Sync bodies
-            val body = bodies!![i]
+            val body = m_bodies!![i]
             body.sweep.c.x = c.x
             body.sweep.c.y = c.y
             body.sweep.a = a
@@ -555,31 +565,33 @@ class Island {
             body.synchronizeTransform()
         }
 
-        report(toiContactSolver.velocityConstraints)
+        report(toiContactSolver.m_velocityConstraints)
     }
 
     fun add(body: Body) {
-        assert(bodyCount < bodyCapacity)
-        body.islandIndex = bodyCount
-        bodies!![bodyCount] = body
-        ++bodyCount
+        assert(m_bodyCount < m_bodyCapacity)
+        body.islandIndex = m_bodyCount
+        m_bodies!![m_bodyCount] = body
+        ++m_bodyCount
     }
 
     fun add(contact: Contact) {
-        assert(contactCount < contactCapacity)
-        contacts!![contactCount++] = contact
+        assert(m_contactCount < m_contactCapacity)
+        m_contacts!![m_contactCount++] = contact
     }
 
     fun add(joint: Joint) {
-        assert(jointCount < jointCapacity)
-        joints!![jointCount++] = joint
+        assert(m_jointCount < m_jointCapacity)
+        m_joints!![m_jointCount++] = joint
     }
 
     fun report(constraints: Array<ContactVelocityConstraint>) {
-        if (listener == null) return
+        if (m_listener == null) {
+            return
+        }
 
-        for (i in 0 until contactCount) {
-            val c = contacts!![i]
+        for (i in 0 until m_contactCount) {
+            val c = m_contacts!![i]
 
             val vc = constraints[i]
             impulse.count = vc.pointCount
@@ -588,7 +600,7 @@ class Island {
                 impulse.tangentImpulses[j] = vc.points[j].tangentImpulse
             }
 
-            listener!!.postSolve(c, impulse)
+            m_listener!!.postSolve(c, impulse)
         }
     }
 }

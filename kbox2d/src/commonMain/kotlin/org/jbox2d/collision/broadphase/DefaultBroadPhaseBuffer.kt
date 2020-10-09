@@ -39,30 +39,47 @@ import org.jbox2d.internal.*
  *
  * @author Daniel Murphy
  */
-class DefaultBroadPhaseBuffer(private val tree: BroadPhaseStrategy) : TreeCallback, BroadPhase {
+class DefaultBroadPhaseBuffer(private val m_tree: BroadPhaseStrategy) : TreeCallback, BroadPhase {
 
     override var proxyCount: Int = 0
-        private set
+        private set(value: Int) {
+            field = value
+        }
 
-    private var moveCapacity: Int = 16
-    private var moveBuffer: IntArray = IntArray(moveCapacity)
-    private var moveCount: Int = 0
+    private var m_moveBuffer: IntArray? = null
+    private var m_moveCapacity: Int = 0
+    private var m_moveCount: Int = 0
 
-    private var pairCapacity: Int = 16
-    private var pairBuffer: LongArray = LongArray(pairCapacity)
-    private var pairCount: Int = 0
+    private var m_pairBuffer: LongArray? = null
+    private var m_pairCapacity: Int = 0
+    private var m_pairCount: Int = 0
 
-    private var queryProxyId: Int = BroadPhase.NULL_PROXY
+    private var m_queryProxyId: Int = 0
 
     override val treeHeight: Int
-        get() = tree.height
+        get() = m_tree.height
+
     override val treeBalance: Int
-        get() = tree.maxBalance
+        get() = m_tree.maxBalance
+
     override val treeQuality: Float
-        get() = tree.areaRatio
+        get() = m_tree.areaRatio
+
+    init {
+        proxyCount = 0
+
+        m_pairCapacity = 16
+        m_pairCount = 0
+        m_pairBuffer = LongArray(m_pairCapacity)
+
+        m_moveCapacity = 16
+        m_moveCount = 0
+        m_moveBuffer = IntArray(m_moveCapacity)
+        m_queryProxyId = BroadPhase.NULL_PROXY
+    }
 
     override fun createProxy(aabb: AABB, userData: Any): Int {
-        val proxyId = tree.createProxy(aabb, userData)
+        val proxyId = m_tree.createProxy(aabb, userData)
         ++proxyCount
         bufferMove(proxyId)
         return proxyId
@@ -71,11 +88,11 @@ class DefaultBroadPhaseBuffer(private val tree: BroadPhaseStrategy) : TreeCallba
     override fun destroyProxy(proxyId: Int) {
         unbufferMove(proxyId)
         --proxyCount
-        tree.destroyProxy(proxyId)
+        m_tree.destroyProxy(proxyId)
     }
 
     override fun moveProxy(proxyId: Int, aabb: AABB, displacement: Vec2) {
-        val buffer = tree.moveProxy(proxyId, aabb, displacement)
+        val buffer = m_tree.moveProxy(proxyId, aabb, displacement)
         if (buffer) {
             bufferMove(proxyId)
         }
@@ -86,99 +103,105 @@ class DefaultBroadPhaseBuffer(private val tree: BroadPhaseStrategy) : TreeCallba
     }
 
     override fun getUserData(proxyId: Int): Any? {
-        return tree.getUserData(proxyId)
+        return m_tree.getUserData(proxyId)
     }
 
     override fun getFatAABB(proxyId: Int): AABB {
-        return tree.getFatAABB(proxyId)
+        return m_tree.getFatAABB(proxyId)
     }
 
     override fun testOverlap(proxyIdA: Int, proxyIdB: Int): Boolean {
         // return AABB.testOverlap(proxyA.aabb, proxyB.aabb);
-        // return tree.overlap(proxyIdA, proxyIdB);
-        val a = tree.getFatAABB(proxyIdA)
-        val b = tree.getFatAABB(proxyIdB)
+        // return m_tree.overlap(proxyIdA, proxyIdB);
+        val a = m_tree.getFatAABB(proxyIdA)
+        val b = m_tree.getFatAABB(proxyIdB)
         if (b.lowerBound.x - a.upperBound.x > 0.0f || b.lowerBound.y - a.upperBound.y > 0.0f) {
             return false
         }
-        return !(a.lowerBound.x - b.upperBound.x > 0.0f || a.lowerBound.y - b.upperBound.y > 0.0f)
+
+        return if (a.lowerBound.x - b.upperBound.x > 0.0f || a.lowerBound.y - b.upperBound.y > 0.0f) {
+            false
+        } else true
+
     }
 
     override fun drawTree(argDraw: DebugDraw) {
-        tree.drawTree(argDraw)
+        m_tree.drawTree(argDraw)
     }
 
     override fun updatePairs(callback: PairCallback) {
         // Reset pair buffer
-        pairCount = 0
+        m_pairCount = 0
 
         // Perform tree queries for all moving proxies.
-        for (i in 0 until moveCount) {
-            queryProxyId = moveBuffer[i]
-            if (queryProxyId == BroadPhase.NULL_PROXY) {
+        for (i in 0 until m_moveCount) {
+            m_queryProxyId = m_moveBuffer!![i]
+            if (m_queryProxyId == BroadPhase.NULL_PROXY) {
                 continue
             }
 
             // We have to query the tree with the fat AABB so that
             // we don't fail to create a pair that may touch later.
-            val fatAABB = tree.getFatAABB(queryProxyId)
+            val fatAABB = m_tree.getFatAABB(m_queryProxyId)
 
             // Query tree, create pairs and add them pair buffer.
-            // log.debug("querying aabb: " + queryProxy.aabb);
-            tree.query(this, fatAABB)
+            // log.debug("quering aabb: "+m_queryProxy.aabb);
+            m_tree.query(this, fatAABB)
         }
-        // log.debug("Number of pairs found: " + pairCount);
+        // log.debug("Number of pairs found: "+m_pairCount);
 
         // Reset move buffer
-        moveCount = 0
+        m_moveCount = 0
 
         // Sort the pair buffer to expose duplicates.
-        Arrays_sort(pairBuffer, 0, pairCount)
+        Arrays_sort(m_pairBuffer!!, 0, m_pairCount)
 
         // Send the pairs back to the client.
         var i = 0
-        while (i < pairCount) {
-            val primaryPair = pairBuffer[i]
-            val userDataA = tree.getUserData((primaryPair shr 32).toInt())
-            val userDataB = tree.getUserData(primaryPair.toInt())
+        while (i < m_pairCount) {
+            val primaryPair = m_pairBuffer!![i]
+            val userDataA = m_tree.getUserData((primaryPair shr 32).toInt())
+            val userDataB = m_tree.getUserData(primaryPair.toInt())
 
-            // log.debug("returning pair: $userDataA, $userDataB);
+            // log.debug("returning pair: "+userDataA+", "+userDataB);
             callback.addPair(userDataA, userDataB)
             ++i
 
             // Skip any duplicate pairs.
-            while (i < pairCount) {
-                val pair = pairBuffer[i]
-                if (pair != primaryPair) break
+            while (i < m_pairCount) {
+                val pair = m_pairBuffer!![i]
+                if (pair != primaryPair) {
+                    break
+                }
                 ++i
             }
         }
     }
 
     override fun query(callback: TreeCallback, aabb: AABB) {
-        tree.query(callback, aabb)
+        m_tree.query(callback, aabb)
     }
 
     override fun raycast(callback: TreeRayCastCallback, input: RayCastInput) {
-        tree.raycast(callback, input)
+        m_tree.raycast(callback, input)
     }
 
     protected fun bufferMove(proxyId: Int) {
-        if (moveCount == moveCapacity) {
-            val old = moveBuffer
-            moveCapacity *= 2
-            moveBuffer = IntArray(moveCapacity)
-            arraycopy(old, 0, moveBuffer, 0, old.size)
+        if (m_moveCount == m_moveCapacity) {
+            val old = m_moveBuffer
+            m_moveCapacity *= 2
+            m_moveBuffer = IntArray(m_moveCapacity)
+            arraycopy(old!!, 0, m_moveBuffer!!, 0, old.size)
         }
 
-        moveBuffer[moveCount] = proxyId
-        ++moveCount
+        m_moveBuffer!![m_moveCount] = proxyId
+        ++m_moveCount
     }
 
     protected fun unbufferMove(proxyId: Int) {
-        for (i in 0 until moveCount) {
-            if (moveBuffer[i] == proxyId) {
-                moveBuffer[i] = BroadPhase.NULL_PROXY
+        for (i in 0 until m_moveCount) {
+            if (m_moveBuffer!![i] == proxyId) {
+                m_moveBuffer!![i] = BroadPhase.NULL_PROXY
             }
         }
     }
@@ -188,28 +211,28 @@ class DefaultBroadPhaseBuffer(private val tree: BroadPhaseStrategy) : TreeCallba
      */
     override fun treeCallback(proxyId: Int): Boolean {
         // A proxy cannot form a pair with itself.
-        if (proxyId == queryProxyId) {
+        if (proxyId == m_queryProxyId) {
             return true
         }
 
         // Grow the pair buffer as needed.
-        if (pairCount == pairCapacity) {
-            val oldBuffer = pairBuffer
-            pairCapacity *= 2
-            pairBuffer = LongArray(pairCapacity)
-            arraycopy(oldBuffer, 0, pairBuffer, 0, oldBuffer.size)
-            for (i in oldBuffer.size until pairCapacity) {
-                pairBuffer[i] = 0
+        if (m_pairCount == m_pairCapacity) {
+            val oldBuffer = m_pairBuffer
+            m_pairCapacity *= 2
+            m_pairBuffer = LongArray(m_pairCapacity)
+            arraycopy(oldBuffer!!, 0, m_pairBuffer!!, 0, oldBuffer.size)
+            for (i in oldBuffer.size until m_pairCapacity) {
+                m_pairBuffer!![i] = 0
             }
         }
 
-        if (proxyId < queryProxyId) {
-            pairBuffer[pairCount] = (proxyId.toLong() shl 32) or queryProxyId.toLong()
+        if (proxyId < m_queryProxyId) {
+            m_pairBuffer!![m_pairCount] = (proxyId.toLong() shl 32) or m_queryProxyId.toLong()
         } else {
-            pairBuffer[pairCount] = (queryProxyId.toLong() shl 32) or proxyId.toLong()
+            m_pairBuffer!![m_pairCount] = (m_queryProxyId.toLong() shl 32) or proxyId.toLong()
         }
 
-        ++pairCount
+        ++m_pairCount
         return true
     }
 }

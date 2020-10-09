@@ -29,9 +29,12 @@ import org.jbox2d.internal.*
  * @author Daniel Murphy
  */
 data class Vec3(
-    var x: Float = 0f,
-    var y: Float = 0f,
-    var z: Float = 0f
+
+    var x: Float = 0.toFloat(),
+
+    var y: Float = 0.toFloat(),
+
+    var z: Float = 0.toFloat()
 ) {
     constructor(copy: Vec3) : this(copy.x, copy.y, copy.z)
 

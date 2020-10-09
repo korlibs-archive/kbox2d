@@ -36,24 +36,29 @@ import org.jbox2d.dynamics.Body
  */
 class FrictionJointDef : JointDef(JointType.FRICTION) {
 
+
     /**
      * The local anchor point relative to bodyA's origin.
      */
+
     val localAnchorA: Vec2 = Vec2()
 
     /**
      * The local anchor point relative to bodyB's origin.
      */
+
     val localAnchorB: Vec2 = Vec2()
 
     /**
      * The maximum friction force in N.
      */
+
     var maxForce: Float = 0f
 
     /**
      * The maximum friction torque in N-m.
      */
+
     var maxTorque: Float = 0f
 
     /**

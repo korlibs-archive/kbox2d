@@ -30,6 +30,22 @@ import org.jbox2d.common.Vec2
 import org.jbox2d.dynamics.SolverData
 import org.jbox2d.pooling.IWorldPool
 
+//Linear constraint (point-to-line)
+//d = pB - pA = xB + rB - xA - rA
+//C = dot(ay, d)
+//Cdot = dot(d, cross(wA, ay)) + dot(ay, vB + cross(wB, rB) - vA - cross(wA, rA))
+//   = -dot(ay, vA) - dot(cross(d + rA, ay), wA) + dot(ay, vB) + dot(cross(rB, ay), vB)
+//J = [-ay, -cross(d + rA, ay), ay, cross(rB, ay)]
+
+//Spring linear constraint
+//C = dot(ax, d)
+//Cdot = = -dot(ax, vA) - dot(cross(d + rA, ax), wA) + dot(ax, vB) + dot(cross(rB, ax), vB)
+//J = [-ax -cross(d+rA, ax) ax cross(rB, ax)]
+
+//Motor rotational constraint
+//Cdot = wB - wA
+//J = [0 0 -1 0 0 1]
+
 /**
  * A wheel joint. This joint provides two degrees of freedom: translation along an axis fixed in
  * bodyA and rotation in the plane. You can use a joint limit to restrict the range of motion and a
@@ -40,53 +56,52 @@ import org.jbox2d.pooling.IWorldPool
  */
 class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) {
 
-    var springFrequencyHz: Float = def.frequencyHz
-    var springDampingRatio: Float = def.dampingRatio
+    var springFrequencyHz: Float = 0.toFloat()
+
+    var springDampingRatio: Float = 0.toFloat()
 
     // Solver shared
-    val localAnchorA = Vec2().set(def.localAnchorA)
-    val localAnchorB = Vec2().set(def.localAnchorB)
 
+    val localAnchorA = Vec2()
+
+    val localAnchorB = Vec2()
     /** For serialization  */
-    val localAxisA = Vec2().set(def.localAxisA)
-    private val localYAxisA = Vec2()
 
-    init {
-        Vec2.crossToOutUnsafe(1.0f, localAxisA, localYAxisA)
-    }
+    val localAxisA = Vec2()
+    private val m_localYAxisA = Vec2()
 
-    private var impulse: Float = 0f
-    private var motorImpulse: Float = 0f
-    private var springImpulse: Float = 0f
+    private var m_impulse: Float = 0.toFloat()
+    private var m_motorImpulse: Float = 0.toFloat()
+    private var m_springImpulse: Float = 0.toFloat()
 
-    private var _maxMotorTorque: Float = def.maxMotorTorque
-    private var _motorSpeed: Float = def.motorSpeed
-    var isMotorEnabled: Boolean = def.enableMotor
+    private var m_maxMotorTorque: Float = 0.toFloat()
+    private var m_motorSpeed: Float = 0.toFloat()
+    var isMotorEnabled: Boolean = false
         private set
 
     // Solver temp
-    private var indexA: Int = 0
-    private var indexB: Int = 0
-    private val localCenterA = Vec2()
-    private val localCenterB = Vec2()
-    private var invMassA: Float = 0f
-    private var invMassB: Float = 0f
-    private var invIA: Float = 0f
-    private var invIB: Float = 0f
+    private var m_indexA: Int = 0
+    private var m_indexB: Int = 0
+    private val m_localCenterA = Vec2()
+    private val m_localCenterB = Vec2()
+    private var m_invMassA: Float = 0.toFloat()
+    private var m_invMassB: Float = 0.toFloat()
+    private var m_invIA: Float = 0.toFloat()
+    private var m_invIB: Float = 0.toFloat()
 
-    private val ax = Vec2()
-    private val ay = Vec2()
-    private var sAx: Float = 0f
-    private var sBx: Float = 0f
-    private var sAy: Float = 0f
-    private var sBy: Float = 0f
+    private val m_ax = Vec2()
+    private val m_ay = Vec2()
+    private var m_sAx: Float = 0.toFloat()
+    private var m_sBx: Float = 0.toFloat()
+    private var m_sAy: Float = 0.toFloat()
+    private var m_sBy: Float = 0.toFloat()
 
-    private var mass: Float = 0f
-    private var motorMass: Float = 0f
-    private var springMass: Float = 0f
+    private var m_mass: Float = 0.toFloat()
+    private var m_motorMass: Float = 0.toFloat()
+    private var m_springMass: Float = 0.toFloat()
 
-    private var bias: Float = 0f
-    private var gamma: Float = 0f
+    private var m_bias: Float = 0.toFloat()
+    private var m_gamma: Float = 0.toFloat()
 
     val jointTranslation: Float
         get() {
@@ -110,19 +125,19 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
         get() = bodyA!!._angularVelocity - bodyB!!._angularVelocity
 
     var motorSpeed: Float
-        get() = _motorSpeed
+        get() = m_motorSpeed
         set(speed) {
             bodyA!!.isAwake = true
             bodyB!!.isAwake = true
-            _motorSpeed = speed
+            m_motorSpeed = speed
         }
 
     var maxMotorTorque: Float
-        get() = _maxMotorTorque
+        get() = m_maxMotorTorque
         set(torque) {
             bodyA!!.isAwake = true
             bodyB!!.isAwake = true
-            _maxMotorTorque = torque
+            m_maxMotorTorque = torque
         }
 
     // pooling
@@ -130,23 +145,41 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
     private val rB = Vec2()
     private val d = Vec2()
 
-    override fun getAnchorA(out: Vec2) {
-        bodyA!!.getWorldPointToOut(localAnchorA, out)
+    init {
+        localAnchorA.set(def.localAnchorA)
+        localAnchorB.set(def.localAnchorB)
+        localAxisA.set(def.localAxisA)
+        Vec2.crossToOutUnsafe(1.0f, localAxisA, m_localYAxisA)
+
+
+        m_motorMass = 0.0f
+        m_motorImpulse = 0.0f
+
+        m_maxMotorTorque = def.maxMotorTorque
+        m_motorSpeed = def.motorSpeed
+        isMotorEnabled = def.enableMotor
+
+        springFrequencyHz = def.frequencyHz
+        springDampingRatio = def.dampingRatio
     }
 
-    override fun getAnchorB(out: Vec2) {
-        bodyB!!.getWorldPointToOut(localAnchorB, out)
+    override fun getAnchorA(argOut: Vec2) {
+        bodyA!!.getWorldPointToOut(localAnchorA, argOut)
     }
 
-    override fun getReactionForce(invDt: Float, out: Vec2) {
+    override fun getAnchorB(argOut: Vec2) {
+        bodyB!!.getWorldPointToOut(localAnchorB, argOut)
+    }
+
+    override fun getReactionForce(inv_dt: Float, argOut: Vec2) {
         val temp = pool.popVec2()
-        temp.set(ay).mulLocal(impulse)
-        out.set(ax).mulLocal(springImpulse).addLocal(temp).mulLocal(invDt)
+        temp.set(m_ay).mulLocal(m_impulse)
+        argOut.set(m_ax).mulLocal(m_springImpulse).addLocal(temp).mulLocal(inv_dt)
         pool.pushVec2(1)
     }
 
-    override fun getReactionTorque(invDt: Float): Float {
-        return invDt * motorImpulse
+    override fun getReactionTorque(inv_dt: Float): Float {
+        return inv_dt * m_motorImpulse
     }
 
     fun enableMotor(flag: Boolean) {
@@ -155,34 +188,34 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
         isMotorEnabled = flag
     }
 
-    fun getMotorTorque(invDt: Float): Float {
-        return motorImpulse * invDt
+    fun getMotorTorque(inv_dt: Float): Float {
+        return m_motorImpulse * inv_dt
     }
 
     override fun initVelocityConstraints(data: SolverData) {
-        indexA = bodyA!!.islandIndex
-        indexB = bodyB!!.islandIndex
-        localCenterA.set(bodyA!!.sweep.localCenter)
-        localCenterB.set(bodyB!!.sweep.localCenter)
-        invMassA = bodyA!!.invMass
-        invMassB = bodyB!!.invMass
-        invIA = bodyA!!.invI
-        invIB = bodyB!!.invI
+        m_indexA = bodyA!!.islandIndex
+        m_indexB = bodyB!!.islandIndex
+        m_localCenterA.set(bodyA!!.sweep.localCenter)
+        m_localCenterB.set(bodyB!!.sweep.localCenter)
+        m_invMassA = bodyA!!.m_invMass
+        m_invMassB = bodyB!!.m_invMass
+        m_invIA = bodyA!!.m_invI
+        m_invIB = bodyB!!.m_invI
 
-        val mA = invMassA
-        val mB = invMassB
-        val iA = invIA
-        val iB = invIB
+        val mA = m_invMassA
+        val mB = m_invMassB
+        val iA = m_invIA
+        val iB = m_invIB
 
-        val cA = data.positions!![indexA].c
-        val aA = data.positions!![indexA].a
-        val vA = data.velocities!![indexA].v
-        var wA = data.velocities!![indexA].w
+        val cA = data.positions!![m_indexA].c
+        val aA = data.positions!![m_indexA].a
+        val vA = data.velocities!![m_indexA].v
+        var wA = data.velocities!![m_indexA].w
 
-        val cB = data.positions!![indexB].c
-        val aB = data.positions!![indexB].a
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+        val cB = data.positions!![m_indexB].c
+        val aB = data.positions!![m_indexB].a
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
         val qA = pool.popRot()
         val qB = pool.popRot()
@@ -192,133 +225,135 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
         qB.setRadians(aB)
 
         // Compute the effective masses.
-        Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(localCenterA), rA)
-        Rot.mulToOutUnsafe(qB, temp.set(localAnchorB).subLocal(localCenterB), rB)
+        Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), rA)
+        Rot.mulToOutUnsafe(qB, temp.set(localAnchorB).subLocal(m_localCenterB), rB)
         d.set(cB).addLocal(rB).subLocal(cA).subLocal(rA)
 
         // Point to line constraint
         run {
-            Rot.mulToOut(qA, localYAxisA, ay)
-            sAy = Vec2.cross(temp.set(d).addLocal(rA), ay)
-            sBy = Vec2.cross(rB, ay)
+            Rot.mulToOut(qA, m_localYAxisA, m_ay)
+            m_sAy = Vec2.cross(temp.set(d).addLocal(rA), m_ay)
+            m_sBy = Vec2.cross(rB, m_ay)
 
-            mass = mA + mB + iA * sAy * sAy + iB * sBy * sBy
+            m_mass = mA + mB + iA * m_sAy * m_sAy + iB * m_sBy * m_sBy
 
-            if (mass > 0.0f) {
-                mass = 1.0f / mass
+            if (m_mass > 0.0f) {
+                m_mass = 1.0f / m_mass
             }
         }
 
         // Spring constraint
-        springMass = 0.0f
-        bias = 0.0f
-        gamma = 0.0f
+        m_springMass = 0.0f
+        m_bias = 0.0f
+        m_gamma = 0.0f
         if (springFrequencyHz > 0.0f) {
-            Rot.mulToOut(qA, localAxisA, ax)
-            sAx = Vec2.cross(temp.set(d).addLocal(rA), ax)
-            sBx = Vec2.cross(rB, ax)
+            Rot.mulToOut(qA, localAxisA, m_ax)
+            m_sAx = Vec2.cross(temp.set(d).addLocal(rA), m_ax)
+            m_sBx = Vec2.cross(rB, m_ax)
 
-            val invMass = mA + mB + iA * sAx * sAx + iB * sBx * sBx
+            val invMass = mA + mB + iA * m_sAx * m_sAx + iB * m_sBx * m_sBx
 
             if (invMass > 0.0f) {
-                springMass = 1.0f / invMass
+                m_springMass = 1.0f / invMass
 
-                val C = Vec2.dot(d, ax)
+                val C = Vec2.dot(d, m_ax)
 
                 // Frequency
                 val omega = 2.0f * MathUtils.PI * springFrequencyHz
 
                 // Damping coefficient
-                val d = 2.0f * springMass * springDampingRatio * omega
+                val d = 2.0f * m_springMass * springDampingRatio * omega
 
                 // Spring stiffness
-                val k = springMass * omega * omega
+                val k = m_springMass * omega * omega
 
                 // magic formulas
                 val h = data.step!!.dt
-                gamma = h * (d + h * k)
-                if (gamma > 0.0f) {
-                    gamma = 1.0f / gamma
+                m_gamma = h * (d + h * k)
+                if (m_gamma > 0.0f) {
+                    m_gamma = 1.0f / m_gamma
                 }
 
-                bias = C * h * k * gamma
+                m_bias = C * h * k * m_gamma
 
-                springMass = invMass + gamma
-                if (springMass > 0.0f) {
-                    springMass = 1.0f / springMass
+                m_springMass = invMass + m_gamma
+                if (m_springMass > 0.0f) {
+                    m_springMass = 1.0f / m_springMass
                 }
             }
         } else {
-            springImpulse = 0.0f
+            m_springImpulse = 0.0f
         }
 
         // Rotational motor
         if (isMotorEnabled) {
-            motorMass = iA + iB
-            if (motorMass > 0.0f) {
-                motorMass = 1.0f / motorMass
+            m_motorMass = iA + iB
+            if (m_motorMass > 0.0f) {
+                m_motorMass = 1.0f / m_motorMass
             }
         } else {
-            motorMass = 0.0f
-            motorImpulse = 0.0f
+            m_motorMass = 0.0f
+            m_motorImpulse = 0.0f
         }
 
         if (data.step!!.warmStarting) {
             val P = pool.popVec2()
             // Account for variable time step.
-            impulse *= data.step!!.dtRatio
-            springImpulse *= data.step!!.dtRatio
-            motorImpulse *= data.step!!.dtRatio
+            m_impulse *= data.step!!.dtRatio
+            m_springImpulse *= data.step!!.dtRatio
+            m_motorImpulse *= data.step!!.dtRatio
 
-            P.x = impulse * ay.x + springImpulse * ax.x
-            P.y = impulse * ay.y + springImpulse * ax.y
-            val LA = impulse * sAy + springImpulse * sAx + motorImpulse
-            val LB = impulse * sBy + springImpulse * sBx + motorImpulse
+            P.x = m_impulse * m_ay.x + m_springImpulse * m_ax.x
+            P.y = m_impulse * m_ay.y + m_springImpulse * m_ax.y
+            val LA = m_impulse * m_sAy + m_springImpulse * m_sAx + m_motorImpulse
+            val LB = m_impulse * m_sBy + m_springImpulse * m_sBx + m_motorImpulse
 
-            vA.x -= invMassA * P.x
-            vA.y -= invMassA * P.y
-            wA -= invIA * LA
+            vA.x -= m_invMassA * P.x
+            vA.y -= m_invMassA * P.y
+            wA -= m_invIA * LA
 
-            vB.x += invMassB * P.x
-            vB.y += invMassB * P.y
-            wB += invIB * LB
+            vB.x += m_invMassB * P.x
+            vB.y += m_invMassB * P.y
+            wB += m_invIB * LB
             pool.pushVec2(1)
         } else {
-            impulse = 0.0f
-            springImpulse = 0.0f
-            motorImpulse = 0.0f
+            m_impulse = 0.0f
+            m_springImpulse = 0.0f
+            m_motorImpulse = 0.0f
         }
         pool.pushRot(2)
         pool.pushVec2(1)
 
-        data.velocities!![indexA].w = wA
-        data.velocities!![indexB].w = wB
+        // data.velocities[m_indexA].v = vA;
+        data.velocities!![m_indexA].w = wA
+        // data.velocities[m_indexB].v = vB;
+        data.velocities!![m_indexB].w = wB
     }
 
     override fun solveVelocityConstraints(data: SolverData) {
-        val mA = invMassA
-        val mB = invMassB
-        val iA = invIA
-        val iB = invIB
+        val mA = m_invMassA
+        val mB = m_invMassB
+        val iA = m_invIA
+        val iB = m_invIB
 
-        val vA = data.velocities!![indexA].v
-        var wA = data.velocities!![indexA].w
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+        val vA = data.velocities!![m_indexA].v
+        var wA = data.velocities!![m_indexA].w
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
         val temp = pool.popVec2()
         val P = pool.popVec2()
 
         // Solve spring constraint
         run {
-            val Cdot = Vec2.dot(ax, temp.set(vB).subLocal(vA)) + sBx * wB - sAx * wA
-            val impulse = -springMass * (Cdot + bias + gamma * springImpulse)
-            springImpulse += impulse
+            val Cdot = Vec2.dot(m_ax, temp.set(vB).subLocal(vA)) + m_sBx * wB - m_sAx * wA
+            val impulse = -m_springMass * (Cdot + m_bias + m_gamma * m_springImpulse)
+            m_springImpulse += impulse
 
-            P.x = impulse * ax.x
-            P.y = impulse * ax.y
-            val LA = impulse * sAx
-            val LB = impulse * sBx
+            P.x = impulse * m_ax.x
+            P.y = impulse * m_ax.y
+            val LA = impulse * m_sAx
+            val LB = impulse * m_sBx
 
             vA.x -= mA * P.x
             vA.y -= mA * P.y
@@ -331,13 +366,13 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
 
         // Solve rotational motor constraint
         run {
-            val Cdot = wB - wA - _motorSpeed
-            var impulse = -motorMass * Cdot
+            val Cdot = wB - wA - m_motorSpeed
+            var impulse = -m_motorMass * Cdot
 
-            val oldImpulse = motorImpulse
-            val maxImpulse = data.step!!.dt * _maxMotorTorque
-            motorImpulse = MathUtils.clamp(motorImpulse + impulse, -maxImpulse, maxImpulse)
-            impulse = motorImpulse - oldImpulse
+            val oldImpulse = m_motorImpulse
+            val maxImpulse = data.step!!.dt * m_maxMotorTorque
+            m_motorImpulse = MathUtils.clamp(m_motorImpulse + impulse, -maxImpulse, maxImpulse)
+            impulse = m_motorImpulse - oldImpulse
 
             wA -= iA * impulse
             wB += iB * impulse
@@ -345,14 +380,14 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
 
         // Solve point to line constraint
         run {
-            val Cdot = Vec2.dot(ay, temp.set(vB).subLocal(vA)) + sBy * wB - sAy * wA
-            val impulse = -mass * Cdot
-            this.impulse += impulse
+            val Cdot = Vec2.dot(m_ay, temp.set(vB).subLocal(vA)) + m_sBy * wB - m_sAy * wA
+            val impulse = -m_mass * Cdot
+            m_impulse += impulse
 
-            P.x = impulse * ay.x
-            P.y = impulse * ay.y
-            val LA = impulse * sAy
-            val LB = impulse * sBy
+            P.x = impulse * m_ay.x
+            P.y = impulse * m_ay.y
+            val LA = impulse * m_sAy
+            val LB = impulse * m_sBy
 
             vA.x -= mA * P.x
             vA.y -= mA * P.y
@@ -364,15 +399,17 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
         }
         pool.pushVec2(2)
 
-        data.velocities!![indexA].w = wA
-        data.velocities!![indexB].w = wB
+        // data.velocities[m_indexA].v = vA;
+        data.velocities!![m_indexA].w = wA
+        // data.velocities[m_indexB].v = vB;
+        data.velocities!![m_indexB].w = wB
     }
 
     override fun solvePositionConstraints(data: SolverData): Boolean {
-        val cA = data.positions!![indexA].c
-        var aA = data.positions!![indexA].a
-        val cB = data.positions!![indexB].c
-        var aB = data.positions!![indexB].a
+        val cA = data.positions!![m_indexA].c
+        var aA = data.positions!![m_indexA].a
+        val cB = data.positions!![m_indexB].c
+        var aB = data.positions!![m_indexB].a
 
         val qA = pool.popRot()
         val qB = pool.popRot()
@@ -381,21 +418,26 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
         qA.setRadians(aA)
         qB.setRadians(aB)
 
-        Rot.mulToOut(qA, temp.set(localAnchorA).subLocal(localCenterA), rA)
-        Rot.mulToOut(qB, temp.set(localAnchorB).subLocal(localCenterB), rB)
+        Rot.mulToOut(qA, temp.set(localAnchorA).subLocal(m_localCenterA), rA)
+        Rot.mulToOut(qB, temp.set(localAnchorB).subLocal(m_localCenterB), rB)
         d.set(cB).subLocal(cA).addLocal(rB).subLocal(rA)
 
         val ay = pool.popVec2()
-        Rot.mulToOut(qA, localYAxisA, ay)
+        Rot.mulToOut(qA, m_localYAxisA, ay)
 
         val sAy = Vec2.cross(temp.set(d).addLocal(rA), ay)
         val sBy = Vec2.cross(rB, ay)
 
         val C = Vec2.dot(d, ay)
 
-        val k = invMassA + invMassB + invIA * this.sAy * this.sAy + invIB * this.sBy * this.sBy
+        val k = m_invMassA + m_invMassB + m_invIA * m_sAy * m_sAy + m_invIB * m_sBy * m_sBy
 
-        val impulse = if (k != 0.0f) -C / k else 0.0f
+        val impulse: Float
+        if (k != 0.0f) {
+            impulse = -C / k
+        } else {
+            impulse = 0.0f
+        }
 
         val P = pool.popVec2()
         P.x = impulse * ay.x
@@ -403,17 +445,19 @@ class WheelJoint(argPool: IWorldPool, def: WheelJointDef) : Joint(argPool, def) 
         val LA = impulse * sAy
         val LB = impulse * sBy
 
-        cA.x -= invMassA * P.x
-        cA.y -= invMassA * P.y
-        aA -= invIA * LA
-        cB.x += invMassB * P.x
-        cB.y += invMassB * P.y
-        aB += invIB * LB
+        cA.x -= m_invMassA * P.x
+        cA.y -= m_invMassA * P.y
+        aA -= m_invIA * LA
+        cB.x += m_invMassB * P.x
+        cB.y += m_invMassB * P.y
+        aB += m_invIB * LB
 
         pool.pushVec2(3)
         pool.pushRot(2)
-        data.positions!![indexA].a = aA
-        data.positions!![indexB].a = aB
+        // data.positions[m_indexA].c = cA;
+        data.positions!![m_indexA].a = aA
+        // data.positions[m_indexB].c = cB;
+        data.positions!![m_indexB].a = aB
 
         return MathUtils.abs(C) <= Settings.linearSlop
     }

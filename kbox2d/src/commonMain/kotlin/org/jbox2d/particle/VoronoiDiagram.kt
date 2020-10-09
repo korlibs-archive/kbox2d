@@ -7,12 +7,12 @@ import org.jbox2d.pooling.normal.MutableStack
 
 class VoronoiDiagram(generatorCapacity: Int) {
 
-    private val generatorBuffer: Array<Generator> = Array(generatorCapacity) { Generator() }
-    private var generatorCount: Int = 0
-    private var countX: Int = 0
-    private var countY: Int = 0
+    private val m_generatorBuffer: Array<Generator> = Array(generatorCapacity) { Generator() }
+    private var m_generatorCount: Int = 0
+    private var m_countX: Int = 0
+    private var m_countY: Int = 0
     // The diagram is an array of "pointers".
-    private var diagram: Array<Generator?>? = null
+    private var m_diagram: Array<Generator?>? = null
 
     private val lower = Vec2()
     private val upper = Vec2()
@@ -34,7 +34,7 @@ class VoronoiDiagram(generatorCapacity: Int) {
 
     val taskPool: VoronoiDiagramTaskMutableStack = VoronoiDiagramTaskMutableStack()
 
-    class VoronoiDiagramTaskMutableStack : MutableStack<VoronoiDiagramTask>(50) {
+    class VoronoiDiagramTaskMutableStack : MutableStack<VoronoiDiagram.VoronoiDiagramTask>(50) {
         override fun newInstance(): VoronoiDiagramTask = VoronoiDiagramTask()
         override fun newArray(size: Int): Array<VoronoiDiagramTask> =
             arrayOfNulls<VoronoiDiagramTask>(size) as Array<VoronoiDiagramTask>
@@ -48,25 +48,25 @@ class VoronoiDiagram(generatorCapacity: Int) {
     }
 
     class VoronoiDiagramTask {
-        internal var x: Int = 0
-        internal var y: Int = 0
-        internal var i: Int = 0
-        internal var generator: Generator? = null
+        internal var m_x: Int = 0
+        internal var m_y: Int = 0
+        internal var m_i: Int = 0
+        internal var m_generator: Generator? = null
 
         constructor() {}
 
         constructor(x: Int, y: Int, i: Int, g: Generator) {
-            this.x = x
-            this.y = y
-            this.i = i
-            generator = g
+            m_x = x
+            m_y = y
+            m_i = i
+            m_generator = g
         }
 
         fun set(x: Int, y: Int, i: Int, g: Generator): VoronoiDiagramTask {
-            this.x = x
-            this.y = y
-            this.i = i
-            generator = g
+            m_x = x
+            m_y = y
+            m_i = i
+            m_generator = g
             return this
         }
     }
@@ -76,13 +76,13 @@ class VoronoiDiagram(generatorCapacity: Int) {
     }
 
     fun getNodes(callback: VoronoiDiagramCallback) {
-        for (y in 0 until countY - 1) {
-            for (x in 0 until countX - 1) {
-                val i = x + y * countX
-                val a = diagram!![i]
-                val b = diagram!![i + 1]
-                val c = diagram!![i + countX]
-                val d = diagram!![i + 1 + countX]
+        for (y in 0 until m_countY - 1) {
+            for (x in 0 until m_countX - 1) {
+                val i = x + y * m_countX
+                val a = m_diagram!![i]
+                val b = m_diagram!![i + 1]
+                val c = m_diagram!![i + m_countX]
+                val d = m_diagram!![i + 1 + m_countX]
                 if (b !== c) {
                     if (a !== b && a !== c) {
                         callback.callback(a!!.tag, b!!.tag, c!!.tag)
@@ -96,119 +96,121 @@ class VoronoiDiagram(generatorCapacity: Int) {
     }
 
     fun addGenerator(center: Vec2, tag: Int) {
-        val g = generatorBuffer[generatorCount++]
+        val g = m_generatorBuffer[m_generatorCount++]
         g.center.x = center.x
         g.center.y = center.y
         g.tag = tag
     }
 
     fun generate(radius: Float) {
-        assert(diagram == null)
+        assert(m_diagram == null)
         val inverseRadius = 1 / radius
         lower.x = Float.MAX_VALUE
         lower.y = Float.MAX_VALUE
         upper.x = -Float.MAX_VALUE
         upper.y = -Float.MAX_VALUE
-        for (k in 0 until generatorCount) {
-            val g = generatorBuffer[k]
+        for (k in 0 until m_generatorCount) {
+            val g = m_generatorBuffer[k]
             Vec2.minToOut(lower, g.center, lower)
             Vec2.maxToOut(upper, g.center, upper)
         }
-        countX = 1 + (inverseRadius * (upper.x - lower.x)).toInt()
-        countY = 1 + (inverseRadius * (upper.y - lower.y)).toInt()
-        diagram = arrayOfNulls<Generator>(countX * countY)
-        queue.reset(arrayOfNulls<VoronoiDiagramTask>(4 * countX * countX) as Array<VoronoiDiagramTask>)
-        for (k in 0 until generatorCount) {
-            val g = generatorBuffer[k]
+        m_countX = 1 + (inverseRadius * (upper.x - lower.x)).toInt()
+        m_countY = 1 + (inverseRadius * (upper.y - lower.y)).toInt()
+        m_diagram = arrayOfNulls<Generator>(m_countX * m_countY)
+        queue.reset(arrayOfNulls<VoronoiDiagramTask>(4 * m_countX * m_countX) as Array<VoronoiDiagramTask>)
+        for (k in 0 until m_generatorCount) {
+            val g = m_generatorBuffer[k]
             g.center.x = inverseRadius * (g.center.x - lower.x)
             g.center.y = inverseRadius * (g.center.y - lower.y)
-            val x = MathUtils.max(0, MathUtils.min(g.center.x.toInt(), countX - 1))
-            val y = MathUtils.max(0, MathUtils.min(g.center.y.toInt(), countY - 1))
-            queue.push(taskPool.pop().set(x, y, x + y * countX, g))
+            val x = MathUtils.max(0, MathUtils.min(g.center.x.toInt(), m_countX - 1))
+            val y = MathUtils.max(0, MathUtils.min(g.center.y.toInt(), m_countY - 1))
+            queue.push(taskPool.pop().set(x, y, x + y * m_countX, g))
         }
         while (!queue.empty()) {
             val front = queue.pop()
-            val x = front.x
-            val y = front.y
-            val i = front.i
-            val g = front.generator
-            if (diagram!![i] == null) {
-                diagram!![i] = g!!
+            val x = front.m_x
+            val y = front.m_y
+            val i = front.m_i
+            val g = front.m_generator
+            if (m_diagram!![i] == null) {
+                m_diagram!![i] = g!!
                 if (x > 0) {
                     queue.push(taskPool.pop().set(x - 1, y, i - 1, g))
                 }
                 if (y > 0) {
-                    queue.push(taskPool.pop().set(x, y - 1, i - countX, g))
+                    queue.push(taskPool.pop().set(x, y - 1, i - m_countX, g))
                 }
-                if (x < countX - 1) {
+                if (x < m_countX - 1) {
                     queue.push(taskPool.pop().set(x + 1, y, i + 1, g))
                 }
-                if (y < countY - 1) {
-                    queue.push(taskPool.pop().set(x, y + 1, i + countX, g))
+                if (y < m_countY - 1) {
+                    queue.push(taskPool.pop().set(x, y + 1, i + m_countX, g))
                 }
             }
             taskPool.push(front)
         }
-        val maxIteration = countX + countY
+        val maxIteration = m_countX + m_countY
         for (iteration in 0 until maxIteration) {
-            for (y in 0 until countY) {
-                for (x in 0 until countX - 1) {
-                    val i = x + y * countX
-                    val a = diagram!![i]!!
-                    val b = diagram!![i + 1]!!
+            for (y in 0 until m_countY) {
+                for (x in 0 until m_countX - 1) {
+                    val i = x + y * m_countX
+                    val a = m_diagram!![i]!!
+                    val b = m_diagram!![i + 1]!!
                     if (a !== b) {
                         queue.push(taskPool.pop().set(x, y, i, b))
                         queue.push(taskPool.pop().set(x + 1, y, i + 1, a))
                     }
                 }
             }
-            for (y in 0 until countY - 1) {
-                for (x in 0 until countX) {
-                    val i = x + y * countX
-                    val a = diagram!![i]!!
-                    val b = diagram!![i + countX]!!
+            for (y in 0 until m_countY - 1) {
+                for (x in 0 until m_countX) {
+                    val i = x + y * m_countX
+                    val a = m_diagram!![i]!!
+                    val b = m_diagram!![i + m_countX]!!
                     if (a !== b) {
                         queue.push(taskPool.pop().set(x, y, i, b))
-                        queue.push(taskPool.pop().set(x, y + 1, i + countX, a))
+                        queue.push(taskPool.pop().set(x, y + 1, i + m_countX, a))
                     }
                 }
             }
             var updated = false
             while (!queue.empty()) {
                 val front = queue.pop()
-                val x = front.x
-                val y = front.y
-                val i = front.i
-                val k = front.generator
-                val a = diagram!![i]
+                val x = front.m_x
+                val y = front.m_y
+                val i = front.m_i
+                val k = front.m_generator
+                val a = m_diagram!![i]
                 val b = k
                 if (a !== b) {
                     val ax = a!!.center.x - x
-                    val ay = a.center.y - y
+                    val ay = a!!.center.y - y
                     val bx = b!!.center.x - x
                     val by = b.center.y - y
                     val a2 = ax * ax + ay * ay
                     val b2 = bx * bx + by * by
                     if (a2 > b2) {
-                        diagram!![i] = b
+                        m_diagram!![i] = b
                         if (x > 0) {
                             queue.push(taskPool.pop().set(x - 1, y, i - 1, b))
                         }
                         if (y > 0) {
-                            queue.push(taskPool.pop().set(x, y - 1, i - countX, b))
+                            queue.push(taskPool.pop().set(x, y - 1, i - m_countX, b))
                         }
-                        if (x < countX - 1) {
+                        if (x < m_countX - 1) {
                             queue.push(taskPool.pop().set(x + 1, y, i + 1, b))
                         }
-                        if (y < countY - 1) {
-                            queue.push(taskPool.pop().set(x, y + 1, i + countX, b))
+                        if (y < m_countY - 1) {
+                            queue.push(taskPool.pop().set(x, y + 1, i + m_countX, b))
                         }
                         updated = true
                     }
                 }
                 taskPool.push(front)
             }
-            if (!updated) break
+            if (!updated) {
+                break
+            }
         }
     }
 }

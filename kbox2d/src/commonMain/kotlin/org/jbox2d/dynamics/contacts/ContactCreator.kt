@@ -26,6 +26,7 @@ package org.jbox2d.dynamics.contacts
 import org.jbox2d.dynamics.Fixture
 import org.jbox2d.pooling.IWorldPool
 
+// updated to rev 100
 interface ContactCreator {
 
     fun contactCreateFcn(argPool: IWorldPool, fixtureA: Fixture, fixtureB: Fixture): Contact

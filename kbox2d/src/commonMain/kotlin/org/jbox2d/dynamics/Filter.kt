@@ -23,22 +23,24 @@
  */
 package org.jbox2d.dynamics
 
+// updated to rev 100
 /**
  * This holds contact filtering data.
  *
  * @author daniel
  */
 class Filter {
-
     /**
      * The collision category bits. Normally you would just set one bit.
      */
+
     var categoryBits: Int = 0x0001
 
     /**
      * The collision mask bits. This states the categories that this
      * shape would accept for collision.
      */
+
     var maskBits: Int = 0xFFFF
 
     /**
@@ -46,6 +48,7 @@ class Filter {
      * or always collide (positive). Zero means no collision group. Non-zero group
      * filtering always wins against the mask bits.
      */
+
     var groupIndex: Int = 0
 
     fun set(argOther: Filter) {

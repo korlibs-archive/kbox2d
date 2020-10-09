@@ -45,24 +45,35 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
     /**
      * Local position of the shape centroid in parent body frame.
      */
+
     val centroid = Vec2()
 
     /**
-     * The vertices of the shape in local coordinates.
-     * Note: use [vertexCount], not [vertices].length, to get number of  active vertices.
+     * The vertices of the shape. Note: use getVertexCount(), not m_vertices.length, to get number of
+     * active vertices.
      */
+    /** Get the vertices in local coordinates.  */
+
     val vertices: Array<Vec2> = Array(Settings.maxPolygonVertices) { Vec2() }
 
     /**
-     * The normals of the shape (edge normal vectors, there is one for each vertex).
-     * Note: use [vertexCount], not [normals].length, to get number of active normals.
+     * The normals of the shape. Note: use getVertexCount(), not m_normals.length, to get number of
+     * active normals.
      */
+    /** Get the edge normal vectors. There is one for each vertex.  */
+
     val normals: Array<Vec2> = Array(Settings.maxPolygonVertices) { Vec2() }
 
     /**
      * Number of active vertices in the shape.
      */
-    var vertexCount: Int = 0
+    /**
+     * Get the vertex count.
+     *
+     * @return
+     */
+
+    var count: Int = 0
 
     // pooling
     private val pool1 = Vec2()
@@ -84,13 +95,13 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
             shape.vertices[i].set(vertices[i])
         }
         shape.radius = this.radius
-        shape.vertexCount = this.vertexCount
+        shape.count = this.count
         return shape
     }
 
     /**
-     * Create a convex hull from the given array of points.
-     * The count must be in the range [3, Settings.maxPolygonVertices].
+     * Create a convex hull from the given array of points. The count must be in the range [3,
+     * Settings.maxPolygonVertices].
      *
      * @warning the points may be re-ordered, even if they form a convex polygon.
      * @warning collinear points are removed.
@@ -100,15 +111,15 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
     }
 
     /**
-     * Create a convex hull from the given array of points.
-     * The count must be in the range [3, Settings.maxPolygonVertices].
-     * This method takes an array pool for pooling.
+     * Create a convex hull from the given array of points. The count must be in the range [3,
+     * Settings.maxPolygonVertices]. This method takes an arraypool for pooling.
      *
      * @warning the points may be re-ordered, even if they form a convex polygon.
      * @warning collinear points are removed.
      */
-    fun set(verts: Array<Vec2>, num: Int, vecPool: Vec2ArrayPool?, intPool: IntArrayPool?) {
-        assert(num in 3..Settings.maxPolygonVertices)
+    fun set(verts: Array<Vec2>, num: Int, vecPool: Vec2ArrayPool?,
+                     intPool: IntArrayPool?) {
+        assert(3 <= num && num <= Settings.maxPolygonVertices)
         if (num < 3) {
             setAsBox(1.0f, 1.0f)
             return
@@ -192,13 +203,15 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
             ++m
             ih = ie
 
-            if (ie == i0) break
+            if (ie == i0) {
+                break
+            }
         }
 
-        vertexCount = m
+        this.count = m
 
         // Copy vertices.
-        for (i in 0 until vertexCount) {
+        for (i in 0 until count) {
             if (vertices[i] == null) {
                 vertices[i] = Vec2()
             }
@@ -208,9 +221,9 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
         val edge = pool1
 
         // Compute normals. Ensure the edges have non-zero length.
-        for (i in 0 until vertexCount) {
+        for (i in 0 until count) {
             val i1 = i
-            val i2 = if (i + 1 < vertexCount) i + 1 else 0
+            val i2 = if (i + 1 < count) i + 1 else 0
             edge.set(vertices[i2]).subLocal(vertices[i1])
 
             assert(edge.lengthSquared() > Settings.EPSILON * Settings.EPSILON)
@@ -219,7 +232,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
         }
 
         // Compute the polygon centroid.
-        computeCentroidToOut(vertices, vertexCount, centroid)
+        computeCentroidToOut(vertices, count, centroid)
     }
 
     /**
@@ -229,7 +242,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
      * @param hy the half-height.
      */
     fun setAsBox(hx: Float, hy: Float) {
-        vertexCount = 4
+        count = 4
         vertices[0].set(-hx, -hy)
         vertices[1].set(hx, -hy)
         vertices[2].set(hx, hy)
@@ -250,7 +263,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
      * @param angleRadians the rotation of the box in local coordinates.
      */
     fun setAsBoxRadians(hx: Float, hy: Float, center: Vec2, angleRadians: Float) {
-        vertexCount = 4
+        count = 4
         vertices[0].set(-hx, -hy)
         vertices[1].set(hx, -hy)
         vertices[2].set(hx, hy)
@@ -266,19 +279,19 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
         xf.q.setRadians(angleRadians)
 
         // Transform vertices and normals.
-        for (i in 0 until vertexCount) {
+        for (i in 0 until count) {
             Transform.mulToOut(xf, vertices[i], vertices[i])
             Rot.mulToOut(xf.q, normals[i], normals[i])
         }
     }
 
-    fun setAsBoxDegrees(hx: Float, hy: Float, center: Vec2, angleDegrees: Float) =
-        setAsBoxRadians(hx, hy, center, angleDegrees * MathUtils.DEG2RAD)
+    fun setAsBoxDegrees(hx: Float, hy: Float, center: Vec2, angleDegrees: Float) = setAsBoxRadians(hx, hy, center, angleDegrees * MathUtils.DEG2RAD)
 
-    fun setAsBox(hx: Float, hy: Float, center: Vec2, angle: Angle) =
-        setAsBoxRadians(hx, hy, center, angle.radians.toFloat())
+    fun setAsBox(hx: Float, hy: Float, center: Vec2, angle: Angle) = setAsBoxRadians(hx, hy, center, angle.radians.toFloat())
 
-    override fun getChildCount() = 1
+    override fun getChildCount(): Int {
+        return 1
+    }
 
     override fun testPoint(xf: Transform, p: Vec2): Boolean {
         var tempx: Float
@@ -290,22 +303,24 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
         val pLocalx = xfq.c * tempx + xfq.s * tempy
         val pLocaly = -xfq.s * tempx + xfq.c * tempy
 
-        if (debug) {
+        if (m_debug) {
             println("--testPoint debug--")
             println("Vertices: ")
-            for (i in 0 until vertexCount) {
+            for (i in 0 until count) {
                 println(vertices[i])
             }
             println("pLocal: $pLocalx, $pLocaly")
         }
 
-        for (i in 0 until vertexCount) {
+        for (i in 0 until count) {
             val vertex = vertices[i]
             val normal = normals[i]
             tempx = pLocalx - vertex.x
             tempy = pLocaly - vertex.y
             val dot = normal.x * tempx + normal.y * tempy
-            if (dot > 0.0f) return false
+            if (dot > 0.0f) {
+                return false
+            }
         }
 
         return true
@@ -324,7 +339,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
         upper.x = lower.x
         upper.y = lower.y
 
-        for (i in 1 until vertexCount) {
+        for (i in 1 until count) {
             val v2 = vertices[i]
             // Vec2 v = Mul(xf, m_vertices[i]);
             val vx = xfqc * v2.x - xfqs * v2.y + xfpx
@@ -342,10 +357,13 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
     }
 
     /**
-     * Get a vertex by [index].
+     * Get a vertex by index.
+     *
+     * @param index
+     * @return
      */
     fun getVertex(index: Int): Vec2 {
-        assert(0 <= index && index < vertexCount)
+        assert(0 <= index && index < count)
         return vertices[index]
     }
 
@@ -361,7 +379,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
         var normalForMaxDistanceX = pLocalx
         var normalForMaxDistanceY = pLocaly
 
-        for (i in 0 until vertexCount) {
+        for (i in 0 until count) {
             val vertex = vertices[i]
             val normal = normals[i]
             tx = pLocalx - vertex.x
@@ -379,7 +397,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
             var minDistanceX = normalForMaxDistanceX
             var minDistanceY = normalForMaxDistanceY
             var minDistance2 = maxDistance * maxDistance
-            for (i in 0 until vertexCount) {
+            for (i in 0 until count) {
                 val vertex = vertices[i]
                 val distanceVecX = pLocalx - vertex.x
                 val distanceVecY = pLocaly - vertex.y
@@ -403,14 +421,17 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
         return distance
     }
 
-    override fun raycast(output: RayCastOutput, input: RayCastInput, xf: Transform, childIndex: Int): Boolean {
+    override fun raycast(output: RayCastOutput, input: RayCastInput, xf: Transform,
+                         childIndex: Int): Boolean {
         val xfqc = xf.q.c
         val xfqs = xf.q.s
         val xfp = xf.p
+        var tempx: Float
+        var tempy: Float
         // b2Vec2 p1 = b2MulT(xf.q, input.p1 - xf.p);
         // b2Vec2 p2 = b2MulT(xf.q, input.p2 - xf.p);
-        var tempx = input.p1.x - xfp.x
-        var tempy = input.p1.y - xfp.y
+        tempx = input.p1.x - xfp.x
+        tempy = input.p1.y - xfp.y
         val p1x = xfqc * tempx + xfqs * tempy
         val p1y = -xfqs * tempx + xfqc * tempy
 
@@ -427,7 +448,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
 
         var index = -1
 
-        for (i in 0 until vertexCount) {
+        for (i in 0 until count) {
             val normal = normals[i]
             val vertex = vertices[i]
             // p = p1 + a * d
@@ -439,7 +460,9 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
             val denominator = normal.x * dx + normal.y * dy
 
             if (denominator == 0.0f) {
-                if (numerator < 0.0f) return false
+                if (numerator < 0.0f) {
+                    return false
+                }
             } else {
                 // Note: we want this predicate without division:
                 // lower < numerator / denominator, where denominator < 0
@@ -458,7 +481,9 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
                 }
             }
 
-            if (upper < lower) return false
+            if (upper < lower) {
+                return false
+            }
         }
 
         assert(0.0f <= lower && lower <= input.maxFraction)
@@ -540,7 +565,7 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
         //
         // The rest of the derivation is handled by computer algebra.
 
-        assert(vertexCount >= 3)
+        assert(count >= 3)
 
         val center = pool1
         center.setZero()
@@ -552,20 +577,20 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
         val s = pool2
         s.setZero()
         // This code would put the reference point inside the polygon.
-        for (i in 0 until vertexCount) {
+        for (i in 0 until count) {
             s.addLocal(vertices[i])
         }
-        s.mulLocal(1.0f / vertexCount)
+        s.mulLocal(1.0f / count)
 
         val k_inv3 = 1.0f / 3.0f
 
         val e1 = pool3
         val e2 = pool4
 
-        for (i in 0 until vertexCount) {
+        for (i in 0 until count) {
             // Triangle vertices.
             e1.set(vertices[i]).subLocal(s)
-            e2.set(s).negateLocal().addLocal(if (i + 1 < vertexCount) vertices[i + 1] else vertices[0])
+            e2.set(s).negateLocal().addLocal(if (i + 1 < count) vertices[i + 1] else vertices[0])
 
             val D = Vec2.cross(e1, e2)
 
@@ -604,20 +629,26 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
 
     /**
      * Validate convexity. This is a very time consuming operation.
+     *
+     * @return
      */
     fun validate(): Boolean {
-        for (i in 0 until vertexCount) {
+        for (i in 0 until count) {
             val i1 = i
-            val i2 = if (i < vertexCount - 1) i1 + 1 else 0
+            val i2 = if (i < count - 1) i1 + 1 else 0
             val p = vertices[i1]
             val e = pool1.set(vertices[i2]).subLocal(p)
 
-            for (j in 0 until vertexCount) {
-                if (j == i1 || j == i2) continue
+            for (j in 0 until count) {
+                if (j == i1 || j == i2) {
+                    continue
+                }
 
                 val v = pool2.set(vertices[j]).subLocal(p)
                 val c = Vec2.cross(e, v)
-                if (c < 0.0f) return false
+                if (c < 0.0f) {
+                    return false
+                }
             }
         }
 
@@ -637,6 +668,6 @@ class PolygonShape : Shape(ShapeType.POLYGON) {
 
     companion object {
         /** Dump lots of debug information.  */
-        private val debug = false
+        private val m_debug = false
     }
 }

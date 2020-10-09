@@ -29,8 +29,12 @@ import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.collision.shapes.EdgeShape
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.collision.shapes.Shape
-import org.jbox2d.common.*
-import org.jbox2d.internal.assert
+import org.jbox2d.common.MathUtils
+import org.jbox2d.common.Rot
+import org.jbox2d.common.Settings
+import org.jbox2d.common.Transform
+import org.jbox2d.common.Vec2
+import org.jbox2d.internal.*
 import org.jbox2d.pooling.IWorldPool
 
 /**
@@ -54,15 +58,15 @@ class Collision(private val pool: IWorldPool) {
 
     private val results1 = EdgeResults()
     private val results2 = EdgeResults()
-    private val incidentEdge = Array(2) { ClipVertex() }
+    private val incidentEdge = Array<ClipVertex>(2) { ClipVertex() }
     private val localTangent = Vec2()
     private val localNormal = Vec2()
     private val planePoint = Vec2()
     private val tangent = Vec2()
     private val v11 = Vec2()
     private val v12 = Vec2()
-    private val clipPoints1 = Array(2) { ClipVertex() }
-    private val clipPoints2 = Array(2) { ClipVertex() }
+    private val clipPoints1 = Array<ClipVertex>(2) { ClipVertex() }
+    private val clipPoints2 = Array<ClipVertex>(2) { ClipVertex() }
 
     private val Q = Vec2()
     private val e = Vec2()
@@ -72,16 +76,17 @@ class Collision(private val pool: IWorldPool) {
 
     private val collider = EPCollider()
 
-    // djm pooling
-    private val d = Vec2()
-
     /**
      * Determine if two generic shapes overlap.
+     *
+     * @param shapeA
+     * @param shapeB
+     * @param xfA
+     * @param xfB
+     * @return
      */
-    fun testOverlap(
-        shapeA: Shape, indexA: Int, shapeB: Shape, indexB: Int,
-        xfA: Transform, xfB: Transform
-    ): Boolean {
+    fun testOverlap(shapeA: Shape, indexA: Int, shapeB: Shape, indexB: Int,
+                    xfA: Transform, xfB: Transform): Boolean {
         input.proxyA.set(shapeA, indexA)
         input.proxyB.set(shapeB, indexB)
         input.transformA.set(xfA)
@@ -96,12 +101,16 @@ class Collision(private val pool: IWorldPool) {
     }
 
     /**
-     * Compute the collision [manifold] between two circles.
+     * Compute the collision manifold between two circles.
+     *
+     * @param manifold
+     * @param circle1
+     * @param xfA
+     * @param circle2
+     * @param xfB
      */
-    fun collideCircles(
-        manifold: Manifold, circle1: CircleShape,
-        xfA: Transform, circle2: CircleShape, xfB: Transform
-    ) {
+    fun collideCircles(manifold: Manifold, circle1: CircleShape,
+                       xfA: Transform, circle2: CircleShape, xfB: Transform) {
         manifold.pointCount = 0
         // before inline:
         // Transform.mulToOut(xfA, circle1.m_p, pA);
@@ -122,7 +131,9 @@ class Collision(private val pool: IWorldPool) {
         // end inline
 
         val radius = circle1.radius + circle2.radius
-        if (distSqr > radius * radius) return
+        if (distSqr > radius * radius) {
+            return
+        }
 
         manifold.type = ManifoldType.CIRCLES
         manifold.localPoint.set(circle1p)
@@ -136,12 +147,16 @@ class Collision(private val pool: IWorldPool) {
     // djm pooling, and from above
 
     /**
-     * Compute the collision [manifold] between a [polygon] and a [circle].
+     * Compute the collision manifold between a polygon and a circle.
+     *
+     * @param manifold
+     * @param polygon
+     * @param xfA
+     * @param circle
+     * @param xfB
      */
-    fun collidePolygonAndCircle(
-        manifold: Manifold, polygon: PolygonShape,
-        xfA: Transform, circle: CircleShape, xfB: Transform
-    ) {
+    fun collidePolygonAndCircle(manifold: Manifold, polygon: PolygonShape,
+                                xfA: Transform, circle: CircleShape, xfB: Transform) {
         manifold.pointCount = 0
         // Vec2 v = circle.m_p;
 
@@ -167,7 +182,7 @@ class Collision(private val pool: IWorldPool) {
         var normalIndex = 0
         var separation = -Float.MAX_VALUE
         val radius = polygon.radius + circle.radius
-        val vertexCount = polygon.vertexCount
+        val vertexCount = polygon.count
         var s: Float
         val vertices = polygon.vertices
         val normals = polygon.normals
@@ -182,8 +197,11 @@ class Collision(private val pool: IWorldPool) {
             val tempy = cLocaly - vertex.y
             s = normals[i].x * tempx + normals[i].y * tempy
 
-            // early out
-            if (s > radius) return
+
+            if (s > radius) {
+                // early out
+                return
+            }
 
             if (s > separation) {
                 separation = s
@@ -320,14 +338,19 @@ class Collision(private val pool: IWorldPool) {
     private val poolVec2 = Vec2()
 
     /**
-     * Find the max separation between [poly1] and [poly2] using edge normals from [poly1].
+     * Find the max separation between poly1 and poly2 using edge normals from poly1.
+     *
+     * @param edgeIndex
+     * @param poly1
+     * @param xf1
+     * @param poly2
+     * @param xf2
+     * @return
      */
-    fun findMaxSeparation(
-        results: EdgeResults, poly1: PolygonShape, xf1: Transform,
-        poly2: PolygonShape, xf2: Transform
-    ) {
-        val count1 = poly1.vertexCount
-        val count2 = poly2.vertexCount
+    fun findMaxSeparation(results: EdgeResults, poly1: PolygonShape,
+                          xf1: Transform, poly2: PolygonShape, xf2: Transform) {
+        val count1 = poly1.count
+        val count2 = poly2.count
         val n1s = poly1.normals
         val v1s = poly1.vertices
         val v2s = poly2.vertices
@@ -362,14 +385,12 @@ class Collision(private val pool: IWorldPool) {
         results.separation = maxSeparation
     }
 
-    fun findIncidentEdge(
-        c: Array<ClipVertex>, poly1: PolygonShape, xf1: Transform,
-        edge1: Int, poly2: PolygonShape, xf2: Transform
-    ) {
-        val count1 = poly1.vertexCount
+    fun findIncidentEdge(c: Array<ClipVertex>, poly1: PolygonShape,
+                         xf1: Transform, edge1: Int, poly2: PolygonShape, xf2: Transform) {
+        val count1 = poly1.count
         val normals1 = poly1.normals
 
-        val count2 = poly2.vertexCount
+        val count2 = poly2.count
         val vertices2 = poly2.vertices
         val normals2 = poly2.normals
 
@@ -433,11 +454,15 @@ class Collision(private val pool: IWorldPool) {
 
     /**
      * Compute the collision manifold between two polygons.
+     *
+     * @param manifold
+     * @param polygon1
+     * @param xf1
+     * @param polygon2
+     * @param xf2
      */
-    fun collidePolygons(
-        manifold: Manifold, polyA: PolygonShape,
-        xfA: Transform, polyB: PolygonShape, xfB: Transform
-    ) {
+    fun collidePolygons(manifold: Manifold, polyA: PolygonShape,
+                        xfA: Transform, polyB: PolygonShape, xfB: Transform) {
         // Find edge normal of max separation on A - return if separating axis is found
         // Find edge normal of max separation on B - return if separation axis is found
         // Choose reference edge as min(minA, minB)
@@ -463,7 +488,7 @@ class Collision(private val pool: IWorldPool) {
         val poly2: PolygonShape  // incident polygon
         val xf1: Transform
         val xf2: Transform
-        val edge1: Int           // reference edge
+        val edge1: Int                 // reference edge
         val flip: Boolean
         val k_tol = 0.1f * Settings.linearSlop
 
@@ -488,7 +513,7 @@ class Collision(private val pool: IWorldPool) {
 
         findIncidentEdge(incidentEdge, poly1, xf1, edge1, poly2, xf2)
 
-        val count1 = poly1.vertexCount
+        val count1 = poly1.count
         val vertices1 = poly1.vertices
 
         val iv1 = edge1
@@ -542,12 +567,16 @@ class Collision(private val pool: IWorldPool) {
         np = clipSegmentToLine(clipPoints1, incidentEdge, tangent, sideOffset1, iv1)
         tangent.negateLocal()
 
-        if (np < 2) return
+        if (np < 2) {
+            return
+        }
 
         // Clip to negative box side 1
         np = clipSegmentToLine(clipPoints2, clipPoints1, tangent, sideOffset2, iv2)
 
-        if (np < 2) return
+        if (np < 2) {
+            return
+        }
 
         // Now clipPoints2 contains the clipped points.
         manifold.localNormal.set(localNormal)
@@ -580,11 +609,10 @@ class Collision(private val pool: IWorldPool) {
 
     // Compute contact points for edge versus circle.
     // This accounts for edge connectivity.
-    fun collideEdgeAndCircle(
-        manifold: Manifold, edgeA: EdgeShape, xfA: Transform,
-        circleB: CircleShape, xfB: Transform
-    ) {
+    fun collideEdgeAndCircle(manifold: Manifold, edgeA: EdgeShape, xfA: Transform,
+                             circleB: CircleShape, xfB: Transform) {
         manifold.pointCount = 0
+
 
         // Compute circle in frame of edge
         // Vec2 Q = MulT(xfA, Mul(xfB, circleB.m_p));
@@ -610,7 +638,9 @@ class Collision(private val pool: IWorldPool) {
             val P = A
             d.set(Q).subLocal(P)
             val dd = Vec2.dot(d, d)
-            if (dd > radius * radius) return
+            if (dd > radius * radius) {
+                return
+            }
 
             // Is there an edge connected to A?
             if (edgeA.hasVertex0) {
@@ -620,7 +650,9 @@ class Collision(private val pool: IWorldPool) {
                 val u1 = Vec2.dot(e1, temp.set(B1).subLocal(Q))
 
                 // Is the circle in Region AB of the previous edge?
-                if (u1 > 0.0f) return
+                if (u1 > 0.0f) {
+                    return
+                }
             }
 
             cf.indexA = 0
@@ -640,7 +672,9 @@ class Collision(private val pool: IWorldPool) {
             val P = B
             d.set(Q).subLocal(P)
             val dd = Vec2.dot(d, d)
-            if (dd > radius * radius) return
+            if (dd > radius * radius) {
+                return
+            }
 
             // Is there an edge connected to B?
             if (edgeA.hasVertex3) {
@@ -651,7 +685,9 @@ class Collision(private val pool: IWorldPool) {
                 val v2 = Vec2.dot(e2, temp.set(Q).subLocal(A2))
 
                 // Is the circle in Region AB of the next edge?
-                if (v2 > 0.0f) return
+                if (v2 > 0.0f) {
+                    return
+                }
             }
 
             cf.indexA = 1
@@ -675,7 +711,9 @@ class Collision(private val pool: IWorldPool) {
         P.mulLocal(1.0f / den)
         d.set(Q).subLocal(P)
         val dd = Vec2.dot(d, d)
-        if (dd > radius * radius) return
+        if (dd > radius * radius) {
+            return
+        }
 
         n.x = -e.y
         n.y = e.x
@@ -687,7 +725,7 @@ class Collision(private val pool: IWorldPool) {
         cf.indexA = 0
         cf.typeA = ContactID.Type.FACE.ordinal.toByte()
         manifold.pointCount = 1
-        manifold.type = ManifoldType.FACE_A
+        manifold.type = Manifold.ManifoldType.FACE_A
         manifold.localNormal.set(n)
         manifold.localPoint.set(A)
         // manifold.points[0].id.key = 0;
@@ -695,16 +733,14 @@ class Collision(private val pool: IWorldPool) {
         manifold.points[0].localPoint.set(circleB.p)
     }
 
-    fun collideEdgeAndPolygon(
-        manifold: Manifold, edgeA: EdgeShape, xfA: Transform,
-        polygonB: PolygonShape, xfB: Transform
-    ) {
+    fun collideEdgeAndPolygon(manifold: Manifold, edgeA: EdgeShape, xfA: Transform,
+                              polygonB: PolygonShape, xfB: Transform) {
         collider.collide(manifold, edgeA, xfA, polygonB, xfB)
     }
 
 
     /**
-     * A class for returning edge results
+     * Java-specific class for returning edge results
      */
     class EdgeResults {
         var separation: Float = 0.toFloat()
@@ -736,16 +772,21 @@ class Collision(private val pool: IWorldPool) {
      * @author Daniel Murphy
      */
     enum class PointState {
-        /** point does not exist */
+        /**
+         * point does not exist
+         */
         NULL_STATE,
-
-        /** point was added in the update */
+        /**
+         * point was added in the update
+         */
         ADD_STATE,
-
-        /** point persisted across the update */
+        /**
+         * point persisted across the update
+         */
         PERSIST_STATE,
-
-        /** point was removed in the update */
+        /**
+         * point was removed in the update
+         */
         REMOVE_STATE
     }
 
@@ -753,6 +794,7 @@ class Collision(private val pool: IWorldPool) {
      * This structure is used to keep track of the best separating axis.
      */
     internal class EPAxis {
+
         var type: Type? = null
         var index: Int = 0
         var separation: Float = 0.toFloat()
@@ -766,8 +808,8 @@ class Collision(private val pool: IWorldPool) {
      * This holds polygon B expressed in frame A.
      */
     internal class TempPolygon {
-        val vertices = Array(Settings.maxPolygonVertices) { Vec2() }
-        val normals = Array(Settings.maxPolygonVertices) { Vec2() }
+        val vertices = Array<Vec2>(Settings.maxPolygonVertices) { Vec2() }
+        val normals = Array<Vec2>(Settings.maxPolygonVertices) { Vec2() }
         var count: Int = 0
     }
 
@@ -793,34 +835,34 @@ class Collision(private val pool: IWorldPool) {
      */
     internal class EPCollider {
 
-        val polygonB = TempPolygon()
+        val m_polygonB = TempPolygon()
 
-        val xf = Transform()
-        val centroidB = Vec2()
-        var v0 = Vec2()
-        var v1 = Vec2()
-        var v2 = Vec2()
-        var v3 = Vec2()
-        val normal0 = Vec2()
-        val normal1 = Vec2()
-        val normal2 = Vec2()
-        val normal = Vec2()
+        val m_xf = Transform()
+        val m_centroidB = Vec2()
+        var m_v0 = Vec2()
+        var m_v1 = Vec2()
+        var m_v2 = Vec2()
+        var m_v3 = Vec2()
+        val m_normal0 = Vec2()
+        val m_normal1 = Vec2()
+        val m_normal2 = Vec2()
+        val m_normal = Vec2()
 
-        var type1: VertexType? = null
-        var type2: VertexType? = null
+        var m_type1: VertexType? = null
+        var m_type2: VertexType? = null
 
-        val lowerLimit = Vec2()
-        val upperLimit = Vec2()
-        var radius: Float = 0.toFloat()
-        var front: Boolean = false
+        val m_lowerLimit = Vec2()
+        val m_upperLimit = Vec2()
+        var m_radius: Float = 0.toFloat()
+        var m_front: Boolean = false
 
         private val edge1 = Vec2()
         private val temp = Vec2()
         private val edge0 = Vec2()
         private val edge2 = Vec2()
-        private val ie = Array(2) { ClipVertex() }
-        private val clipPoints1 = Array(2) { ClipVertex() }
-        private val clipPoints2 = Array(2) { ClipVertex() }
+        private val ie = Array<ClipVertex>(2) { ClipVertex() }
+        private val clipPoints1 = Array<ClipVertex>(2) { ClipVertex() }
+        private val clipPoints2 = Array<ClipVertex>(2) { ClipVertex() }
         private val rf = ReferenceFace()
         private val edgeAxis = EPAxis()
         private val polygonAxis = EPAxis()
@@ -834,23 +876,24 @@ class Collision(private val pool: IWorldPool) {
 
         private val poolVec2 = Vec2()
 
-        fun collide(
-            manifold: Manifold, edgeA: EdgeShape, xfA: Transform,
-            polygonB: PolygonShape, xfB: Transform
-        ) {
+        fun collide(manifold: Manifold, edgeA: EdgeShape, xfA: Transform,
+                    polygonB: PolygonShape, xfB: Transform) {
 
-            v0 = edgeA.vertex0
-            v1 = edgeA.vertex1
-            v2 = edgeA.vertex2
-            v3 = edgeA.vertex3
+            Transform.mulTransToOutUnsafe(xfA, xfB, m_xf, poolVec2)
+            Transform.mulToOutUnsafe(m_xf, polygonB.centroid, m_centroidB)
+
+            m_v0 = edgeA.vertex0
+            m_v1 = edgeA.vertex1
+            m_v2 = edgeA.vertex2
+            m_v3 = edgeA.vertex3
 
             val hasVertex0 = edgeA.hasVertex0
             val hasVertex3 = edgeA.hasVertex3
 
-            edge1.set(v2).subLocal(v1)
+            edge1.set(m_v2).subLocal(m_v1)
             edge1.normalize()
-            normal1.set(edge1.y, -edge1.x)
-            val offset1 = Vec2.dot(normal1, temp.set(centroidB).subLocal(v1))
+            m_normal1.set(edge1.y, -edge1.x)
+            val offset1 = Vec2.dot(m_normal1, temp.set(m_centroidB).subLocal(m_v1))
             var offset0 = 0.0f
             var offset2 = 0.0f
             var convex1 = false
@@ -858,192 +901,192 @@ class Collision(private val pool: IWorldPool) {
 
             // Is there a preceding edge?
             if (hasVertex0) {
-                edge0.set(v1).subLocal(v0)
+                edge0.set(m_v1).subLocal(m_v0)
                 edge0.normalize()
-                normal0.set(edge0.y, -edge0.x)
+                m_normal0.set(edge0.y, -edge0.x)
                 convex1 = Vec2.cross(edge0, edge1) >= 0.0f
-                offset0 = Vec2.dot(normal0, temp.set(centroidB).subLocal(v0))
+                offset0 = Vec2.dot(m_normal0, temp.set(m_centroidB).subLocal(m_v0))
             }
 
             // Is there a following edge?
             if (hasVertex3) {
-                edge2.set(v3).subLocal(v2)
+                edge2.set(m_v3).subLocal(m_v2)
                 edge2.normalize()
-                normal2.set(edge2.y, -edge2.x)
+                m_normal2.set(edge2.y, -edge2.x)
                 convex2 = Vec2.cross(edge1, edge2) > 0.0f
-                offset2 = Vec2.dot(normal2, temp.set(centroidB).subLocal(v2))
+                offset2 = Vec2.dot(m_normal2, temp.set(m_centroidB).subLocal(m_v2))
             }
 
             // Determine front or back collision. Determine collision normal limits.
             if (hasVertex0 && hasVertex3) {
                 if (convex1 && convex2) {
-                    front = offset0 >= 0.0f || offset1 >= 0.0f || offset2 >= 0.0f
-                    if (front) {
-                        normal.x = normal1.x
-                        normal.y = normal1.y
-                        lowerLimit.x = normal0.x
-                        lowerLimit.y = normal0.y
-                        upperLimit.x = normal2.x
-                        upperLimit.y = normal2.y
+                    m_front = offset0 >= 0.0f || offset1 >= 0.0f || offset2 >= 0.0f
+                    if (m_front) {
+                        m_normal.x = m_normal1.x
+                        m_normal.y = m_normal1.y
+                        m_lowerLimit.x = m_normal0.x
+                        m_lowerLimit.y = m_normal0.y
+                        m_upperLimit.x = m_normal2.x
+                        m_upperLimit.y = m_normal2.y
                     } else {
-                        normal.x = -normal1.x
-                        normal.y = -normal1.y
-                        lowerLimit.x = -normal1.x
-                        lowerLimit.y = -normal1.y
-                        upperLimit.x = -normal1.x
-                        upperLimit.y = -normal1.y
+                        m_normal.x = -m_normal1.x
+                        m_normal.y = -m_normal1.y
+                        m_lowerLimit.x = -m_normal1.x
+                        m_lowerLimit.y = -m_normal1.y
+                        m_upperLimit.x = -m_normal1.x
+                        m_upperLimit.y = -m_normal1.y
                     }
                 } else if (convex1) {
-                    front = offset0 >= 0.0f || offset1 >= 0.0f && offset2 >= 0.0f
-                    if (front) {
-                        normal.x = normal1.x
-                        normal.y = normal1.y
-                        lowerLimit.x = normal0.x
-                        lowerLimit.y = normal0.y
-                        upperLimit.x = normal1.x
-                        upperLimit.y = normal1.y
+                    m_front = offset0 >= 0.0f || offset1 >= 0.0f && offset2 >= 0.0f
+                    if (m_front) {
+                        m_normal.x = m_normal1.x
+                        m_normal.y = m_normal1.y
+                        m_lowerLimit.x = m_normal0.x
+                        m_lowerLimit.y = m_normal0.y
+                        m_upperLimit.x = m_normal1.x
+                        m_upperLimit.y = m_normal1.y
                     } else {
-                        normal.x = -normal1.x
-                        normal.y = -normal1.y
-                        lowerLimit.x = -normal2.x
-                        lowerLimit.y = -normal2.y
-                        upperLimit.x = -normal1.x
-                        upperLimit.y = -normal1.y
+                        m_normal.x = -m_normal1.x
+                        m_normal.y = -m_normal1.y
+                        m_lowerLimit.x = -m_normal2.x
+                        m_lowerLimit.y = -m_normal2.y
+                        m_upperLimit.x = -m_normal1.x
+                        m_upperLimit.y = -m_normal1.y
                     }
                 } else if (convex2) {
-                    front = offset2 >= 0.0f || offset0 >= 0.0f && offset1 >= 0.0f
-                    if (front) {
-                        normal.x = normal1.x
-                        normal.y = normal1.y
-                        lowerLimit.x = normal1.x
-                        lowerLimit.y = normal1.y
-                        upperLimit.x = normal2.x
-                        upperLimit.y = normal2.y
+                    m_front = offset2 >= 0.0f || offset0 >= 0.0f && offset1 >= 0.0f
+                    if (m_front) {
+                        m_normal.x = m_normal1.x
+                        m_normal.y = m_normal1.y
+                        m_lowerLimit.x = m_normal1.x
+                        m_lowerLimit.y = m_normal1.y
+                        m_upperLimit.x = m_normal2.x
+                        m_upperLimit.y = m_normal2.y
                     } else {
-                        normal.x = -normal1.x
-                        normal.y = -normal1.y
-                        lowerLimit.x = -normal1.x
-                        lowerLimit.y = -normal1.y
-                        upperLimit.x = -normal0.x
-                        upperLimit.y = -normal0.y
+                        m_normal.x = -m_normal1.x
+                        m_normal.y = -m_normal1.y
+                        m_lowerLimit.x = -m_normal1.x
+                        m_lowerLimit.y = -m_normal1.y
+                        m_upperLimit.x = -m_normal0.x
+                        m_upperLimit.y = -m_normal0.y
                     }
                 } else {
-                    front = offset0 >= 0.0f && offset1 >= 0.0f && offset2 >= 0.0f
-                    if (front) {
-                        normal.x = normal1.x
-                        normal.y = normal1.y
-                        lowerLimit.x = normal1.x
-                        lowerLimit.y = normal1.y
-                        upperLimit.x = normal1.x
-                        upperLimit.y = normal1.y
+                    m_front = offset0 >= 0.0f && offset1 >= 0.0f && offset2 >= 0.0f
+                    if (m_front) {
+                        m_normal.x = m_normal1.x
+                        m_normal.y = m_normal1.y
+                        m_lowerLimit.x = m_normal1.x
+                        m_lowerLimit.y = m_normal1.y
+                        m_upperLimit.x = m_normal1.x
+                        m_upperLimit.y = m_normal1.y
                     } else {
-                        normal.x = -normal1.x
-                        normal.y = -normal1.y
-                        lowerLimit.x = -normal2.x
-                        lowerLimit.y = -normal2.y
-                        upperLimit.x = -normal0.x
-                        upperLimit.y = -normal0.y
+                        m_normal.x = -m_normal1.x
+                        m_normal.y = -m_normal1.y
+                        m_lowerLimit.x = -m_normal2.x
+                        m_lowerLimit.y = -m_normal2.y
+                        m_upperLimit.x = -m_normal0.x
+                        m_upperLimit.y = -m_normal0.y
                     }
                 }
             } else if (hasVertex0) {
                 if (convex1) {
-                    front = offset0 >= 0.0f || offset1 >= 0.0f
-                    if (front) {
-                        normal.x = normal1.x
-                        normal.y = normal1.y
-                        lowerLimit.x = normal0.x
-                        lowerLimit.y = normal0.y
-                        upperLimit.x = -normal1.x
-                        upperLimit.y = -normal1.y
+                    m_front = offset0 >= 0.0f || offset1 >= 0.0f
+                    if (m_front) {
+                        m_normal.x = m_normal1.x
+                        m_normal.y = m_normal1.y
+                        m_lowerLimit.x = m_normal0.x
+                        m_lowerLimit.y = m_normal0.y
+                        m_upperLimit.x = -m_normal1.x
+                        m_upperLimit.y = -m_normal1.y
                     } else {
-                        normal.x = -normal1.x
-                        normal.y = -normal1.y
-                        lowerLimit.x = normal1.x
-                        lowerLimit.y = normal1.y
-                        upperLimit.x = -normal1.x
-                        upperLimit.y = -normal1.y
+                        m_normal.x = -m_normal1.x
+                        m_normal.y = -m_normal1.y
+                        m_lowerLimit.x = m_normal1.x
+                        m_lowerLimit.y = m_normal1.y
+                        m_upperLimit.x = -m_normal1.x
+                        m_upperLimit.y = -m_normal1.y
                     }
                 } else {
-                    front = offset0 >= 0.0f && offset1 >= 0.0f
-                    if (front) {
-                        normal.x = normal1.x
-                        normal.y = normal1.y
-                        lowerLimit.x = normal1.x
-                        lowerLimit.y = normal1.y
-                        upperLimit.x = -normal1.x
-                        upperLimit.y = -normal1.y
+                    m_front = offset0 >= 0.0f && offset1 >= 0.0f
+                    if (m_front) {
+                        m_normal.x = m_normal1.x
+                        m_normal.y = m_normal1.y
+                        m_lowerLimit.x = m_normal1.x
+                        m_lowerLimit.y = m_normal1.y
+                        m_upperLimit.x = -m_normal1.x
+                        m_upperLimit.y = -m_normal1.y
                     } else {
-                        normal.x = -normal1.x
-                        normal.y = -normal1.y
-                        lowerLimit.x = normal1.x
-                        lowerLimit.y = normal1.y
-                        upperLimit.x = -normal0.x
-                        upperLimit.y = -normal0.y
+                        m_normal.x = -m_normal1.x
+                        m_normal.y = -m_normal1.y
+                        m_lowerLimit.x = m_normal1.x
+                        m_lowerLimit.y = m_normal1.y
+                        m_upperLimit.x = -m_normal0.x
+                        m_upperLimit.y = -m_normal0.y
                     }
                 }
             } else if (hasVertex3) {
                 if (convex2) {
-                    front = offset1 >= 0.0f || offset2 >= 0.0f
-                    if (front) {
-                        normal.x = normal1.x
-                        normal.y = normal1.y
-                        lowerLimit.x = -normal1.x
-                        lowerLimit.y = -normal1.y
-                        upperLimit.x = normal2.x
-                        upperLimit.y = normal2.y
+                    m_front = offset1 >= 0.0f || offset2 >= 0.0f
+                    if (m_front) {
+                        m_normal.x = m_normal1.x
+                        m_normal.y = m_normal1.y
+                        m_lowerLimit.x = -m_normal1.x
+                        m_lowerLimit.y = -m_normal1.y
+                        m_upperLimit.x = m_normal2.x
+                        m_upperLimit.y = m_normal2.y
                     } else {
-                        normal.x = -normal1.x
-                        normal.y = -normal1.y
-                        lowerLimit.x = -normal1.x
-                        lowerLimit.y = -normal1.y
-                        upperLimit.x = normal1.x
-                        upperLimit.y = normal1.y
+                        m_normal.x = -m_normal1.x
+                        m_normal.y = -m_normal1.y
+                        m_lowerLimit.x = -m_normal1.x
+                        m_lowerLimit.y = -m_normal1.y
+                        m_upperLimit.x = m_normal1.x
+                        m_upperLimit.y = m_normal1.y
                     }
                 } else {
-                    front = offset1 >= 0.0f && offset2 >= 0.0f
-                    if (front) {
-                        normal.x = normal1.x
-                        normal.y = normal1.y
-                        lowerLimit.x = -normal1.x
-                        lowerLimit.y = -normal1.y
-                        upperLimit.x = normal1.x
-                        upperLimit.y = normal1.y
+                    m_front = offset1 >= 0.0f && offset2 >= 0.0f
+                    if (m_front) {
+                        m_normal.x = m_normal1.x
+                        m_normal.y = m_normal1.y
+                        m_lowerLimit.x = -m_normal1.x
+                        m_lowerLimit.y = -m_normal1.y
+                        m_upperLimit.x = m_normal1.x
+                        m_upperLimit.y = m_normal1.y
                     } else {
-                        normal.x = -normal1.x
-                        normal.y = -normal1.y
-                        lowerLimit.x = -normal2.x
-                        lowerLimit.y = -normal2.y
-                        upperLimit.x = normal1.x
-                        upperLimit.y = normal1.y
+                        m_normal.x = -m_normal1.x
+                        m_normal.y = -m_normal1.y
+                        m_lowerLimit.x = -m_normal2.x
+                        m_lowerLimit.y = -m_normal2.y
+                        m_upperLimit.x = m_normal1.x
+                        m_upperLimit.y = m_normal1.y
                     }
                 }
             } else {
-                front = offset1 >= 0.0f
-                if (front) {
-                    normal.x = normal1.x
-                    normal.y = normal1.y
-                    lowerLimit.x = -normal1.x
-                    lowerLimit.y = -normal1.y
-                    upperLimit.x = -normal1.x
-                    upperLimit.y = -normal1.y
+                m_front = offset1 >= 0.0f
+                if (m_front) {
+                    m_normal.x = m_normal1.x
+                    m_normal.y = m_normal1.y
+                    m_lowerLimit.x = -m_normal1.x
+                    m_lowerLimit.y = -m_normal1.y
+                    m_upperLimit.x = -m_normal1.x
+                    m_upperLimit.y = -m_normal1.y
                 } else {
-                    normal.x = -normal1.x
-                    normal.y = -normal1.y
-                    lowerLimit.x = normal1.x
-                    lowerLimit.y = normal1.y
-                    upperLimit.x = normal1.x
-                    upperLimit.y = normal1.y
+                    m_normal.x = -m_normal1.x
+                    m_normal.y = -m_normal1.y
+                    m_lowerLimit.x = m_normal1.x
+                    m_lowerLimit.y = m_normal1.y
+                    m_upperLimit.x = m_normal1.x
+                    m_upperLimit.y = m_normal1.y
                 }
             }
 
             // Get polygonB in frameA
-            this.polygonB.count = polygonB.vertexCount
-            for (i in 0 until polygonB.vertexCount) {
-                Transform.mulToOutUnsafe(xf, polygonB.vertices[i], this.polygonB.vertices[i])
-                Rot.mulToOutUnsafe(xf.q, polygonB.normals[i], this.polygonB.normals[i])
+            m_polygonB.count = polygonB.count
+            for (i in 0 until polygonB.count) {
+                Transform.mulToOutUnsafe(m_xf, polygonB.vertices[i], m_polygonB.vertices[i])
+                Rot.mulToOutUnsafe(m_xf.q, polygonB.normals[i], m_polygonB.normals[i])
             }
 
-            radius = 2.0f * Settings.polygonRadius
+            m_radius = 2.0f * Settings.polygonRadius
 
             manifold.pointCount = 0
 
@@ -1054,12 +1097,12 @@ class Collision(private val pool: IWorldPool) {
                 return
             }
 
-            if (edgeAxis.separation > radius) {
+            if (edgeAxis.separation > m_radius) {
                 return
             }
 
             computePolygonSeparation(polygonAxis)
-            if (polygonAxis.type != EPAxis.Type.UNKNOWN && polygonAxis.separation > radius) {
+            if (polygonAxis.type != EPAxis.Type.UNKNOWN && polygonAxis.separation > m_radius) {
                 return
             }
 
@@ -1080,13 +1123,13 @@ class Collision(private val pool: IWorldPool) {
             val ie1 = ie[1]
 
             if (primaryAxis.type == EPAxis.Type.EDGE_A) {
-                manifold.type = ManifoldType.FACE_A
+                manifold.type = Manifold.ManifoldType.FACE_A
 
                 // Search for the polygon normal that is most anti-parallel to the edge normal.
                 var bestIndex = 0
-                var bestValue = Vec2.dot(normal, this.polygonB.normals[0])
-                for (i in 1 until this.polygonB.count) {
-                    val value = Vec2.dot(normal, this.polygonB.normals[i])
+                var bestValue = Vec2.dot(m_normal, m_polygonB.normals[0])
+                for (i in 1 until m_polygonB.count) {
+                    val value = Vec2.dot(m_normal, m_polygonB.normals[i])
                     if (value < bestValue) {
                         bestValue = value
                         bestIndex = i
@@ -1094,53 +1137,53 @@ class Collision(private val pool: IWorldPool) {
                 }
 
                 val i1 = bestIndex
-                val i2 = if (i1 + 1 < this.polygonB.count) i1 + 1 else 0
+                val i2 = if (i1 + 1 < m_polygonB.count) i1 + 1 else 0
 
-                ie0.v.set(this.polygonB.vertices[i1])
+                ie0.v.set(m_polygonB.vertices[i1])
                 ie0.id.indexA = 0
                 ie0.id.indexB = i1.toByte()
                 ie0.id.typeA = ContactID.Type.FACE.ordinal.toByte()
                 ie0.id.typeB = ContactID.Type.VERTEX.ordinal.toByte()
 
-                ie1.v.set(this.polygonB.vertices[i2])
+                ie1.v.set(m_polygonB.vertices[i2])
                 ie1.id.indexA = 0
                 ie1.id.indexB = i2.toByte()
                 ie1.id.typeA = ContactID.Type.FACE.ordinal.toByte()
                 ie1.id.typeB = ContactID.Type.VERTEX.ordinal.toByte()
 
-                if (front) {
+                if (m_front) {
                     rf.i1 = 0
                     rf.i2 = 1
-                    rf.v1.set(v1)
-                    rf.v2.set(v2)
-                    rf.normal.set(normal1)
+                    rf.v1.set(m_v1)
+                    rf.v2.set(m_v2)
+                    rf.normal.set(m_normal1)
                 } else {
                     rf.i1 = 1
                     rf.i2 = 0
-                    rf.v1.set(v2)
-                    rf.v2.set(v1)
-                    rf.normal.set(normal1).negateLocal()
+                    rf.v1.set(m_v2)
+                    rf.v2.set(m_v1)
+                    rf.normal.set(m_normal1).negateLocal()
                 }
             } else {
-                manifold.type = ManifoldType.FACE_B
+                manifold.type = Manifold.ManifoldType.FACE_B
 
-                ie0.v.set(v1)
+                ie0.v.set(m_v1)
                 ie0.id.indexA = 0
                 ie0.id.indexB = primaryAxis.index.toByte()
                 ie0.id.typeA = ContactID.Type.VERTEX.ordinal.toByte()
                 ie0.id.typeB = ContactID.Type.FACE.ordinal.toByte()
 
-                ie1.v.set(v2)
+                ie1.v.set(m_v2)
                 ie1.id.indexA = 0
                 ie1.id.indexB = primaryAxis.index.toByte()
                 ie1.id.typeA = ContactID.Type.VERTEX.ordinal.toByte()
                 ie1.id.typeB = ContactID.Type.FACE.ordinal.toByte()
 
                 rf.i1 = primaryAxis.index
-                rf.i2 = if (rf.i1 + 1 < this.polygonB.count) rf.i1 + 1 else 0
-                rf.v1.set(this.polygonB.vertices[rf.i1])
-                rf.v2.set(this.polygonB.vertices[rf.i2])
-                rf.normal.set(this.polygonB.normals[rf.i1])
+                rf.i2 = if (rf.i1 + 1 < m_polygonB.count) rf.i1 + 1 else 0
+                rf.v1.set(m_polygonB.vertices[rf.i1])
+                rf.v2.set(m_polygonB.vertices[rf.i2])
+                rf.normal.set(m_polygonB.normals[rf.i1])
             }
 
             rf.sideNormal1.set(rf.normal.y, -rf.normal.x)
@@ -1148,8 +1191,11 @@ class Collision(private val pool: IWorldPool) {
             rf.sideOffset1 = Vec2.dot(rf.sideNormal1, rf.v1)
             rf.sideOffset2 = Vec2.dot(rf.sideNormal2, rf.v2)
 
-            // Clip incident edge against extruded edge1 side edges. Clip to box side 1
-            var np = clipSegmentToLine(clipPoints1, ie, rf.sideNormal1, rf.sideOffset1, rf.i1)
+            // Clip incident edge against extruded edge1 side edges.
+            var np: Int
+
+            // Clip to box side 1
+            np = clipSegmentToLine(clipPoints1, ie, rf.sideNormal1, rf.sideOffset1, rf.i1)
 
             if (np < Settings.maxManifoldPoints) {
                 return
@@ -1173,15 +1219,16 @@ class Collision(private val pool: IWorldPool) {
 
             var pointCount = 0
             for (i in 0 until Settings.maxManifoldPoints) {
+                val separation: Float
 
-                val separation = Vec2.dot(rf.normal, temp.set(clipPoints2[i].v).subLocal(rf.v1))
+                separation = Vec2.dot(rf.normal, temp.set(clipPoints2[i].v).subLocal(rf.v1))
 
-                if (separation <= radius) {
+                if (separation <= m_radius) {
                     val cp = manifold.points[pointCount]
 
                     if (primaryAxis.type == EPAxis.Type.EDGE_A) {
                         // cp.localPoint = MulT(m_xf, clipPoints2[i].v);
-                        Transform.mulTransToOutUnsafe(xf, clipPoints2[i].v, cp.localPoint)
+                        Transform.mulTransToOutUnsafe(m_xf, clipPoints2[i].v, cp.localPoint)
                         cp.id.set(clipPoints2[i].id)
                     } else {
                         cp.localPoint.set(clipPoints2[i].v)
@@ -1198,17 +1245,18 @@ class Collision(private val pool: IWorldPool) {
             manifold.pointCount = pointCount
         }
 
+
         fun computeEdgeSeparation(axis: EPAxis) {
             axis.type = EPAxis.Type.EDGE_A
-            axis.index = if (front) 0 else 1
+            axis.index = if (m_front) 0 else 1
             axis.separation = Float.MAX_VALUE
-            val nx = normal.x
-            val ny = normal.y
+            val nx = m_normal.x
+            val ny = m_normal.y
 
-            for (i in 0 until polygonB.count) {
-                val v = polygonB.vertices[i]
-                val tempx = v.x - v1.x
-                val tempy = v.y - v1.y
+            for (i in 0 until m_polygonB.count) {
+                val v = m_polygonB.vertices[i]
+                val tempx = v.x - m_v1.x
+                val tempy = v.y - m_v1.y
                 val s = nx * tempx + ny * tempy
                 if (s < axis.separation) {
                     axis.separation = s
@@ -1221,26 +1269,26 @@ class Collision(private val pool: IWorldPool) {
             axis.index = -1
             axis.separation = -Float.MAX_VALUE
 
-            perp.x = -normal.y
-            perp.y = normal.x
+            perp.x = -m_normal.y
+            perp.y = m_normal.x
 
-            for (i in 0 until polygonB.count) {
-                val normalB = polygonB.normals[i]
-                val vB = polygonB.vertices[i]
+            for (i in 0 until m_polygonB.count) {
+                val normalB = m_polygonB.normals[i]
+                val vB = m_polygonB.vertices[i]
                 n.x = -normalB.x
                 n.y = -normalB.y
 
                 // float s1 = Vec2.dot(n, temp.set(vB).subLocal(m_v1));
                 // float s2 = Vec2.dot(n, temp.set(vB).subLocal(m_v2));
-                var tempx = vB.x - v1.x
-                var tempy = vB.y - v1.y
+                var tempx = vB.x - m_v1.x
+                var tempy = vB.y - m_v1.y
                 val s1 = n.x * tempx + n.y * tempy
-                tempx = vB.x - v2.x
-                tempy = vB.y - v2.y
+                tempx = vB.x - m_v2.x
+                tempy = vB.y - m_v2.y
                 val s2 = n.x * tempx + n.y * tempy
                 val s = MathUtils.min(s1, s2)
 
-                if (s > radius) {
+                if (s > m_radius) {
                     // No collision
                     axis.type = EPAxis.Type.EDGE_B
                     axis.index = i
@@ -1250,11 +1298,11 @@ class Collision(private val pool: IWorldPool) {
 
                 // Adjacency
                 if (n.x * perp.x + n.y * perp.y >= 0.0f) {
-                    if (Vec2.dot(temp.set(n).subLocal(upperLimit), normal) < -Settings.angularSlop) {
+                    if (Vec2.dot(temp.set(n).subLocal(m_upperLimit), m_normal) < -Settings.angularSlop) {
                         continue
                     }
                 } else {
-                    if (Vec2.dot(temp.set(n).subLocal(lowerLimit), normal) < -Settings.angularSlop) {
+                    if (Vec2.dot(temp.set(n).subLocal(m_lowerLimit), m_normal) < -Settings.angularSlop) {
                         continue
                     }
                 }
@@ -1270,6 +1318,9 @@ class Collision(private val pool: IWorldPool) {
 
     // #### COLLISION STUFF (not from collision.h or collision.cpp) ####
 
+    // djm pooling
+    private val d = Vec2()
+
     companion object {
 
         val NULL_FEATURE = Int.MAX_VALUE
@@ -1278,11 +1329,15 @@ class Collision(private val pool: IWorldPool) {
          * Compute the point states given two manifolds. The states pertain to the transition from
          * manifold1 to manifold2. So state1 is either persist or remove while state2 is either add or
          * persist.
+         *
+         * @param state1
+         * @param state2
+         * @param manifold1
+         * @param manifold2
          */
-        fun getPointStates(
-            state1: Array<PointState>, state2: Array<PointState>,
-            manifold1: Manifold, manifold2: Manifold
-        ) {
+
+        fun getPointStates(state1: Array<PointState>, state2: Array<PointState>,
+                           manifold1: Manifold, manifold2: Manifold) {
 
             for (i in 0 until Settings.maxManifoldPoints) {
                 state1[i] = PointState.NULL_STATE
@@ -1320,11 +1375,16 @@ class Collision(private val pool: IWorldPool) {
 
         /**
          * Clipping for contact manifolds. Sutherland-Hodgman clipping.
+         *
+         * @param vOut
+         * @param vIn
+         * @param normal
+         * @param offset
+         * @return
          */
-        fun clipSegmentToLine(
-            vOut: Array<ClipVertex>, vIn: Array<ClipVertex>,
-            normal: Vec2, offset: Float, vertexIndexA: Int
-        ): Int {
+
+        fun clipSegmentToLine(vOut: Array<ClipVertex>, vIn: Array<ClipVertex>,
+                              normal: Vec2, offset: Float, vertexIndexA: Int): Int {
 
             // Start with no output points
             var numOut = 0

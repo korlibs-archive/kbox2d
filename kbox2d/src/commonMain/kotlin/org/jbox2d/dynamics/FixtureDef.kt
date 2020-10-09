@@ -33,7 +33,6 @@ import org.jbox2d.userdata.*
  * @author daniel
  */
 data class FixtureDef(
-
     /**
      * The shape, this must be set. The shape will be cloned, so you can create the shape on the
      * stack.

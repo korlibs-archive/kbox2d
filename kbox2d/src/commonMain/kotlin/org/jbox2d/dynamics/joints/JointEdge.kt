@@ -38,13 +38,24 @@ class JointEdge {
     /**
      * Provides quick access to the other body attached
      */
+
     var other: Body? = null
 
-    /** the joint */
+    /**
+     * the joint
+     */
+
     var joint: Joint? = null
 
-    /** the previous joint edge in the body's joint list */
+    /**
+     * the previous joint edge in the body's joint list
+     */
+
     var prev: JointEdge? = null
-    /** the next joint edge in the body's joint list */
+
+    /**
+     * the next joint edge in the body's joint list
+     */
+
     var next: JointEdge? = null
 }

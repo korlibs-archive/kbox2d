@@ -8,6 +8,18 @@ import org.jbox2d.dynamics.SolverData
 import org.jbox2d.internal.*
 import org.jbox2d.pooling.IWorldPool
 
+//Point-to-point constraint
+//Cdot = v2 - v1
+//   = v2 + cross(w2, r2) - v1 - cross(w1, r1)
+//J = [-I -r1_skew I r2_skew ]
+//Identity used:
+//w k % (rx i + ry j) = w * (-ry i + rx j)
+
+//Angle constraint
+//Cdot = w2 - w1
+//J = [0 0 -1 0 0 1]
+//K = invI1 + invI2
+
 /**
  * A motor joint is used to control the relative motion between two bodies. A typical usage is to
  * control the movement of a dynamic body with respect to the ground.
@@ -17,7 +29,12 @@ import org.jbox2d.pooling.IWorldPool
 class MotorJoint(pool: IWorldPool, def: MotorJointDef) : Joint(pool, def) {
 
     // Solver shared
-    /** The target linear offset, in frame A, in meters. Do not modify. */
+    /**
+     * Get the target linear offset, in frame A, in meters. Do not modify.
+     */
+    /**
+     * Set the target linear offset, in frame A, in meters.
+     */
     var linearOffset = Vec2()
         set(linearOffset) {
             if (linearOffset.x != this.linearOffset.x || linearOffset.y != this.linearOffset.y) {
@@ -26,61 +43,71 @@ class MotorJoint(pool: IWorldPool, def: MotorJointDef) : Joint(pool, def) {
                 this.linearOffset.set(linearOffset)
             }
         }
-    private var _angularOffset: Float = def.angularOffset
-    private val linearImpulse = Vec2()
-    private var angularImpulse: Float = 0f
-    private var _maxForce: Float = def.maxForce
-    private var _maxTorque: Float = def.maxTorque
+    private var m_angularOffset: Float = def.angularOffset
+    private val m_linearImpulse = Vec2()
+    private var m_angularImpulse: Float = 0f
+    private var m_maxForce: Float = def.maxForce
+    private var m_maxTorque: Float = def.maxTorque
 
     var correctionFactor: Float = def.correctionFactor
 
     // Solver temp
-    private var indexA: Int = 0
-    private var indexB: Int = 0
-    private val rA = Vec2()
-    private val rB = Vec2()
-    private val localCenterA = Vec2()
-    private val localCenterB = Vec2()
-    private val linearError = Vec2()
-    private var angularError: Float = 0f
-    private var invMassA: Float = 0f
-    private var invMassB: Float = 0f
-    private var invIA: Float = 0f
-    private var invIB: Float = 0f
-    private val linearMass = Mat22()
-    private var angularMass: Float = 0f
+    private var m_indexA: Int = 0
+    private var m_indexB: Int = 0
+    private val m_rA = Vec2()
+    private val m_rB = Vec2()
+    private val m_localCenterA = Vec2()
+    private val m_localCenterB = Vec2()
+    private val m_linearError = Vec2()
+    private var m_angularError: Float = 0.toFloat()
+    private var m_invMassA: Float = 0.toFloat()
+    private var m_invMassB: Float = 0.toFloat()
+    private var m_invIA: Float = 0.toFloat()
+    private var m_invIB: Float = 0.toFloat()
+    private val m_linearMass = Mat22()
+    private var m_angularMass: Float = 0.toFloat()
 
     /**
-     * Target angular offset in radians.
+     * Set the target angular offset, in radians.
+     *
+     * @param angularOffset
      */
     var angularOffset: Float
-        get() = _angularOffset
+        get() = m_angularOffset
         set(angularOffset) {
-            if (angularOffset != _angularOffset) {
+            if (angularOffset != m_angularOffset) {
                 bodyA!!.isAwake = true
                 bodyB!!.isAwake = true
-                _angularOffset = angularOffset
+                m_angularOffset = angularOffset
             }
         }
 
     /**
-     * Maximum friction force in N.
+     * Get the maximum friction force in N.
+     */
+    /**
+     * Set the maximum friction force in N.
+     *
+     * @param force
      */
     var maxForce: Float
-        get() = _maxForce
+        get() = m_maxForce
         set(force) {
             assert(force >= 0.0f)
-            _maxForce = force
+            m_maxForce = force
         }
 
     /**
-     * Maximum friction torque in N*m.
+     * Get the maximum friction torque in N*m.
+     */
+    /**
+     * Set the maximum friction torque in N*m.
      */
     var maxTorque: Float
-        get() = _maxTorque
+        get() = m_maxTorque
         set(torque) {
             assert(torque >= 0.0f)
-            _maxTorque = torque
+            m_maxTorque = torque
         }
 
     init {
@@ -95,12 +122,12 @@ class MotorJoint(pool: IWorldPool, def: MotorJointDef) : Joint(pool, def) {
         out.set(bodyB!!.position)
     }
 
-    override fun getReactionForce(invDt: Float, out: Vec2) {
-        out.set(linearImpulse).mulLocal(invDt)
+    override fun getReactionForce(inv_dt: Float, out: Vec2) {
+        out.set(m_linearImpulse).mulLocal(inv_dt)
     }
 
-    override fun getReactionTorque(invDt: Float): Float {
-        return angularImpulse * invDt
+    override fun getReactionTorque(inv_dt: Float): Float {
+        return m_angularImpulse * inv_dt
     }
 
     /**
@@ -111,24 +138,24 @@ class MotorJoint(pool: IWorldPool, def: MotorJointDef) : Joint(pool, def) {
     }
 
     override fun initVelocityConstraints(data: SolverData) {
-        indexA = bodyA!!.islandIndex
-        indexB = bodyB!!.islandIndex
-        localCenterA.set(bodyA!!.sweep.localCenter)
-        localCenterB.set(bodyB!!.sweep.localCenter)
-        invMassA = bodyA!!.invMass
-        invMassB = bodyB!!.invMass
-        invIA = bodyA!!.invI
-        invIB = bodyB!!.invI
+        m_indexA = bodyA!!.islandIndex
+        m_indexB = bodyB!!.islandIndex
+        m_localCenterA.set(bodyA!!.sweep.localCenter)
+        m_localCenterB.set(bodyB!!.sweep.localCenter)
+        m_invMassA = bodyA!!.m_invMass
+        m_invMassB = bodyB!!.m_invMass
+        m_invIA = bodyA!!.m_invI
+        m_invIB = bodyB!!.m_invI
 
-        val cA = data.positions!![indexA].c
-        val aA = data.positions!![indexA].a
-        val vA = data.velocities!![indexA].v
-        var wA = data.velocities!![indexA].w
+        val cA = data.positions!![m_indexA].c
+        val aA = data.positions!![m_indexA].a
+        val vA = data.velocities!![m_indexA].v
+        var wA = data.velocities!![m_indexA].w
 
-        val cB = data.positions!![indexB].c
-        val aB = data.positions!![indexB].a
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+        val cB = data.positions!![m_indexB].c
+        val aB = data.positions!![m_indexB].a
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
         val qA = pool.popRot()
         val qB = pool.popRot()
@@ -141,10 +168,10 @@ class MotorJoint(pool: IWorldPool, def: MotorJointDef) : Joint(pool, def) {
         // Compute the effective mass matrix.
         // m_rA = b2Mul(qA, -m_localCenterA);
         // m_rB = b2Mul(qB, -m_localCenterB);
-        rA.x = qA.c * -localCenterA.x - qA.s * -localCenterA.y
-        rA.y = qA.s * -localCenterA.x + qA.c * -localCenterA.y
-        rB.x = qB.c * -localCenterB.x - qB.s * -localCenterB.y
-        rB.y = qB.s * -localCenterB.x + qB.c * -localCenterB.y
+        m_rA.x = qA.c * -m_localCenterA.x - qA.s * -m_localCenterA.y
+        m_rA.y = qA.s * -m_localCenterA.x + qA.c * -m_localCenterA.y
+        m_rB.x = qB.c * -m_localCenterB.x - qB.s * -m_localCenterB.y
+        m_rB.y = qB.s * -m_localCenterB.x + qB.c * -m_localCenterB.y
 
         // J = [-I -r1_skew I r2_skew]
         // [ 0 -1 0 1]
@@ -154,45 +181,45 @@ class MotorJoint(pool: IWorldPool, def: MotorJointDef) : Joint(pool, def) {
         // K = [ mA+r1y^2*iA+mB+r2y^2*iB, -r1y*iA*r1x-r2y*iB*r2x, -r1y*iA-r2y*iB]
         // [ -r1y*iA*r1x-r2y*iB*r2x, mA+r1x^2*iA+mB+r2x^2*iB, r1x*iA+r2x*iB]
         // [ -r1y*iA-r2y*iB, r1x*iA+r2x*iB, iA+iB]
-        val mA = invMassA
-        val mB = invMassB
-        val iA = invIA
-        val iB = invIB
+        val mA = m_invMassA
+        val mB = m_invMassB
+        val iA = m_invIA
+        val iB = m_invIB
 
-        K.ex.x = mA + mB + iA * rA.y * rA.y + iB * rB.y * rB.y
-        K.ex.y = -iA * rA.x * rA.y - iB * rB.x * rB.y
+        K.ex.x = mA + mB + iA * m_rA.y * m_rA.y + iB * m_rB.y * m_rB.y
+        K.ex.y = -iA * m_rA.x * m_rA.y - iB * m_rB.x * m_rB.y
         K.ey.x = K.ex.y
-        K.ey.y = mA + mB + iA * rA.x * rA.x + iB * rB.x * rB.x
+        K.ey.y = mA + mB + iA * m_rA.x * m_rA.x + iB * m_rB.x * m_rB.x
 
-        K.invertToOut(linearMass)
+        K.invertToOut(m_linearMass)
 
-        angularMass = iA + iB
-        if (angularMass > 0.0f) {
-            angularMass = 1.0f / angularMass
+        m_angularMass = iA + iB
+        if (m_angularMass > 0.0f) {
+            m_angularMass = 1.0f / m_angularMass
         }
 
-        // linearError = cB + m_rB - cA - m_rA - b2Mul(qA, m_linearOffset);
+        // m_linearError = cB + m_rB - cA - m_rA - b2Mul(qA, m_linearOffset);
         Rot.mulToOutUnsafe(qA, linearOffset, temp)
-        linearError.x = cB.x + rB.x - cA.x - rA.x - temp.x
-        linearError.y = cB.y + rB.y - cA.y - rA.y - temp.y
-        angularError = aB - aA - _angularOffset
+        m_linearError.x = cB.x + m_rB.x - cA.x - m_rA.x - temp.x
+        m_linearError.y = cB.y + m_rB.y - cA.y - m_rA.y - temp.y
+        m_angularError = aB - aA - m_angularOffset
 
         if (data.step!!.warmStarting) {
             // Scale impulses to support a variable time step.
-            linearImpulse.x *= data.step!!.dtRatio
-            linearImpulse.y *= data.step!!.dtRatio
-            angularImpulse *= data.step!!.dtRatio
+            m_linearImpulse.x *= data.step!!.dtRatio
+            m_linearImpulse.y *= data.step!!.dtRatio
+            m_angularImpulse *= data.step!!.dtRatio
 
-            val P = linearImpulse
+            val P = m_linearImpulse
             vA.x -= mA * P.x
             vA.y -= mA * P.y
-            wA -= iA * (rA.x * P.y - rA.y * P.x + angularImpulse)
+            wA -= iA * (m_rA.x * P.y - m_rA.y * P.x + m_angularImpulse)
             vB.x += mB * P.x
             vB.y += mB * P.y
-            wB += iB * (rB.x * P.y - rB.y * P.x + angularImpulse)
+            wB += iB * (m_rB.x * P.y - m_rB.y * P.x + m_angularImpulse)
         } else {
-            linearImpulse.setZero()
-            angularImpulse = 0.0f
+            m_linearImpulse.setZero()
+            m_angularImpulse = 0.0f
         }
 
         pool.pushVec2(1)
@@ -200,36 +227,36 @@ class MotorJoint(pool: IWorldPool, def: MotorJointDef) : Joint(pool, def) {
         pool.pushRot(2)
 
         // data.velocities[m_indexA].v = vA;
-        data.velocities!![indexA].w = wA
+        data.velocities!![m_indexA].w = wA
         // data.velocities[m_indexB].v = vB;
-        data.velocities!![indexB].w = wB
+        data.velocities!![m_indexB].w = wB
     }
 
     override fun solveVelocityConstraints(data: SolverData) {
-        val vA = data.velocities!![indexA].v
-        var wA = data.velocities!![indexA].w
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+        val vA = data.velocities!![m_indexA].v
+        var wA = data.velocities!![m_indexA].w
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
-        val mA = invMassA
-        val mB = invMassB
-        val iA = invIA
-        val iB = invIB
+        val mA = m_invMassA
+        val mB = m_invMassB
+        val iA = m_invIA
+        val iB = m_invIB
 
         val h = data.step!!.dt
-        val inv_h = data.step!!.invDt
+        val inv_h = data.step!!.inv_dt
 
         val temp = pool.popVec2()
 
         // Solve angular friction
         run {
-            val Cdot = wB - wA + inv_h * correctionFactor * angularError
-            var impulse = -angularMass * Cdot
+            val Cdot = wB - wA + inv_h * correctionFactor * m_angularError
+            var impulse = -m_angularMass * Cdot
 
-            val oldImpulse = angularImpulse
-            val maxImpulse = h * _maxTorque
-            angularImpulse = MathUtils.clamp(angularImpulse + impulse, -maxImpulse, maxImpulse)
-            impulse = angularImpulse - oldImpulse
+            val oldImpulse = m_angularImpulse
+            val maxImpulse = h * m_maxTorque
+            m_angularImpulse = MathUtils.clamp(m_angularImpulse + impulse, -maxImpulse, maxImpulse)
+            impulse = m_angularImpulse - oldImpulse
 
             wA -= iA * impulse
             wB += iB * impulse
@@ -240,43 +267,45 @@ class MotorJoint(pool: IWorldPool, def: MotorJointDef) : Joint(pool, def) {
         // Solve linear friction
         run {
             // Cdot = vB + b2Cross(wB, m_rB) - vA - b2Cross(wA, m_rA) + inv_h * m_correctionFactor *
-            // linearError;
-            Cdot.x = vB.x + -wB * rB.y - vA.x - -wA * rA.y + inv_h * correctionFactor * linearError.x
-            Cdot.y = vB.y + wB * rB.x - vA.y - wA * rA.x + inv_h * correctionFactor * linearError.y
+            // m_linearError;
+            Cdot.x = vB.x + -wB * m_rB.y - vA.x - -wA * m_rA.y + inv_h * correctionFactor * m_linearError.x
+            Cdot.y = vB.y + wB * m_rB.x - vA.y - wA * m_rA.x + inv_h * correctionFactor * m_linearError.y
 
             val impulse = temp
-            Mat22.mulToOutUnsafe(linearMass, Cdot, impulse)
+            Mat22.mulToOutUnsafe(m_linearMass, Cdot, impulse)
             impulse.negateLocal()
             val oldImpulse = pool.popVec2()
-            oldImpulse.set(linearImpulse)
-            linearImpulse.addLocal(impulse)
+            oldImpulse.set(m_linearImpulse)
+            m_linearImpulse.addLocal(impulse)
 
-            val maxImpulse = h * _maxForce
+            val maxImpulse = h * m_maxForce
 
-            if (linearImpulse.lengthSquared() > maxImpulse * maxImpulse) {
-                linearImpulse.normalize()
-                linearImpulse.mulLocal(maxImpulse)
+            if (m_linearImpulse.lengthSquared() > maxImpulse * maxImpulse) {
+                m_linearImpulse.normalize()
+                m_linearImpulse.mulLocal(maxImpulse)
             }
 
-            impulse.x = linearImpulse.x - oldImpulse.x
-            impulse.y = linearImpulse.y - oldImpulse.y
+            impulse.x = m_linearImpulse.x - oldImpulse.x
+            impulse.y = m_linearImpulse.y - oldImpulse.y
 
             vA.x -= mA * impulse.x
             vA.y -= mA * impulse.y
-            wA -= iA * (rA.x * impulse.y - rA.y * impulse.x)
+            wA -= iA * (m_rA.x * impulse.y - m_rA.y * impulse.x)
 
             vB.x += mB * impulse.x
             vB.y += mB * impulse.y
-            wB += iB * (rB.x * impulse.y - rB.y * impulse.x)
+            wB += iB * (m_rB.x * impulse.y - m_rB.y * impulse.x)
         }
 
         pool.pushVec2(3)
 
         // data.velocities[m_indexA].v.set(vA);
-        data.velocities!![indexA].w = wA
+        data.velocities!![m_indexA].w = wA
         // data.velocities[m_indexB].v.set(vB);
-        data.velocities!![indexB].w = wB
+        data.velocities!![m_indexB].w = wB
     }
 
-    override fun solvePositionConstraints(data: SolverData) = true
+    override fun solvePositionConstraints(data: SolverData): Boolean {
+        return true
+    }
 }

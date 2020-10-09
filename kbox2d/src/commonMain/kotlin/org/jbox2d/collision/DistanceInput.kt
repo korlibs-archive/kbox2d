@@ -30,13 +30,16 @@ import org.jbox2d.common.Transform
  * Input for Distance.
  * You have to option to use the shape radii
  * in the computation.
+ *
  */
 class DistanceInput {
 
     var proxyA = DistanceProxy()
+
     var proxyB = DistanceProxy()
 
     var transformA = Transform()
+
     var transformB = Transform()
 
     var useRadii: Boolean = false

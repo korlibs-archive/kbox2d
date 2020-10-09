@@ -27,36 +27,47 @@ import com.soywiz.korma.geom.*
 import org.jbox2d.internal.*
 
 /**
- * A 2x2 matrix. Stored in column-major order.
+ * A 2-by-2 matrix. Stored in column-major order.
  */
 class Mat22 {
 
+
     val ex: Vec2
+
     val ey: Vec2
 
     /**
      * Extract the angle in radians from this matrix (assumed to be a rotation matrix).
+     *
+     * @return
      */
     val angleRadians: Float get() = MathUtils.atan2(ex.y, ex.x)
 
     /**
      * Extract the angle in degrees from this matrix (assumed to be a rotation matrix).
+     *
+     * @return
      */
     val angleDegrees: Float get() = angleRadians * MathUtils.RAD2DEG
 
     /**
      * Extract the angle from this matrix (assumed to be a rotation matrix).
+     *
+     * @return
      */
     val angle: Angle get() = angleRadians.radians
 
     /** Convert the matrix to printable format.  */
     override fun toString(): String {
-        return "[${ex.x},${ey.x}]\n[${ex.y},${ey.y}]"
+        var s = ""
+        s += "[" + ex.x + "," + ey.x + "]\n"
+        s += "[" + ex.y + "," + ey.y + "]"
+        return s
     }
 
     /**
-     * Construct zero matrix. Note: this is NOT an identity matrix!
-     * djm fixed double allocation problem
+     * Construct zero matrix. Note: this is NOT an identity matrix! djm fixed double allocation
+     * problem
      */
     constructor() {
         ex = Vec2()
@@ -64,7 +75,10 @@ class Mat22 {
     }
 
     /**
-     * Create a matrix with given vectors [c1] and [c2] as columns.
+     * Create a matrix with given vectors as columns.
+     *
+     * @param c1 Column 1 of matrix
+     * @param c2 Column 2 of matrix
      */
     constructor(c1: Vec2, c2: Vec2) {
         ex = c1.clone()
@@ -73,14 +87,21 @@ class Mat22 {
 
     /**
      * Create a matrix from four floats.
+     *
+     * @param exx
+     * @param col2x
+     * @param exy
+     * @param col2y
      */
-    constructor(col1x: Float, col2x: Float, col1y: Float, col2y: Float) {
-        ex = Vec2(col1x, col1y)
+    constructor(exx: Float, col2x: Float, exy: Float, col2y: Float) {
+        ex = Vec2(exx, exy)
         ey = Vec2(col2x, col2y)
     }
 
     /**
-     * Set as a copy of another matrix [m].
+     * Set as a copy of another matrix.
+     *
+     * @param m Matrix to copy
      */
     fun set(m: Mat22): Mat22 {
         ex.x = m.ex.x
@@ -90,9 +111,9 @@ class Mat22 {
         return this
     }
 
-    fun set(col1x: Float, col2x: Float, col1y: Float, col2y: Float): Mat22 {
-        ex.x = col1x
-        ex.y = col1y
+    fun set(exx: Float, col2x: Float, exy: Float, col2y: Float): Mat22 {
+        ex.x = exx
+        ex.y = exy
         ey.x = col2x
         ey.y = col2y
         return this
@@ -101,12 +122,15 @@ class Mat22 {
     /**
      * Return a clone of this matrix. djm fixed double allocation
      */
+    // @Override // annotation omitted for GWT-compatibility
     fun clone(): Mat22 {
-        return Mat22(ex, ey)
+        return Mat22(ex!!, ey!!)
     }
 
     /**
-     * Set as a matrix representing a rotation in radians ([angleRadians]).
+     * Set as a matrix representing a rotation.
+     *
+     * @param angleRadians Rotation (in radians) that matrix represents.
      */
     fun setRadians(angleRadians: Float) {
         val c = MathUtils.cos(angleRadians)
@@ -142,7 +166,10 @@ class Mat22 {
     }
 
     /**
-     * Set by column vectors [c1] and [c2].
+     * Set by column vectors.
+     *
+     * @param c1 Column 1
+     * @param c2 Column 2
      */
     fun set(c1: Vec2, c2: Vec2) {
         ex.x = c1.x
@@ -151,7 +178,7 @@ class Mat22 {
         ey.y = c2.y
     }
 
-    /** Returns a new inverted Mat22 - does NOT invert the matrix locally!  */
+    /** Returns the inverted Mat22 - does NOT invert the matrix locally!  */
     fun invert(): Mat22 {
         val a = ex.x
         val b = ey.x
@@ -199,11 +226,15 @@ class Mat22 {
         out.ey.y = det * a
     }
 
+
     /**
      * Return the matrix composed of the absolute values of all elements. djm: fixed double allocation
+     *
+     * @return Absolute value matrix
      */
     fun abs(): Mat22 {
-        return Mat22(MathUtils.abs(ex.x), MathUtils.abs(ey.x), MathUtils.abs(ex.y), MathUtils.abs(ey.y))
+        return Mat22(MathUtils.abs(ex.x), MathUtils.abs(ey.x), MathUtils.abs(ex.y),
+                MathUtils.abs(ey.y))
     }
 
     /* djm: added */
@@ -213,7 +244,10 @@ class Mat22 {
     }
 
     /**
-     * Multiply a vector [v] by this matrix.
+     * Multiply a vector by this matrix.
+     *
+     * @param v Vector to multiply by matrix.
+     * @return Resulting vector
      */
     fun mul(v: Vec2): Vec2 {
         return Vec2(ex.x * v.x + ey.x * v.y, ex.y * v.x + ey.y * v.y)
@@ -231,15 +265,23 @@ class Mat22 {
         out.y = ex.y * v.x + ey.y * v.y
     }
 
+
     /**
      * Multiply another matrix by this one (this one on left). djm optimized
+     *
+     * @param R
+     * @return
      */
     fun mul(R: Mat22): Mat22 {
+        /*
+     * Mat22 C = new Mat22();C.set(this.mul(R.ex), this.mul(R.ey));return C;
+     */
         val C = Mat22()
         C.ex.x = ex.x * R.ex.x + ey.x * R.ex.y
         C.ex.y = ex.y * R.ex.x + ey.y * R.ex.y
         C.ey.x = ex.x * R.ey.x + ey.x * R.ey.y
         C.ey.y = ex.y * R.ey.x + ey.y * R.ey.y
+        // C.set(ex,col2);
         return C
     }
 
@@ -269,14 +311,24 @@ class Mat22 {
     }
 
     /**
-     * Multiply another matrix [B] by the transpose of this one (transpose of this one on left).
-     * djm: optimized
+     * Multiply another matrix by the transpose of this one (transpose of this one on left). djm:
+     * optimized
+     *
+     * @param B
+     * @return
      */
     fun mulTrans(B: Mat22): Mat22 {
+        /*
+     * Vec2 c1 = new Vec2(Vec2.dot(this.ex, B.ex), Vec2.dot(this.ey, B.ex)); Vec2 c2 = new
+     * Vec2(Vec2.dot(this.ex, B.ey), Vec2.dot(this.ey, B.ey)); Mat22 C = new Mat22(); C.set(c1, c2);
+     * return C;
+     */
         val C = Mat22()
-        C.ex.x = Vec2.dot(this.ex, B.ex)
-        C.ex.y = Vec2.dot(this.ey, B.ex)
-        C.ey.x = Vec2.dot(this.ex, B.ey)
+
+        C.ex.x = Vec2.dot(this.ex!!, B.ex!!)
+        C.ex.y = Vec2.dot(this.ey!!, B.ex)
+
+        C.ey.x = Vec2.dot(this.ex, B.ey!!)
         C.ey.y = Vec2.dot(this.ey, B.ey)
         return C
     }
@@ -287,6 +339,10 @@ class Mat22 {
     }
 
     fun mulTransToOut(B: Mat22, out: Mat22) {
+        /*
+     * out.ex.x = Vec2.dot(this.ex, B.ex); out.ex.y = Vec2.dot(this.ey, B.ex); out.ey.x =
+     * Vec2.dot(this.ex, B.ey); out.ey.y = Vec2.dot(this.ey, B.ey);
+     */
         val x1 = this.ex.x * B.ex.x + this.ex.y * B.ex.y
         val y1 = this.ey.x * B.ex.x + this.ey.y * B.ex.y
         val x2 = this.ex.x * B.ey.x + this.ex.y * B.ey.y
@@ -307,23 +363,34 @@ class Mat22 {
     }
 
     /**
-     * Multiply a vector [v] by the transpose of this matrix.
+     * Multiply a vector by the transpose of this matrix.
+     *
+     * @param v
+     * @return
      */
     fun mulTrans(v: Vec2): Vec2 {
+        // return new Vec2(Vec2.dot(v, ex), Vec2.dot(v, col2));
         return Vec2(v.x * ex.x + v.y * ex.y, v.x * ey.x + v.y * ey.y)
     }
 
     /* djm added */
     fun mulTransToOut(v: Vec2, out: Vec2) {
+        /*
+     * out.x = Vec2.dot(v, ex); out.y = Vec2.dot(v, col2);
+     */
         val tempx = v.x * ex.x + v.y * ex.y
         out.y = v.x * ey.x + v.y * ey.y
         out.x = tempx
     }
 
     /**
-     * Add this matrix to [B], return the result.
+     * Add this matrix to B, return the result.
+     *
+     * @param B
+     * @return
      */
     fun add(B: Mat22): Mat22 {
+        // return new Mat22(ex.add(B.ex), col2.add(B.ey));
         val m = Mat22()
         m.ex.x = ex.x + B.ex.x
         m.ex.y = ex.y + B.ex.y
@@ -333,9 +400,14 @@ class Mat22 {
     }
 
     /**
-     * Add [B] to this matrix locally.
+     * Add B to this matrix locally.
+     *
+     * @param B
+     * @return
      */
     fun addLocal(B: Mat22): Mat22 {
+        // ex.addLocal(B.ex);
+        // col2.addLocal(B.ey);
         ex.x += B.ex.x
         ex.y += B.ex.y
         ey.x += B.ey.x
@@ -383,26 +455,33 @@ class Mat22 {
         return result
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null) return false
-        if (this::class != other::class) return false
-        val oth = other as Mat22?
-        if (ex != oth?.ex) return false
-        if (ey != oth?.ey) return false
+    override fun equals(obj: Any?): Boolean {
+        if (this === obj) return true
+        if (obj == null) return false
+        if (this::class != obj::class) return false
+        val other = obj as Mat22?
+        if (ex == null) {
+            if (other?.ex != null) return false
+        } else if (ex != other?.ex) return false
+        if (ey == null) {
+            if (other?.ey != null) return false
+        } else if (ey != other?.ey) return false
         return true
     }
 
     companion object {
-
         /**
          * Return the matrix composed of the absolute values of all elements.
+         *
+         * @return Absolute value matrix
          */
+
         fun abs(R: Mat22): Mat22 {
             return R.abs()
         }
 
         /* djm created */
+
         fun absToOut(R: Mat22, out: Mat22) {
             out.ex.x = MathUtils.abs(R.ex.x)
             out.ex.y = MathUtils.abs(R.ex.y)
@@ -410,9 +489,12 @@ class Mat22 {
             out.ey.y = MathUtils.abs(R.ey.y)
         }
 
+
         fun mul(R: Mat22, v: Vec2): Vec2 {
+            // return R.mul(v);
             return Vec2(R.ex.x * v.x + R.ey.x * v.y, R.ex.y * v.x + R.ey.y * v.y)
         }
+
 
         fun mulToOut(R: Mat22, v: Vec2, out: Vec2) {
             val tempy = R.ex.y * v.x + R.ey.y * v.y
@@ -420,13 +502,16 @@ class Mat22 {
             out.y = tempy
         }
 
+
         fun mulToOutUnsafe(R: Mat22, v: Vec2, out: Vec2) {
             assert(v !== out)
             out.x = R.ex.x * v.x + R.ey.x * v.y
             out.y = R.ex.y * v.x + R.ey.y * v.y
         }
 
+
         fun mul(A: Mat22, B: Mat22): Mat22 {
+            // return A.mul(B);
             val C = Mat22()
             C.ex.x = A.ex.x * B.ex.x + A.ey.x * B.ex.y
             C.ex.y = A.ex.y * B.ex.x + A.ey.y * B.ex.y
@@ -434,6 +519,7 @@ class Mat22 {
             C.ey.y = A.ex.y * B.ey.x + A.ey.y * B.ey.y
             return C
         }
+
 
         fun mulToOut(A: Mat22, B: Mat22, out: Mat22) {
             val tempy1 = A.ex.y * B.ex.x + A.ey.y * B.ex.y
@@ -446,6 +532,7 @@ class Mat22 {
             out.ey.y = tempy2
         }
 
+
         fun mulToOutUnsafe(A: Mat22, B: Mat22, out: Mat22) {
             assert(out !== A)
             assert(out !== B)
@@ -455,9 +542,11 @@ class Mat22 {
             out.ey.y = A.ex.y * B.ey.x + A.ey.y * B.ey.y
         }
 
+
         fun mulTrans(R: Mat22, v: Vec2): Vec2 {
             return Vec2(v.x * R.ex.x + v.y * R.ex.y, v.x * R.ey.x + v.y * R.ey.y)
         }
+
 
         fun mulTransToOut(R: Mat22, v: Vec2, out: Vec2) {
             val outx = v.x * R.ex.x + v.y * R.ex.y
@@ -465,11 +554,13 @@ class Mat22 {
             out.x = outx
         }
 
+
         fun mulTransToOutUnsafe(R: Mat22, v: Vec2, out: Vec2) {
             assert(out !== v)
             out.y = v.x * R.ey.x + v.y * R.ey.y
             out.x = v.x * R.ex.x + v.y * R.ex.y
         }
+
 
         fun mulTrans(A: Mat22, B: Mat22): Mat22 {
             val C = Mat22()
@@ -479,6 +570,7 @@ class Mat22 {
             C.ey.y = A.ey.x * B.ey.x + A.ey.y * B.ey.y
             return C
         }
+
 
         fun mulTransToOut(A: Mat22, B: Mat22, out: Mat22) {
             val x1 = A.ex.x * B.ex.x + A.ex.y * B.ex.y
@@ -492,6 +584,7 @@ class Mat22 {
             out.ey.y = y2
         }
 
+
         fun mulTransToOutUnsafe(A: Mat22, B: Mat22, out: Mat22) {
             assert(A !== out)
             assert(B !== out)
@@ -500,6 +593,7 @@ class Mat22 {
             out.ey.x = A.ex.x * B.ey.x + A.ex.y * B.ey.y
             out.ey.y = A.ey.x * B.ey.x + A.ey.y * B.ey.y
         }
+
 
         fun createRotationalTransformRadians(angleRadians: Float, out: Mat22 = Mat22()): Mat22 {
             val c = MathUtils.cos(angleRadians)
@@ -511,11 +605,12 @@ class Mat22 {
             return out
         }
 
-        fun createRotationalTransformDegrees(angleDegrees: Float, out: Mat22 = Mat22()): Mat22 =
-            createRotationalTransformRadians(angleDegrees * MathUtils.DEG2RAD, out)
+        fun createRotationalTransformDegrees(angleDegrees: Float, out: Mat22 = Mat22()): Mat22
+            = createRotationalTransformRadians(angleDegrees * MathUtils.DEG2RAD, out)
 
-        fun createRotationalTransform(angle: Angle, out: Mat22 = Mat22()): Mat22 =
-            createRotationalTransformRadians(angle.radians.toFloat(), out)
+        fun createRotationalTransform(angle: Angle, out: Mat22 = Mat22()): Mat22
+            = createRotationalTransformRadians(angle.radians.toFloat(), out)
+
 
         fun createScaleTransform(scale: Float): Mat22 {
             val mat = Mat22()
@@ -523,6 +618,7 @@ class Mat22 {
             mat.ey.y = scale
             return mat
         }
+
 
         fun createScaleTransform(scale: Float, out: Mat22) {
             out.ex.x = scale

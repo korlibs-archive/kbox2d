@@ -25,14 +25,21 @@ package org.jbox2d.collision
 
 import org.jbox2d.common.Vec2
 
+// updated to rev 100
 /**
  * Ray-cast output data. The ray hits at p1 + fraction * (p2 - p1), where p1 and p2
  * come from b2RayCastInput.
  */
 class RayCastOutput {
 
-    val normal = Vec2()
-    var fraction: Float = 0f
+    val normal: Vec2
+
+    var fraction: Float = 0.toFloat()
+
+    init {
+        normal = Vec2()
+        fraction = 0f
+    }
 
     fun set(rco: RayCastOutput) {
         normal.set(rco.normal)

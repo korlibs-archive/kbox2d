@@ -92,56 +92,56 @@ class DefaultWorldPool(argSize: Int, argContainerSize: Int) : IWorldPool {
         return vecs.pop()
     }
 
-    override fun popVec2(num: Int): Array<Vec2> {
-        return vecs.pop(num)
+    override fun popVec2(argNum: Int): Array<Vec2> {
+        return vecs.pop(argNum)
     }
 
-    override fun pushVec2(num: Int) {
-        vecs.push(num)
+    override fun pushVec2(argNum: Int) {
+        vecs.push(argNum)
     }
 
     override fun popVec3(): Vec3 {
         return vec3s.pop()
     }
 
-    override fun popVec3(num: Int): Array<Vec3> {
-        return vec3s.pop(num)
+    override fun popVec3(argNum: Int): Array<Vec3> {
+        return vec3s.pop(argNum)
     }
 
-    override fun pushVec3(num: Int) {
-        vec3s.push(num)
+    override fun pushVec3(argNum: Int) {
+        vec3s.push(argNum)
     }
 
     override fun popMat22(): Mat22 {
         return mats.pop()
     }
 
-    override fun popMat22(num: Int): Array<Mat22> {
-        return mats.pop(num)
+    override fun popMat22(argNum: Int): Array<Mat22> {
+        return mats.pop(argNum)
     }
 
-    override fun pushMat22(num: Int) {
-        mats.push(num)
+    override fun pushMat22(argNum: Int) {
+        mats.push(argNum)
     }
 
     override fun popMat33(): Mat33 {
         return mat33s.pop()
     }
 
-    override fun pushMat33(num: Int) {
-        mat33s.push(num)
+    override fun pushMat33(argNum: Int) {
+        mat33s.push(argNum)
     }
 
     override fun popAABB(): AABB {
         return aabbs.pop()
     }
 
-    override fun popAABB(num: Int): Array<AABB> {
-        return aabbs.pop(num)
+    override fun popAABB(argNum: Int): Array<AABB> {
+        return aabbs.pop(argNum)
     }
 
-    override fun pushAABB(num: Int) {
-        aabbs.push(num)
+    override fun pushAABB(argNum: Int) {
+        aabbs.push(argNum)
     }
 
     override fun popRot(): Rot {

@@ -23,6 +23,7 @@
  */
 package org.jbox2d.callbacks
 
+// updated to rev 100
 interface PairCallback {
     fun addPair(userDataA: Any?, userDataB: Any?)
 }

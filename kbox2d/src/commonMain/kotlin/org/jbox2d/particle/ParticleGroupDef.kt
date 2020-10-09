@@ -12,15 +12,18 @@ import org.jbox2d.userdata.*
 class ParticleGroupDef : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
     /** The particle-behavior flags.  */
+
     var flags: Int = 0
 
     /** The group-construction flags.  */
+
     var groupFlags: Int = 0
 
     /**
      * The world position of the group. Moves the group's shape a distance equal to the value of
      * position.
      */
+
     val position = Vec2()
 
     /**
@@ -46,26 +49,33 @@ class ParticleGroupDef : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
         get() = angleRadians.radians
 
     /** The linear velocity of the group's origin in world co-ordinates.  */
+
     val linearVelocity = Vec2()
 
     /** The angular velocity of the group.  */
+
     var angularVelocity: Float = 0f
 
     /** The color of all particles in the group.  */
+
     var color: ParticleColor? = null
 
     /**
      * The strength of cohesion among the particles in a group with flag b2_elasticParticle or
      * b2_springParticle.
      */
+
     var strength: Float = 1f
 
     /** Shape containing the particle group.  */
+
     var shape: Shape? = null
 
     /** If true, destroy the group automatically after its last particle has been destroyed.  */
+
     var destroyAutomatically: Boolean = true
 
     /** Use this to store application-specific group data.  */
+
     var userData: Any? = null
 }

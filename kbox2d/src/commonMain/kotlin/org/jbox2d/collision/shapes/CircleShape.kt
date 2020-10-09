@@ -38,13 +38,18 @@ import org.jbox2d.internal.*
  */
 class CircleShape() : Shape(ShapeType.CIRCLE) {
 
+    val p: Vec2 = Vec2()
+
+    /**
+     * Get the vertex count.
+     *
+     * @return
+     */
+    val vertexCount: Int get() = 1
+
     constructor(radius: Number) : this() {
         this.radius = radius.toFloat()
     }
-
-    val p: Vec2 = Vec2()
-
-    val vertexCount = 1
 
     override fun clone(): Shape {
         val shape = CircleShape()
@@ -57,17 +62,26 @@ class CircleShape() : Shape(ShapeType.CIRCLE) {
     override fun getChildCount(): Int = 1
 
     /**
-     * Get the supporting vertex index in the given direction [d].
+     * Get the supporting vertex index in the given direction.
+     *
+     * @param d
+     * @return
      */
     fun getSupport(d: Vec2): Int = 0
 
     /**
-     * Get the supporting vertex in the given direction [d].
+     * Get the supporting vertex in the given direction.
+     *
+     * @param d
+     * @return
      */
     fun getSupportVertex(d: Vec2): Vec2 = p
 
     /**
-     * Get a vertex by [index].
+     * Get a vertex by index.
+     *
+     * @param index
+     * @return
      */
     fun getVertex(index: Int): Vec2 {
         assert(index == 0)
@@ -105,10 +119,8 @@ class CircleShape() : Shape(ShapeType.CIRCLE) {
     // x = s + a * r
     // norm(x) = radius
     override fun raycast(
-        output: RayCastOutput,
-        input: RayCastInput,
-        transform: Transform,
-        childIndex: Int
+        output: RayCastOutput, input: RayCastInput,
+        transform: Transform, childIndex: Int
     ): Boolean {
 
         val inputp1 = input.p1

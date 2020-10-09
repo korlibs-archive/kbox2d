@@ -43,45 +43,49 @@ import org.jbox2d.pooling.IWorldPool
  *
  * @author Daniel Murphy
  */
-class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorldPool, def) {
+class PulleyJoint constructor(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorldPool, def) {
 
-    init {
-        assert(def.ratio != 0.0f)
-    }
+    val _groundAnchorA = Vec2()
 
-    val groundAnchorA = Vec2().set(def.groundAnchorA)
-    val groundAnchorB = Vec2().set(def.groundAnchorB)
+    val _groundAnchorB = Vec2()
 
-    val lengthA: Float = def.lengthA
-    val lengthB: Float = def.lengthB
+    fun getGroundAnchorA() = _groundAnchorA
+    fun getGroundAnchorB() = _groundAnchorB
+
+
+    val lengthA: Float
+
+    val lengthB: Float
 
     // Solver shared
-    val localAnchorA = Vec2().set(def.localAnchorA)
-    val localAnchorB = Vec2().set(def.localAnchorB)
-    val ratio: Float = def.ratio
-    private val constant: Float = lengthA + ratio * lengthB
-    private var impulse: Float = 0f
+
+    val localAnchorA = Vec2()
+
+    val localAnchorB = Vec2()
+    private val m_constant: Float
+    val ratio: Float
+    private var m_impulse: Float = 0.toFloat()
 
     // Solver temp
-    private var indexA: Int = 0
-    private var indexB: Int = 0
-    private val uA = Vec2()
-    private val uB = Vec2()
-    private val rA = Vec2()
-    private val rB = Vec2()
-    private val localCenterA = Vec2()
-    private val localCenterB = Vec2()
-    private var invMassA: Float = 0f
-    private var invMassB: Float = 0f
-    private var invIA: Float = 0f
-    private var invIB: Float = 0f
-    private var mass: Float = 0f
+    private var m_indexA: Int = 0
+    private var m_indexB: Int = 0
+    private val m_uA = Vec2()
+    private val m_uB = Vec2()
+    private val m_rA = Vec2()
+    private val m_rB = Vec2()
+    private val m_localCenterA = Vec2()
+    private val m_localCenterB = Vec2()
+    private var m_invMassA: Float = 0.toFloat()
+    private var m_invMassB: Float = 0.toFloat()
+    private var m_invIA: Float = 0.toFloat()
+    private var m_invIB: Float = 0.toFloat()
+    private var m_mass: Float = 0.toFloat()
 
     val currentLengthA: Float
         get() {
             val p = pool.popVec2()
             bodyA!!.getWorldPointToOut(localAnchorA, p)
-            p.subLocal(groundAnchorA)
+            p.subLocal(_groundAnchorA)
             val length = p.length()
             pool.pushVec2(1)
             return length
@@ -91,7 +95,7 @@ class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorl
         get() {
             val p = pool.popVec2()
             bodyB!!.getWorldPointToOut(localAnchorB, p)
-            p.subLocal(groundAnchorB)
+            p.subLocal(_groundAnchorB)
             val length = p.length()
             pool.pushVec2(1)
             return length
@@ -101,7 +105,7 @@ class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorl
         get() {
             val p = pool.popVec2()
             bodyA!!.getWorldPointToOut(localAnchorA, p)
-            p.subLocal(groundAnchorA)
+            p.subLocal(_groundAnchorA)
 
             val len = p.length()
             pool.pushVec2(1)
@@ -112,46 +116,65 @@ class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorl
         get() {
             val p = pool.popVec2()
             bodyB!!.getWorldPointToOut(localAnchorB, p)
-            p.subLocal(groundAnchorB)
+            p.subLocal(_groundAnchorB)
 
             val len = p.length()
             pool.pushVec2(1)
             return len
         }
 
-    override fun getAnchorA(out: Vec2) {
-        bodyA!!.getWorldPointToOut(localAnchorA, out)
+    init {
+        _groundAnchorA.set(def.groundAnchorA)
+        _groundAnchorB.set(def.groundAnchorB)
+        localAnchorA.set(def.localAnchorA)
+        localAnchorB.set(def.localAnchorB)
+
+        assert(def.ratio != 0.0f)
+        ratio = def.ratio
+
+        lengthA = def.lengthA
+        lengthB = def.lengthB
+
+        m_constant = def.lengthA + ratio * def.lengthB
+        m_impulse = 0.0f
     }
 
-    override fun getAnchorB(out: Vec2) {
-        bodyB!!.getWorldPointToOut(localAnchorB, out)
+
+    override fun getAnchorA(argOut: Vec2) {
+        bodyA!!.getWorldPointToOut(localAnchorA, argOut)
     }
 
-    override fun getReactionForce(invDt: Float, out: Vec2) {
-        out.set(uB).mulLocal(impulse).mulLocal(invDt)
+    override fun getAnchorB(argOut: Vec2) {
+        bodyB!!.getWorldPointToOut(localAnchorB, argOut)
     }
 
-    override fun getReactionTorque(invDt: Float) = 0f
+    override fun getReactionForce(inv_dt: Float, argOut: Vec2) {
+        argOut.set(m_uB).mulLocal(m_impulse).mulLocal(inv_dt)
+    }
+
+    override fun getReactionTorque(inv_dt: Float): Float {
+        return 0f
+    }
 
     override fun initVelocityConstraints(data: SolverData) {
-        indexA = bodyA!!.islandIndex
-        indexB = bodyB!!.islandIndex
-        localCenterA.set(bodyA!!.sweep.localCenter)
-        localCenterB.set(bodyB!!.sweep.localCenter)
-        invMassA = bodyA!!.invMass
-        invMassB = bodyB!!.invMass
-        invIA = bodyA!!.invI
-        invIB = bodyB!!.invI
+        m_indexA = bodyA!!.islandIndex
+        m_indexB = bodyB!!.islandIndex
+        m_localCenterA.set(bodyA!!.sweep.localCenter)
+        m_localCenterB.set(bodyB!!.sweep.localCenter)
+        m_invMassA = bodyA!!.m_invMass
+        m_invMassB = bodyB!!.m_invMass
+        m_invIA = bodyA!!.m_invI
+        m_invIB = bodyB!!.m_invI
 
-        val cA = data.positions!![indexA].c
-        val aA = data.positions!![indexA].a
-        val vA = data.velocities!![indexA].v
-        var wA = data.velocities!![indexA].w
+        val cA = data.positions!![m_indexA].c
+        val aA = data.positions!![m_indexA].a
+        val vA = data.velocities!![m_indexA].v
+        var wA = data.velocities!![m_indexA].w
 
-        val cB = data.positions!![indexB].c
-        val aB = data.positions!![indexB].a
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+        val cB = data.positions!![m_indexB].c
+        val aB = data.positions!![m_indexB].a
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
         val qA = pool.popRot()
         val qB = pool.popRot()
@@ -161,101 +184,105 @@ class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorl
         qB.setRadians(aB)
 
         // Compute the effective masses.
-        Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(localCenterA), rA)
-        Rot.mulToOutUnsafe(qB, temp.set(localAnchorB).subLocal(localCenterB), rB)
+        Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), m_rA)
+        Rot.mulToOutUnsafe(qB, temp.set(localAnchorB).subLocal(m_localCenterB), m_rB)
 
-        uA.set(cA).addLocal(rA).subLocal(groundAnchorA)
-        uB.set(cB).addLocal(rB).subLocal(groundAnchorB)
+        m_uA.set(cA).addLocal(m_rA).subLocal(_groundAnchorA)
+        m_uB.set(cB).addLocal(m_rB).subLocal(_groundAnchorB)
 
-        val lengthA = uA.length()
-        val lengthB = uB.length()
+        val lengthA = m_uA.length()
+        val lengthB = m_uB.length()
 
         if (lengthA > 10f * Settings.linearSlop) {
-            uA.mulLocal(1.0f / lengthA)
+            m_uA.mulLocal(1.0f / lengthA)
         } else {
-            uA.setZero()
+            m_uA.setZero()
         }
 
         if (lengthB > 10f * Settings.linearSlop) {
-            uB.mulLocal(1.0f / lengthB)
+            m_uB.mulLocal(1.0f / lengthB)
         } else {
-            uB.setZero()
+            m_uB.setZero()
         }
 
         // Compute effective mass.
-        val ruA = Vec2.cross(rA, uA)
-        val ruB = Vec2.cross(rB, uB)
+        val ruA = Vec2.cross(m_rA, m_uA)
+        val ruB = Vec2.cross(m_rB, m_uB)
 
-        val mA = invMassA + invIA * ruA * ruA
-        val mB = invMassB + invIB * ruB * ruB
+        val mA = m_invMassA + m_invIA * ruA * ruA
+        val mB = m_invMassB + m_invIB * ruB * ruB
 
-        mass = mA + ratio * ratio * mB
+        m_mass = mA + ratio * ratio * mB
 
-        if (mass > 0.0f) {
-            mass = 1.0f / mass
+        if (m_mass > 0.0f) {
+            m_mass = 1.0f / m_mass
         }
 
         if (data.step!!.warmStarting) {
 
             // Scale impulses to support variable time steps.
-            impulse *= data.step!!.dtRatio
+            m_impulse *= data.step!!.dtRatio
 
             // Warm starting.
             val PA = pool.popVec2()
             val PB = pool.popVec2()
 
-            PA.set(uA).mulLocal(-impulse)
-            PB.set(uB).mulLocal(-ratio * impulse)
+            PA.set(m_uA).mulLocal(-m_impulse)
+            PB.set(m_uB).mulLocal(-ratio * m_impulse)
 
-            vA.x += invMassA * PA.x
-            vA.y += invMassA * PA.y
-            wA += invIA * Vec2.cross(rA, PA)
-            vB.x += invMassB * PB.x
-            vB.y += invMassB * PB.y
-            wB += invIB * Vec2.cross(rB, PB)
+            vA.x += m_invMassA * PA.x
+            vA.y += m_invMassA * PA.y
+            wA += m_invIA * Vec2.cross(m_rA, PA)
+            vB.x += m_invMassB * PB.x
+            vB.y += m_invMassB * PB.y
+            wB += m_invIB * Vec2.cross(m_rB, PB)
 
             pool.pushVec2(2)
         } else {
-            impulse = 0.0f
+            m_impulse = 0.0f
         }
-        data.velocities!![indexA].w = wA
-        data.velocities!![indexB].w = wB
+        //    data.velocities[m_indexA].v.set(vA);
+        data.velocities!![m_indexA].w = wA
+        //    data.velocities[m_indexB].v.set(vB);
+        data.velocities!![m_indexB].w = wB
 
         pool.pushVec2(1)
         pool.pushRot(2)
     }
 
     override fun solveVelocityConstraints(data: SolverData) {
-        val vA = data.velocities!![indexA].v
-        var wA = data.velocities!![indexA].w
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+        val vA = data.velocities!![m_indexA].v
+        var wA = data.velocities!![m_indexA].w
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
         val vpA = pool.popVec2()
         val vpB = pool.popVec2()
         val PA = pool.popVec2()
         val PB = pool.popVec2()
 
-        Vec2.crossToOutUnsafe(wA, rA, vpA)
+        Vec2.crossToOutUnsafe(wA, m_rA, vpA)
         vpA.addLocal(vA)
-        Vec2.crossToOutUnsafe(wB, rB, vpB)
+        Vec2.crossToOutUnsafe(wB, m_rB, vpB)
         vpB.addLocal(vB)
 
-        val Cdot = -Vec2.dot(uA, vpA) - ratio * Vec2.dot(uB, vpB)
-        val impulse = -mass * Cdot
-        this.impulse += impulse
+        val Cdot = -Vec2.dot(m_uA, vpA) - ratio * Vec2.dot(m_uB, vpB)
+        val impulse = -m_mass * Cdot
+        m_impulse += impulse
 
-        PA.set(uA).mulLocal(-impulse)
-        PB.set(uB).mulLocal(-ratio * impulse)
-        vA.x += invMassA * PA.x
-        vA.y += invMassA * PA.y
-        wA += invIA * Vec2.cross(rA, PA)
-        vB.x += invMassB * PB.x
-        vB.y += invMassB * PB.y
-        wB += invIB * Vec2.cross(rB, PB)
+        PA.set(m_uA).mulLocal(-impulse)
+        PB.set(m_uB).mulLocal(-ratio * impulse)
+        vA.x += m_invMassA * PA.x
+        vA.y += m_invMassA * PA.y
+        wA += m_invIA * Vec2.cross(m_rA, PA)
+        vB.x += m_invMassB * PB.x
+        vB.y += m_invMassB * PB.y
+        wB += m_invIB * Vec2.cross(m_rB, PB)
 
-        data.velocities!![indexA].w = wA
-        data.velocities!![indexB].w = wB
+        //    data.velocities[m_indexA].v.set(vA);
+        data.velocities!![m_indexA].w = wA
+        //    data.velocities[m_indexB].v.set(vB);
+        data.velocities!![m_indexB].w = wB
 
         pool.pushVec2(4)
     }
@@ -271,19 +298,19 @@ class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorl
         val PA = pool.popVec2()
         val PB = pool.popVec2()
 
-        val cA = data.positions!![indexA].c
-        var aA = data.positions!![indexA].a
-        val cB = data.positions!![indexB].c
-        var aB = data.positions!![indexB].a
+        val cA = data.positions!![m_indexA].c
+        var aA = data.positions!![m_indexA].a
+        val cB = data.positions!![m_indexB].c
+        var aB = data.positions!![m_indexB].a
 
         qA.setRadians(aA)
         qB.setRadians(aB)
 
-        Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(localCenterA), rA)
-        Rot.mulToOutUnsafe(qB, temp.set(localAnchorB).subLocal(localCenterB), rB)
+        Rot.mulToOutUnsafe(qA, temp.set(localAnchorA).subLocal(m_localCenterA), rA)
+        Rot.mulToOutUnsafe(qB, temp.set(localAnchorB).subLocal(m_localCenterB), rB)
 
-        uA.set(cA).addLocal(rA).subLocal(groundAnchorA)
-        uB.set(cB).addLocal(rB).subLocal(groundAnchorB)
+        uA.set(cA).addLocal(rA).subLocal(_groundAnchorA)
+        uB.set(cB).addLocal(rB).subLocal(_groundAnchorB)
 
         val lengthA = uA.length()
         val lengthB = uB.length()
@@ -304,8 +331,8 @@ class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorl
         val ruA = Vec2.cross(rA, uA)
         val ruB = Vec2.cross(rB, uB)
 
-        val mA = invMassA + invIA * ruA * ruA
-        val mB = invMassB + invIB * ruB * ruB
+        val mA = m_invMassA + m_invIA * ruA * ruA
+        val mB = m_invMassB + m_invIB * ruB * ruB
 
         var mass = mA + ratio * ratio * mB
 
@@ -313,7 +340,7 @@ class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorl
             mass = 1.0f / mass
         }
 
-        val C = constant - lengthA - ratio * lengthB
+        val C = m_constant - lengthA - ratio * lengthB
         val linearError = MathUtils.abs(C)
 
         val impulse = -mass * C
@@ -321,15 +348,17 @@ class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorl
         PA.set(uA).mulLocal(-impulse)
         PB.set(uB).mulLocal(-ratio * impulse)
 
-        cA.x += invMassA * PA.x
-        cA.y += invMassA * PA.y
-        aA += invIA * Vec2.cross(rA, PA)
-        cB.x += invMassB * PB.x
-        cB.y += invMassB * PB.y
-        aB += invIB * Vec2.cross(rB, PB)
+        cA.x += m_invMassA * PA.x
+        cA.y += m_invMassA * PA.y
+        aA += m_invIA * Vec2.cross(rA, PA)
+        cB.x += m_invMassB * PB.x
+        cB.y += m_invMassB * PB.y
+        aB += m_invIB * Vec2.cross(rB, PB)
 
-        data.positions!![indexA].a = aA
-        data.positions!![indexB].a = aB
+        //    data.positions[m_indexA].c.set(cA);
+        data.positions!![m_indexA].a = aA
+        //    data.positions[m_indexB].c.set(cB);
+        data.positions!![m_indexB].a = aB
 
         pool.pushRot(2)
         pool.pushVec2(7)
@@ -338,6 +367,7 @@ class PulleyJoint(argWorldPool: IWorldPool, def: PulleyJointDef) : Joint(argWorl
     }
 
     companion object {
+
         val MIN_PULLEY_LENGTH = 2.0f
     }
 }

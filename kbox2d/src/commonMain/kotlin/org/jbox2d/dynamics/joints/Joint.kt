@@ -38,44 +38,37 @@ import org.jbox2d.userdata.*
  * @author Daniel Murphy
  */
 abstract class Joint protected constructor(
+    // Cache here per time step to reduce cache misses.
     protected var pool: IWorldPool,
     def: JointDef
 ) : Box2dTypedUserData by Box2dTypedUserData.Mixin() {
 
-    init {
-        assert(def.bodyA !== def.bodyB)
-    }
-
     /**
-     * Type of the concrete joint.
+     * get the type of the concrete joint.
+     *
+     * @return
      */
-    val type: JointType = def.type
+    val type: JointType
 
     var prev: Joint? = null
+
+    /**
+     * get the next joint the world joint list.
+     */
     var next: Joint? = null
 
-    var edgeA: JointEdge = JointEdge().apply {
-        joint = null
-        other = null
-        prev = null
-        next = null
-    }
-    var edgeB: JointEdge = JointEdge().apply {
-        joint = null
-        other = null
-        prev = null
-        next = null
-    }
+    var edgeA: JointEdge
+    var edgeB: JointEdge
 
     /**
-     * The first body attached to this joint.
+     * get the first body attached to this joint.
      */
-    var bodyA: Body? = def.bodyA
+    var bodyA: Body? = null
 
     /**
-     * The second body attached to this joint.
+     * get the second body attached to this joint.
      */
-    var bodyB: Body? = def.bodyB
+    var bodyB: Body? = null
 
     var islandFlag: Boolean = false
 
@@ -83,35 +76,65 @@ abstract class Joint protected constructor(
      * Get collide connected. Note: modifying the collide connect flag won't work correctly because
      * the flag is only checked when fixture AABBs begin to overlap.
      */
-    val collideConnected: Boolean = def.collideConnected
 
-    var userData: Any? = def.userData
+    val _collideConnected: Boolean
+
+    fun getCollideConnected() = _collideConnected
+
+    var userData: Any? = null
 
     /**
-     * Determine if both bodies are active.
+     * Short-cut function to determine if either body is inactive.
      */
     val isActive: Boolean
         get() = bodyA!!.isActive && bodyB!!.isActive
 
+    init {
+        assert(def.bodyA !== def.bodyB)
+        this.type = def.type
+        prev = null
+        next = null
+        bodyA = def.bodyA
+        bodyB = def.bodyB
+        _collideConnected = def.collideConnected
+        islandFlag = false
+        userData = def.userData
+
+        edgeA = JointEdge()
+        edgeA.joint = null
+        edgeA.other = null
+        edgeA.prev = null
+        edgeA.next = null
+
+        edgeB = JointEdge()
+        edgeB.joint = null
+        edgeB.other = null
+        edgeB.prev = null
+        edgeB.next = null
+
+        // m_localCenterA = new Vec2();
+        // m_localCenterB = new Vec2();
+    }
+
     /**
-     * get the anchor point on [bodyA] in world coordinates.
+     * get the anchor point on bodyA in world coordinates.
      */
     abstract fun getAnchorA(out: Vec2)
 
     /**
-     * get the anchor point on [bodyB] in world coordinates.
+     * get the anchor point on bodyB in world coordinates.
      */
     abstract fun getAnchorB(out: Vec2)
 
     /**
      * get the reaction force on body2 at the joint anchor in Newtons.
      */
-    abstract fun getReactionForce(invDt: Float, out: Vec2)
+    abstract fun getReactionForce(inv_dt: Float, out: Vec2)
 
     /**
      * get the reaction torque on body2 in N*m.
      */
-    abstract fun getReactionTorque(invDt: Float): Float
+    abstract fun getReactionTorque(inv_dt: Float): Float
 
     /** Internal  */
     abstract fun initVelocityConstraints(data: SolverData)
@@ -131,21 +154,26 @@ abstract class Joint protected constructor(
 
     companion object {
 
-        fun create(world: World, def: JointDef): Joint? = when (def.type) {
-            JointType.MOUSE -> MouseJoint(world.pool, def as MouseJointDef)
-            JointType.DISTANCE -> DistanceJoint(world.pool, def as DistanceJointDef)
-            JointType.PRISMATIC -> PrismaticJoint(world.pool, def as PrismaticJointDef)
-            JointType.REVOLUTE -> RevoluteJoint(world.pool, def as RevoluteJointDef)
-            JointType.WELD -> WeldJoint(world.pool, def as WeldJointDef)
-            JointType.FRICTION -> FrictionJoint(world.pool, def as FrictionJointDef)
-            JointType.WHEEL -> WheelJoint(world.pool, def as WheelJointDef)
-            JointType.GEAR -> GearJoint(world.pool, def as GearJointDef)
-            JointType.PULLEY -> PulleyJoint(world.pool, def as PulleyJointDef)
-            JointType.CONSTANT_VOLUME -> ConstantVolumeJoint(world, def as ConstantVolumeJointDef)
-            JointType.ROPE -> RopeJoint(world.pool, def as RopeJointDef)
-            JointType.MOTOR -> MotorJoint(world.pool, def as MotorJointDef)
-            JointType.UNKNOWN -> null
+        fun create(world: World, def: JointDef): Joint? {
+            // Joint joint = null;
+            when (def.type) {
+                JointType.MOUSE -> return MouseJoint(world.pool, def as MouseJointDef)
+                JointType.DISTANCE -> return DistanceJoint(world.pool, def as DistanceJointDef)
+                JointType.PRISMATIC -> return PrismaticJoint(world.pool, def as PrismaticJointDef)
+                JointType.REVOLUTE -> return RevoluteJoint(world.pool, def as RevoluteJointDef)
+                JointType.WELD -> return WeldJoint(world.pool, def as WeldJointDef)
+                JointType.FRICTION -> return FrictionJoint(world.pool, def as FrictionJointDef)
+                JointType.WHEEL -> return WheelJoint(world.pool, def as WheelJointDef)
+                JointType.GEAR -> return GearJoint(world.pool, def as GearJointDef)
+                JointType.PULLEY -> return PulleyJoint(world.pool, def as PulleyJointDef)
+                JointType.CONSTANT_VOLUME -> return ConstantVolumeJoint(world, def as ConstantVolumeJointDef)
+                JointType.ROPE -> return RopeJoint(world.pool, def as RopeJointDef)
+                JointType.MOTOR -> return MotorJoint(world.pool, def as MotorJointDef)
+                JointType.UNKNOWN -> return null
+                else -> return null
+            }
         }
+
 
         fun destroy(joint: Joint) {
             joint.destructor()

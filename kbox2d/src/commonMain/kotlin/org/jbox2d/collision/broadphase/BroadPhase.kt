@@ -8,12 +8,21 @@ import org.jbox2d.collision.AABB
 import org.jbox2d.collision.RayCastInput
 import org.jbox2d.common.Vec2
 
+
 interface BroadPhase {
 
-    /** Number of proxies. */
+    /**
+     * Get the number of proxies.
+     *
+     * @return
+     */
     val proxyCount: Int
 
-    /** Height of the embedded tree. */
+    /**
+     * Get the height of the embedded tree.
+     *
+     * @return
+     */
     val treeHeight: Int
 
     val treeBalance: Int
@@ -21,17 +30,23 @@ interface BroadPhase {
     val treeQuality: Float
 
     /**
-     * Create a proxy with an initial [aabb]. Pairs are not reported until [updatePairs] is called.
+     * Create a proxy with an initial AABB. Pairs are not reported until updatePairs is called.
+     *
+     * @param aabb
+     * @param userData
+     * @return
      */
     fun createProxy(aabb: AABB, userData: Any): Int
 
     /**
      * Destroy a proxy. It is up to the client to remove any pairs.
+     *
+     * @param proxyId
      */
     fun destroyProxy(proxyId: Int)
 
     /**
-     * Call [moveProxy] as many times as you like, then when you are done call [updatePairs] to finalize
+     * Call MoveProxy as many times as you like, then when you are done call UpdatePairs to finalized
      * the proxy pairs (for your time step).
      */
     fun moveProxy(proxyId: Int, aabb: AABB, displacement: Vec2)
@@ -48,18 +63,23 @@ interface BroadPhase {
 
     /**
      * Update the pairs. This results in pair callbacks. This can only add pairs.
+     *
+     * @param callback
      */
     fun updatePairs(callback: PairCallback)
 
     /**
-     * Query an [aabb] for overlapping proxies. The [callback] is called for each proxy that
-     * overlaps the supplied [aabb].
+     * Query an AABB for overlapping proxies. The callback class is called for each proxy that
+     * overlaps the supplied AABB.
+     *
+     * @param callback
+     * @param aabb
      */
     fun query(callback: TreeCallback, aabb: AABB)
 
     /**
-     * Ray-cast against the proxies in the tree. This relies on the callback to perform an exact
-     * ray-cast in the case where the proxy contains a shape. The callback also performs the any
+     * Ray-cast against the proxies in the tree. This relies on the callback to perform a exact
+     * ray-cast in the case were the proxy contains a shape. The callback also performs the any
      * collision filtering. This has performance roughly equal to k * log(n), where k is the number of
      * collisions and n is the number of proxies in the tree.
      *
@@ -69,6 +89,8 @@ interface BroadPhase {
     fun raycast(callback: TreeRayCastCallback, input: RayCastInput)
 
     companion object {
+
+
         val NULL_PROXY = -1
     }
 }

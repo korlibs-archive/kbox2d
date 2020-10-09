@@ -34,15 +34,27 @@ import org.jbox2d.dynamics.Body
  */
 class ContactEdge {
 
-    /** provides quick access to the other body attached. */
+    /**
+     * provides quick access to the other body attached.
+     */
+
     var other: Body? = null
 
-    /** the contact */
+    /**
+     * the contact
+     */
+
     var contact: Contact? = null
 
-    /** the previous contact edge in the body's contact list */
+    /**
+     * the previous contact edge in the body's contact list
+     */
+
     var prev: ContactEdge? = null
 
-    /** the next contact edge in the body's contact list */
+    /**
+     * the next contact edge in the body's contact list
+     */
+
     var next: ContactEdge? = null
 }

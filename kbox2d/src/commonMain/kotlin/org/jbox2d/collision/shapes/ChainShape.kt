@@ -23,6 +23,7 @@
  */
 package org.jbox2d.collision.shapes
 
+
 import org.jbox2d.collision.AABB
 import org.jbox2d.collision.RayCastInput
 import org.jbox2d.collision.RayCastOutput
@@ -35,8 +36,8 @@ import org.jbox2d.internal.*
 /**
  * A chain shape is a free form sequence of line segments. The chain has two-sided collision, so you
  * can use inside and outside collision. Therefore, you may use any winding order. Connectivity
- * information is used to create smooth collisions.
- * WARNING: The chain will not collide properly if there are self-intersections.
+ * information is used to create smooth collisions. WARNING: The chain will not collide properly if
+ * there are self-intersections.
  *
  * @author Daniel
  */
@@ -55,7 +56,9 @@ class ChainShape : Shape(ShapeType.CHAIN) {
     private val pool0 = EdgeShape()
 
     init {
+        vertices = null
         radius = Settings.polygonRadius
+        count = 0
     }
 
     fun clear() {
@@ -71,7 +74,7 @@ class ChainShape : Shape(ShapeType.CHAIN) {
      * Get a child edge.
      */
     fun getChildEdge(edge: EdgeShape, index: Int) {
-        assert(index in 0 until (count - 1))
+        assert(0 <= index && index < count - 1)
         edge.radius = radius
 
         val v0 = vertices!![index + 0]
@@ -236,6 +239,8 @@ class ChainShape : Shape(ShapeType.CHAIN) {
 
     /**
      * Establish connectivity to a vertex that precedes the first vertex. Don't call this for loops.
+     *
+     * @param prevVertex
      */
     fun setPrevVertex(prevVertex: Vec2) {
         this.prevVertex.set(prevVertex)
@@ -244,6 +249,8 @@ class ChainShape : Shape(ShapeType.CHAIN) {
 
     /**
      * Establish connectivity to a vertex that follows the last vertex. Don't call this for loops.
+     *
+     * @param nextVertex
      */
     fun setNextVertex(nextVertex: Vec2) {
         this.nextVertex.set(nextVertex)

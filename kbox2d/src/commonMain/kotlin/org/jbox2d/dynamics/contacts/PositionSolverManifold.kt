@@ -9,8 +9,10 @@ import org.jbox2d.internal.*
 internal class PositionSolverManifold {
 
     val normal = Vec2()
+
     val point = Vec2()
-    var separation: Float = 0f
+
+    var separation: Float = 0.toFloat()
 
     fun initialize(pc: ContactPositionConstraint, xfA: Transform, xfB: Transform, index: Int) {
         assert(pc.pointCount > 0)

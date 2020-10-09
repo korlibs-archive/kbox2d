@@ -34,23 +34,25 @@ import org.jbox2d.common.MathUtils
 import org.jbox2d.common.Settings
 import org.jbox2d.common.Vec2
 import org.jbox2d.internal.*
+import kotlin.reflect.*
 
 class DynamicTreeFlatNodes : BroadPhaseStrategy {
 
-    var root: Int = NULL_NODE
-    lateinit var aabbs: Array<AABB>
-    lateinit var userDatas: Array<Any?>
-    lateinit protected var parents: IntArray
-    lateinit protected var children1: IntArray
-    lateinit protected var children2: IntArray
-    lateinit protected var heights: IntArray
 
-    private var nodeCount: Int = 0
-    private var nodeCapacity: Int = 16
+    var m_root: Int = NULL_NODE
+    lateinit var m_aabb: Array<AABB>
+    lateinit var m_userData: Array<Any?>
+    lateinit protected var m_parent: IntArray
+    lateinit protected var m_child1: IntArray
+    lateinit protected var m_child2: IntArray
+    lateinit protected var m_height: IntArray
 
-    private var freeList: Int = 0
+    private var m_nodeCount: Int = 0
+    private var m_nodeCapacity: Int = 16
 
-    private val drawVecs = Array(4) { Vec2() }
+    private var m_freeList: Int = 0
+
+    private val drawVecs = Array<Vec2>(4) { Vec2() }
 
     private var nodeStack = IntArray(20)
     private var nodeStackIndex: Int = 0
@@ -60,37 +62,46 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
     private val subInput = RayCastInput()
 
     override val height: Int
-        get() = if (root == NULL_NODE) 0 else heights[root]
+        get() = if (m_root == NULL_NODE) {
+            0
+        } else m_height[m_root]
 
     override val maxBalance: Int
         get() {
             var maxBalance = 0
-            for (i in 0 until nodeCapacity) {
-                if (heights[i] <= 1) continue
+            for (i in 0 until m_nodeCapacity) {
+                if (m_height[i] <= 1) {
+                    continue
+                }
 
-                assert(children1[i] != NULL_NODE)
+                assert(m_child1[i] != NULL_NODE)
 
-                val child1 = children1[i]
-                val child2 = children2[i]
-                val balance = MathUtils.abs(heights[child2] - heights[child1])
+                val child1 = m_child1[i]
+                val child2 = m_child2[i]
+                val balance = MathUtils.abs(m_height[child2] - m_height[child1])
                 maxBalance = MathUtils.max(maxBalance, balance)
             }
+
             return maxBalance
         }
 
-    override val areaRatio: Float
+    override// Free node in pool
+    val areaRatio: Float
         get() {
-            if (root == NULL_NODE) return 0.0f
+            if (m_root == NULL_NODE) {
+                return 0.0f
+            }
 
-            val root = root
-            val rootArea = aabbs[root].perimeter
+            val root = m_root
+            val rootArea = m_aabb[root].perimeter
 
             var totalArea = 0.0f
-            for (i in 0 until nodeCapacity) {
-                // Free node in pool
-                if (heights[i] < 0) continue
+            for (i in 0 until m_nodeCapacity) {
+                if (m_height[i] < 0) {
+                    continue
+                }
 
-                totalArea += aabbs[i].perimeter
+                totalArea += m_aabb[i].perimeter
             }
 
             return totalArea / rootArea
@@ -102,37 +113,37 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
     private val textVec = Vec2()
 
     init {
-        expandBuffers(0, nodeCapacity)
+        expandBuffers(0, m_nodeCapacity)
     }
 
     private fun expandBuffers(oldSize: Int, newSize: Int) {
-        aabbs = BufferUtils.reallocateBuffer({ AABB() }, aabbs, oldSize, newSize)
-        userDatas = BufferUtils.reallocateBuffer({ Any() }, userDatas as Array<Any>, oldSize, newSize) as Array<Any?>
-        parents = BufferUtils.reallocateBuffer(parents, oldSize, newSize)
-        children1 = BufferUtils.reallocateBuffer(children1, oldSize, newSize)
-        children2 = BufferUtils.reallocateBuffer(children2, oldSize, newSize)
-        heights = BufferUtils.reallocateBuffer(heights, oldSize, newSize)
+        m_aabb = BufferUtils.reallocateBuffer({ AABB() }, m_aabb, oldSize, newSize)
+        m_userData = BufferUtils.reallocateBuffer<Any>({ Any() }, m_userData as Array<Any>, oldSize, newSize) as Array<Any?>
+        m_parent = BufferUtils.reallocateBuffer(m_parent, oldSize, newSize)
+        m_child1 = BufferUtils.reallocateBuffer(m_child1, oldSize, newSize)
+        m_child2 = BufferUtils.reallocateBuffer(m_child2, oldSize, newSize)
+        m_height = BufferUtils.reallocateBuffer(m_height, oldSize, newSize)
 
         // Build a linked list for the free list.
         for (i in oldSize until newSize) {
-            aabbs[i] = AABB()
-            parents[i] = if (i == newSize - 1) NULL_NODE else i + 1
-            heights[i] = -1
-            children1[i] = -1
-            children2[i] = -1
+            m_aabb[i] = AABB()
+            m_parent[i] = if (i == newSize - 1) NULL_NODE else i + 1
+            m_height[i] = -1
+            m_child1[i] = -1
+            m_child2[i] = -1
         }
-        freeList = oldSize
+        m_freeList = oldSize
     }
 
     override fun createProxy(aabb: AABB, userData: Any): Int {
         val node = allocateNode()
         // Fatten the aabb
-        val nodeAABB = aabbs[node]
+        val nodeAABB = m_aabb[node]
         nodeAABB.lowerBound.x = aabb.lowerBound.x - Settings.aabbExtension
         nodeAABB.lowerBound.y = aabb.lowerBound.y - Settings.aabbExtension
         nodeAABB.upperBound.x = aabb.upperBound.x + Settings.aabbExtension
         nodeAABB.upperBound.y = aabb.upperBound.y + Settings.aabbExtension
-        userDatas[node] = userData
+        m_userData[node] = userData
 
         insertLeaf(node)
 
@@ -140,20 +151,24 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
     }
 
     override fun destroyProxy(proxyId: Int) {
-        assert(proxyId in 0 until nodeCapacity)
-        assert(children1[proxyId] == NULL_NODE)
+        assert(0 <= proxyId && proxyId < m_nodeCapacity)
+        assert(m_child1[proxyId] == NULL_NODE)
 
         removeLeaf(proxyId)
         freeNode(proxyId)
     }
 
     override fun moveProxy(proxyId: Int, aabb: AABB, displacement: Vec2): Boolean {
-        assert(proxyId in 0 until nodeCapacity)
+        assert(0 <= proxyId && proxyId < m_nodeCapacity)
         val node = proxyId
-        assert(children1[node] == NULL_NODE)
+        assert(m_child1[node] == NULL_NODE)
 
-        val nodeAABB = aabbs[node]
-        if (nodeAABB.contains(aabb)) return false
+        val nodeAABB = m_aabb[node]
+        // if (nodeAABB.contains(aabb)) {
+        if (nodeAABB.lowerBound.x <= aabb.lowerBound.x && nodeAABB.lowerBound.y <= aabb.lowerBound.y
+                && aabb.upperBound.x <= nodeAABB.upperBound.x && aabb.upperBound.y <= nodeAABB.upperBound.y) {
+            return false
+        }
 
         removeLeaf(node)
 
@@ -185,34 +200,38 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
     }
 
     override fun getUserData(proxyId: Int): Any? {
-        assert(proxyId in 0 until nodeCount)
-        return userDatas[proxyId]
+        assert(0 <= proxyId && proxyId < m_nodeCount)
+        return m_userData[proxyId]
     }
 
     override fun getFatAABB(proxyId: Int): AABB {
-        assert(proxyId in 0 until nodeCount)
-        return aabbs[proxyId]
+        assert(0 <= proxyId && proxyId < m_nodeCount)
+        return m_aabb[proxyId]
     }
 
     override fun query(callback: TreeCallback, aabb: AABB) {
         nodeStackIndex = 0
-        nodeStack[nodeStackIndex++] = root
+        nodeStack[nodeStackIndex++] = m_root
 
         while (nodeStackIndex > 0) {
             val node = nodeStack[--nodeStackIndex]
-            if (node == NULL_NODE) continue
+            if (node == NULL_NODE) {
+                continue
+            }
 
-            if (AABB.testOverlap(aabbs[node], aabb)) {
-                val child1 = children1[node]
+            if (AABB.testOverlap(m_aabb[node], aabb)) {
+                val child1 = m_child1[node]
                 if (child1 == NULL_NODE) {
                     val proceed = callback.treeCallback(node)
-                    if (!proceed) return
+                    if (!proceed) {
+                        return
+                    }
                 } else {
                     if (nodeStack.size - nodeStackIndex - 2 <= 0) {
                         nodeStack = BufferUtils.reallocateBuffer(nodeStack, nodeStack.size, nodeStack.size * 2)
                     }
                     nodeStack[nodeStackIndex++] = child1
-                    nodeStack[nodeStackIndex++] = children2[node]
+                    nodeStack[nodeStackIndex++] = m_child2[node]
                 }
             }
         }
@@ -225,18 +244,30 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
         val p2x = p2.x
         val p1y = p1.y
         val p2y = p2.y
+        val vx: Float
+        val vy: Float
+        val rx: Float
+        val ry: Float
+        val absVx: Float
+        val absVy: Float
+        var cx: Float
+        var cy: Float
+        var hx: Float
+        var hy: Float
+        var tempx: Float
+        var tempy: Float
         r.x = p2x - p1x
         r.y = p2y - p1y
         assert(r.x * r.x + r.y * r.y > 0f)
         r.normalize()
-        val rx = r.x
-        val ry = r.y
+        rx = r.x
+        ry = r.y
 
         // v is perpendicular to the segment.
-        val vx = -1f * ry
-        val vy = 1f * rx
-        val absVx = MathUtils.abs(vx)
-        val absVy = MathUtils.abs(vy)
+        vx = -1f * ry
+        vy = 1f * rx
+        absVx = MathUtils.abs(vx)
+        absVy = MathUtils.abs(vy)
 
         // Separating axis for segment (Gino, p80).
         // |dot(v, p1 - c)| > dot(|v|, h)
@@ -250,8 +281,8 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
         // temp.set(p2).subLocal(p1).mulLocal(maxFraction).addLocal(p1);
         // Vec2.minToOut(p1, temp, segAABB.lowerBound);
         // Vec2.maxToOut(p1, temp, segAABB.upperBound);
-        var tempx = (p2x - p1x) * maxFraction + p1x
-        var tempy = (p2y - p1y) * maxFraction + p1y
+        tempx = (p2x - p1x) * maxFraction + p1x
+        tempy = (p2y - p1y) * maxFraction + p1y
         segAABB.lowerBound.x = if (p1x < tempx) p1x else tempx
         segAABB.lowerBound.y = if (p1y < tempy) p1y else tempy
         segAABB.upperBound.x = if (p1x > tempx) p1x else tempx
@@ -259,13 +290,15 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
         // end inline
 
         nodeStackIndex = 0
-        nodeStack[nodeStackIndex++] = root
+        nodeStack[nodeStackIndex++] = m_root
         while (nodeStackIndex > 0) {
-            nodeStack[--nodeStackIndex] = root
+            nodeStack[--nodeStackIndex] = m_root
             val node = nodeStack[--nodeStackIndex]
-            if (node == NULL_NODE) continue
+            if (node == NULL_NODE) {
+                continue
+            }
 
-            val nodeAABB = aabbs[node]
+            val nodeAABB = m_aabb[node]
             if (!AABB.testOverlap(nodeAABB, segAABB)) {
                 continue
             }
@@ -274,16 +307,18 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
             // |dot(v, p1 - c)| > dot(|v|, h)
             // node.aabb.getCenterToOut(c);
             // node.aabb.getExtentsToOut(h);
-            val cx = (nodeAABB.lowerBound.x + nodeAABB.upperBound.x) * .5f
-            val cy = (nodeAABB.lowerBound.y + nodeAABB.upperBound.y) * .5f
-            val hx = (nodeAABB.upperBound.x - nodeAABB.lowerBound.x) * .5f
-            val hy = (nodeAABB.upperBound.y - nodeAABB.lowerBound.y) * .5f
+            cx = (nodeAABB.lowerBound.x + nodeAABB.upperBound.x) * .5f
+            cy = (nodeAABB.lowerBound.y + nodeAABB.upperBound.y) * .5f
+            hx = (nodeAABB.upperBound.x - nodeAABB.lowerBound.x) * .5f
+            hy = (nodeAABB.upperBound.y - nodeAABB.lowerBound.y) * .5f
             tempx = p1x - cx
             tempy = p1y - cy
             val separation = MathUtils.abs(vx * tempx + vy * tempy) - (absVx * hx + absVy * hy)
-            if (separation > 0.0f) continue
+            if (separation > 0.0f) {
+                continue
+            }
 
-            val child1 = children1[node]
+            val child1 = m_child1[node]
             if (child1 == NULL_NODE) {
                 subInput.p1.x = p1x
                 subInput.p1.y = p1y
@@ -313,21 +348,23 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
                 }
             } else {
                 nodeStack[nodeStackIndex++] = child1
-                nodeStack[nodeStackIndex++] = children2[node]
+                nodeStack[nodeStackIndex++] = m_child2[node]
             }
         }
     }
 
-    override fun computeHeight() = computeHeight(root)
+    override fun computeHeight(): Int {
+        return computeHeight(m_root)
+    }
 
     private fun computeHeight(node: Int): Int {
-        assert(node in 0 until nodeCapacity)
+        assert(0 <= node && node < m_nodeCapacity)
 
-        if (children1[node] == NULL_NODE) {
+        if (m_child1[node] == NULL_NODE) {
             return 0
         }
-        val height1 = computeHeight(children1[node])
-        val height2 = computeHeight(children2[node])
+        val height1 = computeHeight(m_child1[node])
+        val height2 = computeHeight(m_child2[node])
         return 1 + MathUtils.max(height1, height2)
     }
 
@@ -335,19 +372,19 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
      * Validate this tree. For testing.
      */
     fun validate() {
-        validateStructure(root)
-        validateMetrics(root)
+        validateStructure(m_root)
+        validateMetrics(m_root)
 
         var freeCount = 0
-        var freeNode = freeList
+        var freeNode = m_freeList
         while (freeNode != NULL_NODE) {
-            assert(freeNode in 0 until nodeCapacity)
-            freeNode = parents[freeNode]
+            assert(0 <= freeNode && freeNode < m_nodeCapacity)
+            freeNode = m_parent[freeNode]
             ++freeCount
         }
 
         assert(height == computeHeight())
-        assert(nodeCount + freeCount == nodeCapacity)
+        assert(m_nodeCount + freeCount == m_nodeCapacity)
     }
 
     // /**
@@ -419,18 +456,18 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
     // }
 
     private fun allocateNode(): Int {
-        if (freeList == NULL_NODE) {
-            assert(nodeCount == nodeCapacity)
-            nodeCapacity *= 2
-            expandBuffers(nodeCount, nodeCapacity)
+        if (m_freeList == NULL_NODE) {
+            assert(m_nodeCount == m_nodeCapacity)
+            m_nodeCapacity *= 2
+            expandBuffers(m_nodeCount, m_nodeCapacity)
         }
-        assert(freeList != NULL_NODE)
-        val node = freeList
-        freeList = parents[node]
-        parents[node] = NULL_NODE
-        children1[node] = NULL_NODE
-        heights[node] = 0
-        ++nodeCount
+        assert(m_freeList != NULL_NODE)
+        val node = m_freeList
+        m_freeList = m_parent[node]
+        m_parent[node] = NULL_NODE
+        m_child1[node] = NULL_NODE
+        m_height[node] = 0
+        ++m_nodeCount
         return node
     }
 
@@ -439,28 +476,28 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
      */
     private fun freeNode(node: Int) {
         assert(node != NULL_NODE)
-        assert(0 < nodeCount)
-        parents[node] = if (freeList != NULL_NODE) freeList else NULL_NODE
-        heights[node] = -1
-        freeList = node
-        nodeCount--
+        assert(0 < m_nodeCount)
+        m_parent[node] = if (m_freeList != NULL_NODE) m_freeList else NULL_NODE
+        m_height[node] = -1
+        m_freeList = node
+        m_nodeCount--
     }
 
     private fun insertLeaf(leaf: Int) {
-        if (root == NULL_NODE) {
-            root = leaf
-            parents[root] = NULL_NODE
+        if (m_root == NULL_NODE) {
+            m_root = leaf
+            m_parent[m_root] = NULL_NODE
             return
         }
 
         // find the best sibling
-        val leafAABB = aabbs[leaf]
-        var index = root
-        while (children1[index] != NULL_NODE) {
+        val leafAABB = m_aabb[leaf]
+        var index = m_root
+        while (m_child1[index] != NULL_NODE) {
             val node = index
-            val child1 = children1[node]
-            val child2 = children2[node]
-            val nodeAABB = aabbs[node]
+            val child1 = m_child1[node]
+            val child2 = m_child2[node]
+            val nodeAABB = m_aabb[node]
             val area = nodeAABB.perimeter
 
             combinedAABB.combine(nodeAABB, leafAABB)
@@ -474,8 +511,8 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
 
             // Cost of descending into child1
             val cost1: Float
-            val child1AABB = aabbs[child1]
-            if (children1[child1] == NULL_NODE) {
+            val child1AABB = m_aabb[child1]
+            if (m_child1[child1] == NULL_NODE) {
                 combinedAABB.combine(leafAABB, child1AABB)
                 cost1 = combinedAABB.perimeter + inheritanceCost
             } else {
@@ -487,8 +524,8 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
 
             // Cost of descending into child2
             val cost2: Float
-            val child2AABB = aabbs[child2]
-            if (children1[child2] == NULL_NODE) {
+            val child2AABB = m_aabb[child2]
+            if (m_child1[child2] == NULL_NODE) {
                 combinedAABB.combine(leafAABB, child2AABB)
                 cost2 = combinedAABB.perimeter + inheritanceCost
             } else {
@@ -504,77 +541,86 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
             }
 
             // Descend
-            index = if (cost1 < cost2) child1 else child2
+            if (cost1 < cost2) {
+                index = child1
+            } else {
+                index = child2
+            }
         }
 
         val sibling = index
-        val oldParent = parents[sibling]
+        val oldParent = m_parent[sibling]
         val newParent = allocateNode()
-        parents[newParent] = oldParent
-        userDatas[newParent] = null
-        aabbs[newParent].combine(leafAABB, aabbs[sibling])
-        heights[newParent] = heights[sibling] + 1
+        m_parent[newParent] = oldParent
+        m_userData[newParent] = null
+        m_aabb[newParent].combine(leafAABB, m_aabb[sibling])
+        m_height[newParent] = m_height[sibling] + 1
 
         if (oldParent != NULL_NODE) {
             // The sibling was not the root.
-            if (children1[oldParent] == sibling) {
-                children1[oldParent] = newParent
+            if (m_child1[oldParent] == sibling) {
+                m_child1[oldParent] = newParent
             } else {
-                children2[oldParent] = newParent
+                m_child2[oldParent] = newParent
             }
 
-            children1[newParent] = sibling
-            children2[newParent] = leaf
-            parents[sibling] = newParent
-            parents[leaf] = newParent
+            m_child1[newParent] = sibling
+            m_child2[newParent] = leaf
+            m_parent[sibling] = newParent
+            m_parent[leaf] = newParent
         } else {
             // The sibling was the root.
-            children1[newParent] = sibling
-            children2[newParent] = leaf
-            parents[sibling] = newParent
-            parents[leaf] = newParent
-            root = newParent
+            m_child1[newParent] = sibling
+            m_child2[newParent] = leaf
+            m_parent[sibling] = newParent
+            m_parent[leaf] = newParent
+            m_root = newParent
         }
 
         // Walk back up the tree fixing heights and AABBs
-        index = parents[leaf]
+        index = m_parent[leaf]
         while (index != NULL_NODE) {
             index = balance(index)
 
-            val child1 = children1[index]
-            val child2 = children2[index]
+            val child1 = m_child1[index]
+            val child2 = m_child2[index]
 
             assert(child1 != NULL_NODE)
             assert(child2 != NULL_NODE)
 
-            heights[index] = 1 + MathUtils.max(heights[child1], heights[child2])
-            aabbs[index].combine(aabbs[child1], aabbs[child2])
+            m_height[index] = 1 + MathUtils.max(m_height[child1], m_height[child2])
+            m_aabb[index].combine(m_aabb[child1], m_aabb[child2])
 
-            index = parents[index]
+            index = m_parent[index]
         }
         // validate();
     }
 
     private fun removeLeaf(leaf: Int) {
-        if (leaf == root) {
-            root = NULL_NODE
+        if (leaf == m_root) {
+            m_root = NULL_NODE
             return
         }
 
-        val parent = parents[leaf]
-        val grandParent = this.parents[parent]
-        val parentChild1 = children1[parent]
-        val parentChild2 = children2[parent]
-        val sibling = if (parentChild1 == leaf) parentChild2 else parentChild1
+        val parent = m_parent[leaf]
+        val grandParent = m_parent[parent]
+        val parentChild1 = m_child1[parent]
+        val parentChild2 = m_child2[parent]
+        val sibling: Int
+        if (parentChild1 == leaf) {
+            sibling = parentChild2
+        } else {
+            sibling = parentChild1
+        }
 
         if (grandParent != NULL_NODE) {
             // Destroy parent and connect sibling to grandParent.
-            if (children1[grandParent] == parent) {
-                children1[grandParent] = sibling
+            if (m_child1[grandParent] == parent) {
+                m_child1[grandParent] = sibling
             } else {
-                children2[grandParent] = sibling
+                m_child2[grandParent] = sibling
             }
-            parents[sibling] = grandParent
+            m_parent[sibling] = grandParent
             freeNode(parent)
 
             // Adjust ancestor bounds.
@@ -582,17 +628,17 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
             while (index != NULL_NODE) {
                 index = balance(index)
 
-                val child1 = children1[index]
-                val child2 = children2[index]
+                val child1 = m_child1[index]
+                val child2 = m_child2[index]
 
-                aabbs[index].combine(aabbs[child1], aabbs[child2])
-                heights[index] = 1 + MathUtils.max(heights[child1], heights[child2])
+                m_aabb[index].combine(m_aabb[child1], m_aabb[child2])
+                m_height[index] = 1 + MathUtils.max(m_height[child1], m_height[child2])
 
-                index = this.parents[index]
+                index = m_parent[index]
             }
         } else {
-            root = sibling
-            parents[sibling] = NULL_NODE
+            m_root = sibling
+            m_parent[sibling] = NULL_NODE
             freeNode(parent)
         }
 
@@ -601,189 +647,204 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
 
     // Perform a left or right rotation if node A is imbalanced.
     // Returns the new root index.
-    private fun balance(A: Int): Int {
-        assert(A != NULL_NODE)
+    private fun balance(iA: Int): Int {
+        assert(iA != NULL_NODE)
 
-        if (children1[A] == NULL_NODE || heights[A] < 2) {
-            return A
+        val A = iA
+        if (m_child1[A] == NULL_NODE || m_height[A] < 2) {
+            return iA
         }
 
-        val B = children1[A]
-        val C = children2[A]
-        assert(B in 0 until nodeCapacity)
-        assert(C in 0 until nodeCapacity)
+        val iB = m_child1[A]
+        val iC = m_child2[A]
+        assert(0 <= iB && iB < m_nodeCapacity)
+        assert(0 <= iC && iC < m_nodeCapacity)
 
-        val balance = heights[C] - heights[B]
+        val B = iB
+        val C = iC
+
+        val balance = m_height[C] - m_height[B]
 
         // Rotate C up
         if (balance > 1) {
-            val F = children1[C]
-            val G = children2[C]
+            val iF = m_child1[C]
+            val iG = m_child2[C]
+            val F = iF
+            val G = iG
             // assert (F != null);
             // assert (G != null);
-            assert(F in 0 until nodeCapacity)
-            assert(G in 0 until nodeCapacity)
+            assert(0 <= iF && iF < m_nodeCapacity)
+            assert(0 <= iG && iG < m_nodeCapacity)
 
             // Swap A and C
-            children1[C] = A
-            parents[C] = parents[A]
-            val cParent = parents[C]
-            parents[A] = C
+            m_child1[C] = iA
+            m_parent[C] = m_parent[A]
+            val cParent = m_parent[C]
+            m_parent[A] = iC
 
             // A's old parent should point to C
             if (cParent != NULL_NODE) {
-                if (children1[cParent] == A) {
-                    children1[cParent] = C
+                if (m_child1[cParent] == iA) {
+                    m_child1[cParent] = iC
                 } else {
-                    assert(children2[cParent] == A)
-                    children2[cParent] = C
+                    assert(m_child2[cParent] == iA)
+                    m_child2[cParent] = iC
                 }
             } else {
-                root = C
+                m_root = iC
             }
 
             // Rotate
-            if (heights[F] > heights[G]) {
-                children2[C] = F
-                children2[A] = G
-                parents[G] = A
-                aabbs[A].combine(aabbs[B], aabbs[G])
-                aabbs[C].combine(aabbs[A], aabbs[F])
+            if (m_height[F] > m_height[G]) {
+                m_child2[C] = iF
+                m_child2[A] = iG
+                m_parent[G] = iA
+                m_aabb[A].combine(m_aabb[B], m_aabb[G])
+                m_aabb[C].combine(m_aabb[A], m_aabb[F])
 
-                heights[A] = 1 + MathUtils.max(heights[B], heights[G])
-                heights[C] = 1 + MathUtils.max(heights[A], heights[F])
+                m_height[A] = 1 + MathUtils.max(m_height[B], m_height[G])
+                m_height[C] = 1 + MathUtils.max(m_height[A], m_height[F])
             } else {
-                children2[C] = G
-                children2[A] = F
-                parents[F] = A
-                aabbs[A].combine(aabbs[B], aabbs[F])
-                aabbs[C].combine(aabbs[A], aabbs[G])
+                m_child2[C] = iG
+                m_child2[A] = iF
+                m_parent[F] = iA
+                m_aabb[A].combine(m_aabb[B], m_aabb[F])
+                m_aabb[C].combine(m_aabb[A], m_aabb[G])
 
-                heights[A] = 1 + MathUtils.max(heights[B], heights[F])
-                heights[C] = 1 + MathUtils.max(heights[A], heights[G])
+                m_height[A] = 1 + MathUtils.max(m_height[B], m_height[F])
+                m_height[C] = 1 + MathUtils.max(m_height[A], m_height[G])
             }
 
-            return C
+            return iC
         }
 
         // Rotate B up
         if (balance < -1) {
-            val D = children1[B]
-            val E = children2[B]
-            assert(D in 0 until nodeCapacity)
-            assert(E in 0 until nodeCapacity)
+            val iD = m_child1[B]
+            val iE = m_child2[B]
+            val D = iD
+            val E = iE
+            assert(0 <= iD && iD < m_nodeCapacity)
+            assert(0 <= iE && iE < m_nodeCapacity)
 
             // Swap A and B
-            children1[B] = A
-            parents[B] = parents[A]
-            val Bparent = parents[B]
-            parents[A] = B
+            m_child1[B] = iA
+            m_parent[B] = m_parent[A]
+            val Bparent = m_parent[B]
+            m_parent[A] = iB
 
             // A's old parent should point to B
             if (Bparent != NULL_NODE) {
-                if (children1[Bparent] == A) {
-                    children1[Bparent] = B
+                if (m_child1[Bparent] == iA) {
+                    m_child1[Bparent] = iB
                 } else {
-                    assert(children2[Bparent] == A)
-                    children2[Bparent] = B
+                    assert(m_child2[Bparent] == iA)
+                    m_child2[Bparent] = iB
                 }
             } else {
-                root = B
+                m_root = iB
             }
 
             // Rotate
-            if (heights[D] > heights[E]) {
-                children2[B] = D
-                children1[A] = E
-                parents[E] = A
-                aabbs[A].combine(aabbs[C], aabbs[E])
-                aabbs[B].combine(aabbs[A], aabbs[D])
+            if (m_height[D] > m_height[E]) {
+                m_child2[B] = iD
+                m_child1[A] = iE
+                m_parent[E] = iA
+                m_aabb[A].combine(m_aabb[C], m_aabb[E])
+                m_aabb[B].combine(m_aabb[A], m_aabb[D])
 
-                heights[A] = 1 + MathUtils.max(heights[C], heights[E])
-                heights[B] = 1 + MathUtils.max(heights[A], heights[D])
+                m_height[A] = 1 + MathUtils.max(m_height[C], m_height[E])
+                m_height[B] = 1 + MathUtils.max(m_height[A], m_height[D])
             } else {
-                children2[B] = E
-                children1[A] = D
-                parents[D] = A
-                aabbs[A].combine(aabbs[C], aabbs[D])
-                aabbs[B].combine(aabbs[A], aabbs[E])
+                m_child2[B] = iE
+                m_child1[A] = iD
+                m_parent[D] = iA
+                m_aabb[A].combine(m_aabb[C], m_aabb[D])
+                m_aabb[B].combine(m_aabb[A], m_aabb[E])
 
-                heights[A] = 1 + MathUtils.max(heights[C], heights[D])
-                heights[B] = 1 + MathUtils.max(heights[A], heights[E])
+                m_height[A] = 1 + MathUtils.max(m_height[C], m_height[D])
+                m_height[B] = 1 + MathUtils.max(m_height[A], m_height[E])
             }
 
-            return B
+            return iB
         }
 
-        return A
+        return iA
     }
 
     private fun validateStructure(node: Int) {
-        if (node == NULL_NODE) return
-
-        if (node == root) {
-            assert(parents[node] == NULL_NODE)
+        if (node == NULL_NODE) {
+            return
         }
 
-        val child1 = children1[node]
-        val child2 = children2[node]
+        if (node == m_root) {
+            assert(m_parent[node] == NULL_NODE)
+        }
+
+        val child1 = m_child1[node]
+        val child2 = m_child2[node]
 
         if (child1 == NULL_NODE) {
             assert(child1 == NULL_NODE)
             assert(child2 == NULL_NODE)
-            assert(heights[node] == 0)
+            assert(m_height[node] == 0)
             return
         }
 
-        assert(child1 != NULL_NODE && child1 in 0 until nodeCapacity)
-        assert(child2 != NULL_NODE && child2 in 0 until nodeCapacity)
+        assert(child1 != NULL_NODE && 0 <= child1 && child1 < m_nodeCapacity)
+        assert(child2 != NULL_NODE && 0 <= child2 && child2 < m_nodeCapacity)
 
-        assert(parents[child1] == node)
-        assert(parents[child2] == node)
+        assert(m_parent[child1] == node)
+        assert(m_parent[child2] == node)
 
         validateStructure(child1)
         validateStructure(child2)
     }
 
     private fun validateMetrics(node: Int) {
-        if (node == NULL_NODE) return
+        if (node == NULL_NODE) {
+            return
+        }
 
-        val child1 = children1[node]
-        val child2 = children2[node]
+        val child1 = m_child1[node]
+        val child2 = m_child2[node]
 
         if (child1 == NULL_NODE) {
             assert(child1 == NULL_NODE)
             assert(child2 == NULL_NODE)
-            assert(heights[node] == 0)
+            assert(m_height[node] == 0)
             return
         }
 
-        assert(child1 != NULL_NODE && child1 in 0 until nodeCapacity)
-        assert(child2 != child1 && child2 in 0 until nodeCapacity)
+        assert(child1 != NULL_NODE && 0 <= child1 && child1 < m_nodeCapacity)
+        assert(child2 != child1 && 0 <= child2 && child2 < m_nodeCapacity)
 
-        val height1 = heights[child1]
-        val height2 = heights[child2]
-        val height = 1 + MathUtils.max(height1, height2)
-        assert(heights[node] == height)
+        val height1 = m_height[child1]
+        val height2 = m_height[child2]
+        val height: Int
+        height = 1 + MathUtils.max(height1, height2)
+        assert(m_height[node] == height)
 
         val aabb = AABB()
-        aabb.combine(aabbs[child1], aabbs[child2])
+        aabb.combine(m_aabb[child1], m_aabb[child2])
 
-        assert(aabb.lowerBound == aabbs[node].lowerBound)
-        assert(aabb.upperBound == aabbs[node].upperBound)
+        assert(aabb.lowerBound == m_aabb[node].lowerBound)
+        assert(aabb.upperBound == m_aabb[node].upperBound)
 
         validateMetrics(child1)
         validateMetrics(child2)
     }
 
     override fun drawTree(argDraw: DebugDraw) {
-        if (root == NULL_NODE) return
+        if (m_root == NULL_NODE) {
+            return
+        }
         val height = computeHeight()
-        drawTree(argDraw, root, 0, height)
+        drawTree(argDraw, m_root, 0, height)
     }
 
     fun drawTree(argDraw: DebugDraw, node: Int, spot: Int, height: Int) {
-        val a = aabbs[node]
+        val a = m_aabb[node]
         a.getVertices(drawVecs)
 
         color.set(1f, (height - spot) * 1f / height, (height - spot) * 1f / height)
@@ -792,8 +853,8 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
         argDraw.viewportTranform!!.getWorldToScreen(a.upperBound, textVec)
         argDraw.drawString(textVec.x, textVec.y, node.toString() + "-" + (spot + 1) + "/" + height, color)
 
-        val c1 = children1[node]
-        val c2 = children2[node]
+        val c1 = m_child1[node]
+        val c2 = m_child2[node]
         if (c1 != NULL_NODE) {
             drawTree(argDraw, c1, spot + 1, height)
         }
@@ -803,8 +864,11 @@ class DynamicTreeFlatNodes : BroadPhaseStrategy {
     }
 
     companion object {
+
         val MAX_STACK_SIZE = 64
+
         val NULL_NODE = -1
+
         val INITIAL_BUFFER_LENGTH = 16
     }
 }

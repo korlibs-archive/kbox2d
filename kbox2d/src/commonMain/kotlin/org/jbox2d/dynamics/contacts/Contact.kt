@@ -23,6 +23,7 @@
  */
 package org.jbox2d.dynamics.contacts
 
+
 import org.jbox2d.callbacks.ContactListener
 import org.jbox2d.collision.Manifold
 import org.jbox2d.collision.WorldManifold
@@ -38,55 +39,102 @@ import org.jbox2d.pooling.IWorldPool
  *
  * @author daniel
  */
-abstract class Contact protected constructor(protected val pool: IWorldPool) {
+abstract class Contact protected constructor( protected val pool: IWorldPool) {
 
-    var flags: Int = 0
+    var m_flags: Int = 0
 
     // World pool and list pointers.
-    var prev: Contact? = null
-    var next: Contact? = null
+
+    var m_prev: Contact? = null
+    /**
+     * Get the next contact in the world's contact list.
+     *
+     * @return
+     */
+
+    var m_next: Contact? = null
+
+    fun getPrev() = m_prev
+    fun getNext() = m_next
 
     // Nodes for connecting bodies.
-    var nodeA: ContactEdge = ContactEdge()
-    var nodeB: ContactEdge = ContactEdge()
 
-    /** The first fixture in this contact. */
-    var fixtureA: Fixture? = null
+    var m_nodeA: ContactEdge = ContactEdge()
 
-    /** The second fixture in this contact. */
-    var fixtureB: Fixture? = null
-
-    var indexA: Int = 0
-    var indexB: Int = 0
+    var m_nodeB: ContactEdge = ContactEdge()
 
     /**
-     * Get the contact manifold. Do not set the point count to zero. Instead call [disable].
+     * Get the first fixture in this contact.
+     *
+     * @return
      */
-    val manifold: Manifold = Manifold()
 
-    var toiCount: Float = 0f
-    var toi: Float = 0f
+    var m_fixtureA: Fixture? = null
+    /**
+     * Get the second fixture in this contact.
+     *
+     * @return
+     */
 
-    var friction: Float = 0f
-    var restitution: Float = 0f
+    var m_fixtureB: Fixture? = null
 
-    var tangentSpeed: Float = 0f
+    fun getFixtureA() = m_fixtureA
+    fun getFixtureB() = m_fixtureB
 
+
+    var m_indexA: Int = 0
+
+    var m_indexB: Int = 0
+
+    fun getChildIndexA() = m_indexA
+    fun getChildIndexB() = m_indexB
+
+    /**
+     * Get the contact manifold. Do not set the point count to zero. Instead call Disable.
+     */
+
+    val m_manifold: Manifold = Manifold()
+
+    fun getManifold(): Manifold = m_manifold
+
+
+    var m_toiCount: Float = 0.toFloat()
+
+    var m_toi: Float = 0.toFloat()
+
+
+    var m_friction: Float = 0.toFloat()
+
+    var m_restitution: Float = 0.toFloat()
+
+
+    var m_tangentSpeed: Float = 0.toFloat()
+
+    /**
+     * Is this contact touching
+     *
+     * @return
+     */
     val isTouching: Boolean
-        get() = flags and TOUCHING_FLAG == TOUCHING_FLAG
+        get() = m_flags and TOUCHING_FLAG == TOUCHING_FLAG
 
+    /**
+     * Has this contact been disabled?
+     *
+     * @return
+     */
     /**
      * Enable/disable this contact. This can be used inside the pre-solve contact listener. The
      * contact is only disabled for the current time step (or sub-step in continuous collisions).
+     *
+     * @param flag
      */
     var isEnabled: Boolean
-        get() = flags and ENABLED_FLAG == ENABLED_FLAG
-        set(flag) {
-            flags = if (flag) {
-                flags or ENABLED_FLAG
-            } else {
-                flags and ENABLED_FLAG.inv()
-            }
+        get() = m_flags and ENABLED_FLAG == ENABLED_FLAG
+        set(flag) = if (flag) {
+            m_flags = m_flags or ENABLED_FLAG
+        } else {
+            m_flags = m_flags and ENABLED_FLAG.inv()
         }
 
     // djm pooling
@@ -94,54 +142,55 @@ abstract class Contact protected constructor(protected val pool: IWorldPool) {
 
     /** initialization for pooling  */
     open fun init(fA: Fixture, indexA: Int, fB: Fixture, indexB: Int) {
-        flags = ENABLED_FLAG
+        m_flags = ENABLED_FLAG
 
-        fixtureA = fA
-        fixtureB = fB
+        m_fixtureA = fA
+        m_fixtureB = fB
 
-        this.indexA = indexA
-        this.indexB = indexB
+        m_indexA = indexA
+        m_indexB = indexB
 
-        manifold.pointCount = 0
+        m_manifold.pointCount = 0
 
-        prev = null
-        next = null
+        m_prev = null
+        m_next = null
 
-        nodeA.contact = null
-        nodeA.prev = null
-        nodeA.next = null
-        nodeA.other = null
+        m_nodeA!!.contact = null
+        m_nodeA!!.prev = null
+        m_nodeA!!.next = null
+        m_nodeA!!.other = null
 
-        nodeB.contact = null
-        nodeB.prev = null
-        nodeB.next = null
-        nodeB.other = null
+        m_nodeB!!.contact = null
+        m_nodeB!!.prev = null
+        m_nodeB!!.next = null
+        m_nodeB!!.other = null
 
-        toiCount = 0f
-        friction = mixFriction(fA.friction, fB.friction)
-        restitution = mixRestitution(fA.restitution, fB.restitution)
+        m_toiCount = 0f
+        m_friction = Contact.mixFriction(fA.m_friction, fB.m_friction)
+        m_restitution = Contact.mixRestitution(fA.m_restitution, fB.m_restitution)
 
-        tangentSpeed = 0f
+        m_tangentSpeed = 0f
     }
 
+    /**
+     * Get the world manifold.
+     */
     fun getWorldManifold(worldManifold: WorldManifold) {
-        val bodyA = fixtureA!!.body
-        val bodyB = fixtureB!!.body
-        val shapeA = fixtureA!!.shape
-        val shapeB = fixtureB!!.shape
+        val bodyA = m_fixtureA!!.m_body
+        val bodyB = m_fixtureB!!.m_body
+        val shapeA = m_fixtureA!!.m_shape
+        val shapeB = m_fixtureB!!.m_shape
 
-        worldManifold.initialize(
-            manifold, bodyA!!.xf, shapeA!!.radius,
-            bodyB!!.xf, shapeB!!.radius
-        )
+        worldManifold.initialize(m_manifold, bodyA!!.xf, shapeA!!.radius,
+                bodyB!!.xf, shapeB!!.radius)
     }
 
     fun resetFriction() {
-        friction = mixFriction(fixtureA!!.friction, fixtureB!!.friction)
+        m_friction = Contact.mixFriction(m_fixtureA!!.m_friction, m_fixtureB!!.m_friction)
     }
 
     fun resetRestitution() {
-        restitution = mixRestitution(fixtureA!!.restitution, fixtureB!!.restitution)
+        m_restitution = Contact.mixRestitution(m_fixtureA!!.m_restitution, m_fixtureB!!.m_restitution)
     }
 
     abstract fun evaluate(manifold: Manifold, xfA: Transform, xfB: Transform)
@@ -150,45 +199,45 @@ abstract class Contact protected constructor(protected val pool: IWorldPool) {
      * Flag this contact for filtering. Filtering will occur the next time step.
      */
     fun flagForFiltering() {
-        flags = flags or FILTER_FLAG
+        m_flags = m_flags or FILTER_FLAG
     }
 
     fun update(listener: ContactListener?) {
 
-        oldManifold.set(manifold)
+        oldManifold.set(m_manifold)
 
         // Re-enable this contact.
-        flags = flags or ENABLED_FLAG
+        m_flags = m_flags or ENABLED_FLAG
 
-        val touching: Boolean
-        val wasTouching = flags and TOUCHING_FLAG == TOUCHING_FLAG
+        var touching = false
+        val wasTouching = m_flags and TOUCHING_FLAG == TOUCHING_FLAG
 
-        val sensorA = fixtureA!!.isSensor
-        val sensorB = fixtureB!!.isSensor
+        val sensorA = m_fixtureA!!.isSensor
+        val sensorB = m_fixtureB!!.isSensor
         val sensor = sensorA || sensorB
 
-        val bodyA = fixtureA!!.body!!
-        val bodyB = fixtureB!!.body!!
+        val bodyA = m_fixtureA!!.m_body!!
+        val bodyB = m_fixtureB!!.m_body!!
         val xfA = bodyA.xf
         val xfB = bodyB.xf
         // log.debug("TransformA: "+xfA);
         // log.debug("TransformB: "+xfB);
 
         if (sensor) {
-            val shapeA = fixtureA!!.shape!!
-            val shapeB = fixtureB!!.shape!!
-            touching = pool.collision.testOverlap(shapeA, indexA, shapeB, indexB, xfA, xfB)
+            val shapeA = m_fixtureA!!.m_shape!!
+            val shapeB = m_fixtureB!!.m_shape!!
+            touching = pool.collision.testOverlap(shapeA, m_indexA, shapeB, m_indexB, xfA, xfB)
 
             // Sensors don't generate manifolds.
-            manifold.pointCount = 0
+            m_manifold.pointCount = 0
         } else {
-            evaluate(manifold, xfA, xfB)
-            touching = manifold.pointCount > 0
+            evaluate(m_manifold, xfA, xfB)
+            touching = m_manifold.pointCount > 0
 
             // Match old contact ids to new contact ids and copy the
             // stored impulses to warm start the solver.
-            for (i in 0 until manifold.pointCount) {
-                val mp2 = manifold.points[i]
+            for (i in 0 until m_manifold.pointCount) {
+                val mp2 = m_manifold.points[i]
                 mp2.normalImpulse = 0.0f
                 mp2.tangentImpulse = 0.0f
                 val id2 = mp2.id
@@ -205,57 +254,65 @@ abstract class Contact protected constructor(protected val pool: IWorldPool) {
             }
 
             if (touching != wasTouching) {
-                bodyA.isAwake = true
-                bodyB.isAwake = true
+                bodyA!!.isAwake = true
+                bodyB!!.isAwake = true
             }
         }
 
-        flags = if (touching) {
-            flags or TOUCHING_FLAG
+        if (touching) {
+            m_flags = m_flags or TOUCHING_FLAG
         } else {
-            flags and TOUCHING_FLAG.inv()
+            m_flags = m_flags and TOUCHING_FLAG.inv()
         }
 
-        if (listener == null) return
+        if (listener == null) {
+            return
+        }
 
-        if (!wasTouching && touching) {
+        if (wasTouching == false && touching == true) {
             listener.beginContact(this)
         }
 
-        if (wasTouching && !touching) {
+        if (wasTouching == true && touching == false) {
             listener.endContact(this)
         }
 
-        if (!sensor && touching) {
+        if (sensor == false && touching) {
             listener.preSolve(this, oldManifold)
         }
     }
 
     companion object {
 
-        // Flags stored in flags
-
+        // Flags stored in m_flags
         // Used when crawling contact graph when forming islands.
+
         val ISLAND_FLAG = 0x0001
-
         // Set when the shapes are touching.
+
         val TOUCHING_FLAG = 0x0002
-
         // This contact can be disabled (by user)
+
         val ENABLED_FLAG = 0x0004
-
         // This contact needs filtering because a fixture filter was changed.
-        val FILTER_FLAG = 0x0008
 
+        val FILTER_FLAG = 0x0008
         // This bullet contact had a TOI event
+
         val BULLET_HIT_FLAG = 0x0010
+
 
         val TOI_FLAG = 0x0020
 
         /**
-         * Friction mixing law. The idea is to allow either fixture to drive the restitution to zero.
-         * For example, anything slides on ice.
+         * Friction mixing law. The idea is to allow either fixture to drive the restitution to zero. For
+         * example, anything slides on ice.
+         *
+         * @param friction1
+         * @param friction2
+         * @return
          */
+
         fun mixFriction(friction1: Float, friction2: Float): Float {
             return MathUtils.sqrt(friction1 * friction2)
         }
@@ -263,7 +320,12 @@ abstract class Contact protected constructor(protected val pool: IWorldPool) {
         /**
          * Restitution mixing law. The idea is allow for anything to bounce off an inelastic surface. For
          * example, a superball bounces on anything.
+         *
+         * @param restitution1
+         * @param restitution2
+         * @return
          */
+
         fun mixRestitution(restitution1: Float, restitution2: Float): Float {
             return if (restitution1 > restitution2) restitution1 else restitution2
         }

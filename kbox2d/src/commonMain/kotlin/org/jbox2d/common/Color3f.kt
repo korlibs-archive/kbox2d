@@ -43,24 +43,31 @@
  * misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
  */
+
 package org.jbox2d.common
 
+import org.jbox2d.internal.*
 import kotlin.native.concurrent.ThreadLocal
 
+// updated to rev 100
 /**
  * Similar to javax.vecmath.Color3f holder
  * @author ewjordan
  */
 class Color3f {
 
-    var x: Float = 0f
-    var y: Float = 0f
-    var z: Float = 0f
+
+    var x: Float = 0.toFloat()
+
+    var y: Float = 0.toFloat()
+
+    var z: Float = 0.toFloat()
+
 
     constructor() {
-        x = 0f
-        y = 0f
         z = 0f
+        y = z
+        x = y
     }
 
     constructor(r: Float, g: Float, b: Float) {
@@ -81,16 +88,22 @@ class Color3f {
         z = argColor.z
     }
 
+	// @TODO: Do not mutate those
     companion object {
-        @ThreadLocal
+
+        //@ThreadLocal
         val WHITE = Color3f(1f, 1f, 1f)
-        @ThreadLocal
+
+        //@ThreadLocal
         val BLACK = Color3f(0f, 0f, 0f)
-        @ThreadLocal
+
+        //@ThreadLocal
         val BLUE = Color3f(0f, 0f, 1f)
-        @ThreadLocal
+
+        //@ThreadLocal
         val GREEN = Color3f(0f, 1f, 0f)
-        @ThreadLocal
+
+        //@ThreadLocal
         val RED = Color3f(1f, 0f, 0f)
     }
 }

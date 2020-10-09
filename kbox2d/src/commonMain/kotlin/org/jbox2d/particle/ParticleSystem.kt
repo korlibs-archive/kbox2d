@@ -18,70 +18,69 @@ import org.jbox2d.dynamics.TimeStep
 import org.jbox2d.dynamics.World
 import org.jbox2d.internal.*
 import org.jbox2d.particle.VoronoiDiagram.VoronoiDiagramCallback
-import kotlin.experimental.and
 
-class ParticleSystem(internal var world: World) {
+class ParticleSystem(internal var m_world: World) {
 
-    internal var timestamp: Int = 0
-    internal var allParticleFlags: Int = 0
-    internal var allGroupFlags: Int = 0
-    internal var density: Float = 1f
-    internal var inverseDensity: Float = 1f
+    internal var m_timestamp: Int = 0
+    internal var m_allParticleFlags: Int = 0
+    internal var m_allGroupFlags: Int = 0
+    internal var m_density: Float = 1f
+    internal var m_inverseDensity: Float = 1f
     var particleGravityScale: Float = 1f
-    internal var particleDiameter: Float = 1f
-    internal var inverseDiameter: Float = 1f
-    internal var squaredDiameter: Float = 1f
+    internal var m_particleDiameter: Float = 1f
+    internal var m_inverseDiameter: Float = 1f
+    internal var m_squaredDiameter: Float = 1f
 
     var particleCount: Int = 0
         internal set
-    internal var internalAllocatedCapacity: Int = 0
-    internal var maxCount: Int = 0
-    internal var flagsBuffer: ParticleBufferInt = ParticleBufferInt()
-    internal var positionBuffer: ParticleBuffer<Vec2> = ParticleBuffer { Vec2() }
-    internal var velocityBuffer: ParticleBuffer<Vec2> = ParticleBuffer { Vec2() }
-    internal var accumulationBuffer: FloatArray = FloatArray(0) // temporary values
-    internal var accumulation2Buffer: Array<Vec2> = emptyArray() // temporary vector values
-    internal var depthBuffer: FloatArray? = null // distance from the surface
+    internal var m_internalAllocatedCapacity: Int = 0
+    internal var m_maxCount: Int = 0
+    internal var m_flagsBuffer: ParticleBufferInt = ParticleBufferInt()
+    internal var m_positionBuffer: ParticleBuffer<Vec2> = ParticleBuffer { Vec2() }
+    internal var m_velocityBuffer: ParticleBuffer<Vec2> = ParticleBuffer { Vec2() }
+    internal var m_accumulationBuffer: FloatArray = FloatArray(0) // temporary values
+    internal var m_accumulation2Buffer: Array<Vec2> = emptyArray() // temporary vector values
+    internal var m_depthBuffer: FloatArray? = null // distance from the surface
 
-    var colorBuffer: ParticleBuffer<ParticleColor> = ParticleBuffer { ParticleColor() }
+    var m_colorBuffer: ParticleBuffer<ParticleColor> = ParticleBuffer { ParticleColor() }
     var particleGroupBuffer: Array<ParticleGroup?> = emptyArray()
         internal set
-    internal var userDataBuffer: ParticleBuffer<Any> = ParticleBuffer { Any() }
+    internal var m_userDataBuffer: ParticleBuffer<Any> = ParticleBuffer { Any() }
 
-    internal var proxyCount: Int = 0
-    internal var proxyCapacity: Int = 0
-    internal var proxyBuffer: Array<Proxy> = emptyArray()
+    internal var m_proxyCount: Int = 0
+    internal var m_proxyCapacity: Int = 0
+    internal var m_proxyBuffer: Array<Proxy> = emptyArray()
 
-    var contactCount: Int = 0
-    internal var contactCapacity: Int = 0
-    var contactBuffer: Array<ParticleContact> = emptyArray()
+    var m_contactCount: Int = 0
+    internal var m_contactCapacity: Int = 0
+    var m_contactBuffer: Array<ParticleContact> = emptyArray()
 
-    var bodyContactCount: Int = 0
-    internal var bodyContactCapacity: Int = 0
-    var bodyContactBuffer: Array<ParticleBodyContact> = emptyArray()
+    var m_bodyContactCount: Int = 0
+    internal var m_bodyContactCapacity: Int = 0
+    var m_bodyContactBuffer: Array<ParticleBodyContact> = emptyArray()
 
-    internal var pairCount: Int = 0
-    internal var pairCapacity: Int = 0
-    internal var pairBuffer: Array<Pair> = emptyArray()
+    internal var m_pairCount: Int = 0
+    internal var m_pairCapacity: Int = 0
+    internal var m_pairBuffer: Array<Pair> = emptyArray()
 
-    internal var triadCount: Int = 0
-    internal var triadCapacity: Int = 0
-    internal var triadBuffer: Array<Triad> = emptyArray()
+    internal var m_triadCount: Int = 0
+    internal var m_triadCapacity: Int = 0
+    internal var m_triadBuffer: Array<Triad> = emptyArray()
 
     var particleGroupCount: Int = 0
         internal set
-    internal var groupList: ParticleGroup? = null
+    internal var m_groupList: ParticleGroup? = null
 
-    internal var pressureStrength: Float = 0.05f
+    internal var m_pressureStrength: Float = 0.05f
     var particleDamping: Float = 1f
-    internal var elasticStrength: Float = 0.25f
-    internal var springStrength: Float = 0.25f
-    internal var viscousStrength: Float = 0.25f
-    internal var surfaceTensionStrengthA: Float = 0.1f
-    internal var surfaceTensionStrengthB: Float = 0.2f
-    internal var powderStrength: Float = 0.5f
-    internal var ejectionStrength: Float = 0.5f
-    internal var colorMixingStrength: Float = 0.5f
+    internal var m_elasticStrength: Float = 0.25f
+    internal var m_springStrength: Float = 0.25f
+    internal var m_viscousStrength: Float = 0.25f
+    internal var m_surfaceTensionStrengthA: Float = 0.1f
+    internal var m_surfaceTensionStrengthB: Float = 0.2f
+    internal var m_powderStrength: Float = 0.5f
+    internal var m_ejectionStrength: Float = 0.5f
+    internal var m_colorMixingStrength: Float = 0.5f
 
     private val temp = AABB()
     private val dpcallback = DestroyParticlesInShapeCallback()
@@ -105,58 +104,58 @@ class ParticleSystem(internal var world: World) {
     private val newIndices = NewIndices()
 
     var particleDensity: Float
-        get() = density
+        get() = m_density
         set(density) {
-            this.density = density
-            inverseDensity = 1 / this.density
+            m_density = density
+            m_inverseDensity = 1 / m_density
         }
 
     var particleRadius: Float
-        get() = particleDiameter / 2
+        get() = m_particleDiameter / 2
         set(radius) {
-            particleDiameter = 2 * radius
-            squaredDiameter = particleDiameter * particleDiameter
-            inverseDiameter = 1 / particleDiameter
+            m_particleDiameter = 2 * radius
+            m_squaredDiameter = m_particleDiameter * m_particleDiameter
+            m_inverseDiameter = 1 / m_particleDiameter
         }
 
     internal val particleStride: Float
-        get() = Settings.particleStride * particleDiameter
+        get() = Settings.particleStride * m_particleDiameter
 
     internal val particleMass: Float
         get() {
             val stride = particleStride
-            return density * stride * stride
+            return m_density * stride * stride
         }
 
     internal val particleInvMass: Float
-        get() = 1.777777f * inverseDensity * inverseDiameter * inverseDiameter
+        get() = 1.777777f * m_inverseDensity * m_inverseDiameter * m_inverseDiameter
 
     val particleFlagsBuffer: IntArray?
-        get() = flagsBuffer.data
+        get() = m_flagsBuffer.data
 
     val particlePositionBuffer: Array<Vec2>?
-        get() = positionBuffer.data
+        get() = m_positionBuffer.data
 
     val particleVelocityBuffer: Array<Vec2>?
-        get() = velocityBuffer.data
+        get() = m_velocityBuffer.data
 
     val particleColorBuffer: Array<ParticleColor>?
         get() {
-            colorBuffer.data = requestParticleBuffer({ ParticleColor() }, colorBuffer.data)
-            return colorBuffer.data
+            m_colorBuffer.data = requestParticleBuffer({ ParticleColor() }, m_colorBuffer.data)
+            return m_colorBuffer.data
         }
 
     val particleUserDataBuffer: Array<Any>?
         get() {
-            userDataBuffer.data = requestParticleBuffer({ Any() }, userDataBuffer.data)
-            return userDataBuffer.data
+            m_userDataBuffer.data = requestParticleBuffer({ Any() }, m_userDataBuffer.data)
+            return m_userDataBuffer.data
         }
 
     var particleMaxCount: Int
-        get() = maxCount
+        get() = m_maxCount
         set(count) {
             assert(particleCount <= count)
-            maxCount = count
+            m_maxCount = count
         }
 
     //  public void assertNotSamePosition() {
@@ -170,89 +169,74 @@ class ParticleSystem(internal var world: World) {
     //  }
 
     fun createParticle(def: ParticleDef): Int {
-        if (particleCount >= internalAllocatedCapacity) {
+        if (particleCount >= m_internalAllocatedCapacity) {
             var capacity = if (particleCount != 0) 2 * particleCount else Settings.minParticleBufferCapacity
-            capacity = limitCapacity(capacity, maxCount)
-            capacity = limitCapacity(capacity, flagsBuffer.userSuppliedCapacity)
-            capacity = limitCapacity(capacity, positionBuffer.userSuppliedCapacity)
-            capacity = limitCapacity(capacity, velocityBuffer.userSuppliedCapacity)
-            capacity = limitCapacity(capacity, colorBuffer.userSuppliedCapacity)
-            capacity = limitCapacity(capacity, userDataBuffer.userSuppliedCapacity)
-            if (internalAllocatedCapacity < capacity) {
-                flagsBuffer.data = reallocateBuffer(flagsBuffer, internalAllocatedCapacity, capacity, false)
-                positionBuffer.data = reallocateBuffer(positionBuffer, internalAllocatedCapacity, capacity, false)
-                velocityBuffer.data = reallocateBuffer(velocityBuffer, internalAllocatedCapacity, capacity, false)
-                accumulationBuffer =
-                    BufferUtils.reallocateBuffer(accumulationBuffer, 0, internalAllocatedCapacity, capacity, false)
-                accumulation2Buffer = BufferUtils.reallocateBuffer(
-                    { Vec2() },
-                    accumulation2Buffer,
-                    0,
-                    internalAllocatedCapacity,
-                    capacity,
-                    true
-                )
-                depthBuffer = BufferUtils.reallocateBuffer(depthBuffer, 0, internalAllocatedCapacity, capacity, true)
-                colorBuffer.data = reallocateBuffer(colorBuffer, internalAllocatedCapacity, capacity, true)
-                particleGroupBuffer = BufferUtils.reallocateBuffer<ParticleGroup>(
-                    { ParticleGroup() },
-                    particleGroupBuffer as Array<ParticleGroup>,
-                    0,
-                    internalAllocatedCapacity,
-                    capacity,
-                    false
-                ) as Array<ParticleGroup?>
-                userDataBuffer.data = reallocateBuffer(userDataBuffer, internalAllocatedCapacity, capacity, true)
-                internalAllocatedCapacity = capacity
+            capacity = limitCapacity(capacity, m_maxCount)
+            capacity = limitCapacity(capacity, m_flagsBuffer.userSuppliedCapacity)
+            capacity = limitCapacity(capacity, m_positionBuffer.userSuppliedCapacity)
+            capacity = limitCapacity(capacity, m_velocityBuffer.userSuppliedCapacity)
+            capacity = limitCapacity(capacity, m_colorBuffer.userSuppliedCapacity)
+            capacity = limitCapacity(capacity, m_userDataBuffer.userSuppliedCapacity)
+            if (m_internalAllocatedCapacity < capacity) {
+                m_flagsBuffer.data = reallocateBuffer(m_flagsBuffer, m_internalAllocatedCapacity, capacity, false)
+                m_positionBuffer.data = reallocateBuffer(m_positionBuffer, m_internalAllocatedCapacity, capacity, false)
+                m_velocityBuffer.data = reallocateBuffer(m_velocityBuffer, m_internalAllocatedCapacity, capacity, false)
+                m_accumulationBuffer = BufferUtils.reallocateBuffer(m_accumulationBuffer, 0, m_internalAllocatedCapacity, capacity, false)
+                m_accumulation2Buffer = BufferUtils.reallocateBuffer({ Vec2() }, m_accumulation2Buffer, 0, m_internalAllocatedCapacity, capacity, true)
+                m_depthBuffer = BufferUtils.reallocateBuffer(m_depthBuffer, 0, m_internalAllocatedCapacity, capacity, true)
+                m_colorBuffer.data = reallocateBuffer(m_colorBuffer, m_internalAllocatedCapacity, capacity, true)
+                particleGroupBuffer = BufferUtils.reallocateBuffer<ParticleGroup>({ ParticleGroup() }, particleGroupBuffer as Array<ParticleGroup>, 0, m_internalAllocatedCapacity, capacity, false) as Array<ParticleGroup?>
+                m_userDataBuffer.data = reallocateBuffer(m_userDataBuffer, m_internalAllocatedCapacity, capacity, true)
+                m_internalAllocatedCapacity = capacity
             }
         }
-        if (particleCount >= internalAllocatedCapacity) {
+        if (particleCount >= m_internalAllocatedCapacity) {
             return Settings.invalidParticleIndex
         }
         val index = particleCount++
-        flagsBuffer.data!![index] = def.flags
-        positionBuffer.data!![index].set(def.position)
+        m_flagsBuffer!!.data!![index] = def.flags
+        m_positionBuffer.data!![index].set(def.position)
         //    assertNotSamePosition();
-        velocityBuffer.data!![index].set(def.velocity)
-        particleGroupBuffer[index] = null
-        if (depthBuffer != null) {
-            depthBuffer!![index] = 0f
+        m_velocityBuffer.data!![index].set(def.velocity)
+        particleGroupBuffer!![index] = null
+        if (m_depthBuffer != null) {
+            m_depthBuffer!![index] = 0f
         }
-        if (colorBuffer.data != null || def.color != null) {
-            colorBuffer.data = requestParticleBuffer(colorBuffer.dataClass, colorBuffer.data)
-            colorBuffer.data!![index].set(def.color!!)
+        if (m_colorBuffer.data != null || def.color != null) {
+            m_colorBuffer.data = requestParticleBuffer(m_colorBuffer.dataClass, m_colorBuffer.data)
+            m_colorBuffer.data!![index].set(def.color!!)
         }
-        if (userDataBuffer.data != null || def.userData != null) {
-            userDataBuffer.data = requestParticleBuffer(userDataBuffer.dataClass, userDataBuffer.data)
-            userDataBuffer.data!![index] = def.userData!!
+        if (m_userDataBuffer.data != null || def.userData != null) {
+            m_userDataBuffer.data = requestParticleBuffer(m_userDataBuffer.dataClass, m_userDataBuffer.data)
+            m_userDataBuffer.data!![index] = def.userData!!
         }
-        if (proxyCount >= proxyCapacity) {
-            val oldCapacity = proxyCapacity
-            val newCapacity = if (proxyCount != 0) 2 * proxyCount else Settings.minParticleBufferCapacity
-            proxyBuffer = BufferUtils.reallocateBuffer({ Proxy() }, proxyBuffer, oldCapacity, newCapacity)
-            proxyCapacity = newCapacity
+        if (m_proxyCount >= m_proxyCapacity) {
+            val oldCapacity = m_proxyCapacity
+            val newCapacity = if (m_proxyCount != 0) 2 * m_proxyCount else Settings.minParticleBufferCapacity
+            m_proxyBuffer = BufferUtils.reallocateBuffer({ Proxy() }, m_proxyBuffer, oldCapacity, newCapacity)
+            m_proxyCapacity = newCapacity
         }
-        proxyBuffer[proxyCount++].index = index
+        m_proxyBuffer[m_proxyCount++].index = index
         return index
     }
 
     fun destroyParticle(index: Int, callDestructionListener: Boolean) {
-        var flags = ParticleType.zombieParticle
+        var flags = ParticleType.b2_zombieParticle
         if (callDestructionListener) {
-            flags = flags or ParticleType.destructionListener
+            flags = flags or ParticleType.b2_destructionListener
         }
-        flagsBuffer.data!![index] = flagsBuffer.data!![index] or flags
+        m_flagsBuffer!!.data!![index] = m_flagsBuffer!!.data!![index] or flags
     }
 
     fun destroyParticlesInShape(shape: Shape, xf: Transform, callDestructionListener: Boolean): Int {
         dpcallback.init(this, shape, xf, callDestructionListener)
         shape.computeAABB(temp, xf, 0)
-        world.queryAABB(dpcallback, temp)
+        m_world.queryAABB(dpcallback, temp)
         return dpcallback.destroyed
     }
 
     fun destroyParticlesInGroup(group: ParticleGroup, callDestructionListener: Boolean) {
-        for (i in group.firstIndex until group.lastIndex) {
+        for (i in group.m_firstIndex until group.m_lastIndex) {
             destroyParticle(i, callDestructionListener)
         }
     }
@@ -308,29 +292,29 @@ class ParticleSystem(internal var world: World) {
         val lastIndex = particleCount
 
         val group = ParticleGroup()
-        group.system = this
-        group.firstIndex = firstIndex
-        group.lastIndex = lastIndex
-        group.groupFlags = groupDef.groupFlags
-        group.strength = groupDef.strength
-        group.userData = groupDef.userData
-        group.transform.set(transform)
-        group.destroyAutomatically = groupDef.destroyAutomatically
-        group.prev = null
-        group.next = groupList
-        if (groupList != null) {
-            groupList!!.prev = group
+        group.m_system = this
+        group.m_firstIndex = firstIndex
+        group.m_lastIndex = lastIndex
+        group.m_groupFlags = groupDef.groupFlags
+        group.m_strength = groupDef.strength
+        group.m_userData = groupDef.userData
+        group.m_transform.set(transform)
+        group.m_destroyAutomatically = groupDef.destroyAutomatically
+        group.m_prev = null
+        group.m_next = m_groupList
+        if (m_groupList != null) {
+            m_groupList!!.m_prev = group
         }
-        groupList = group
+        m_groupList = group
         ++particleGroupCount
         for (i in firstIndex until lastIndex) {
-            particleGroupBuffer[i] = group
+            particleGroupBuffer!![i] = group
         }
 
         updateContacts(true)
-        if (groupDef.flags and pairFlags != 0) {
-            for (k in 0 until contactCount) {
-                val contact = contactBuffer[k]
+        if (groupDef.flags and k_pairFlags != 0) {
+            for (k in 0 until m_contactCount) {
+                val contact = m_contactBuffer[k]
                 var a = contact.indexA
                 var b = contact.indexB
                 if (a > b) {
@@ -339,26 +323,26 @@ class ParticleSystem(internal var world: World) {
                     b = temp
                 }
                 if (firstIndex <= a && b < lastIndex) {
-                    if (pairCount >= pairCapacity) {
-                        val oldCapacity = pairCapacity
-                        val newCapacity = if (pairCount != 0) 2 * pairCount else Settings.minParticleBufferCapacity
-                        pairBuffer = BufferUtils.reallocateBuffer({ Pair() }, pairBuffer, oldCapacity, newCapacity)
-                        pairCapacity = newCapacity
+                    if (m_pairCount >= m_pairCapacity) {
+                        val oldCapacity = m_pairCapacity
+                        val newCapacity = if (m_pairCount != 0) 2 * m_pairCount else Settings.minParticleBufferCapacity
+                        m_pairBuffer = BufferUtils.reallocateBuffer({ Pair() }, m_pairBuffer, oldCapacity, newCapacity)
+                        m_pairCapacity = newCapacity
                     }
-                    val pair = pairBuffer[pairCount]
+                    val pair = m_pairBuffer[m_pairCount]
                     pair.indexA = a
                     pair.indexB = b
                     pair.flags = contact.flags
                     pair.strength = groupDef.strength
-                    pair.distance = MathUtils.distance(positionBuffer.data!![a], positionBuffer.data!![b])
-                    pairCount++
+                    pair.distance = MathUtils.distance(m_positionBuffer.data!![a], m_positionBuffer.data!![b])
+                    m_pairCount++
                 }
             }
         }
-        if (groupDef.flags and triadFlags != 0) {
+        if (groupDef.flags and k_triadFlags != 0) {
             val diagram = VoronoiDiagram(lastIndex - firstIndex)
             for (i in firstIndex until lastIndex) {
-                diagram.addGenerator(positionBuffer.data!![i], i)
+                diagram.addGenerator(m_positionBuffer.data!![i], i)
             }
             diagram.generate(stride / 2)
             createParticleGroupCallback.system = this
@@ -366,7 +350,7 @@ class ParticleSystem(internal var world: World) {
             createParticleGroupCallback.firstIndex = firstIndex
             diagram.getNodes(createParticleGroupCallback)
         }
-        if (groupDef.groupFlags and ParticleGroupType.solidParticleGroup != 0) {
+        if (groupDef.groupFlags and ParticleGroupType.b2_solidParticleGroup != 0) {
             computeDepthForGroup(group)
         }
 
@@ -375,20 +359,20 @@ class ParticleSystem(internal var world: World) {
 
     fun joinParticleGroups(groupA: ParticleGroup, groupB: ParticleGroup) {
         assert(groupA != groupB)
-        RotateBuffer(groupB.firstIndex, groupB.lastIndex, particleCount)
-        assert(groupB.lastIndex == particleCount)
-        RotateBuffer(groupA.firstIndex, groupA.lastIndex, groupB.firstIndex)
-        assert(groupA.lastIndex == groupB.firstIndex)
+        RotateBuffer(groupB.m_firstIndex, groupB.m_lastIndex, particleCount)
+        assert(groupB.m_lastIndex == particleCount)
+        RotateBuffer(groupA.m_firstIndex, groupA.m_lastIndex, groupB.m_firstIndex)
+        assert(groupA.m_lastIndex == groupB.m_firstIndex)
 
         var particleFlags = 0
-        for (i in groupA.firstIndex until groupB.lastIndex) {
-            particleFlags = particleFlags or flagsBuffer.data!![i]
+        for (i in groupA.m_firstIndex until groupB.m_lastIndex) {
+            particleFlags = particleFlags or m_flagsBuffer.data!![i]
         }
 
         updateContacts(true)
-        if (particleFlags and pairFlags != 0) {
-            for (k in 0 until contactCount) {
-                val contact = contactBuffer[k]
+        if (particleFlags and k_pairFlags != 0) {
+            for (k in 0 until m_contactCount) {
+                val contact = m_contactBuffer[k]
                 var a = contact.indexA
                 var b = contact.indexB
                 if (a > b) {
@@ -396,30 +380,29 @@ class ParticleSystem(internal var world: World) {
                     a = b
                     b = temp
                 }
-                if (groupA.firstIndex <= a && a < groupA.lastIndex && groupB.firstIndex <= b
-                    && b < groupB.lastIndex
-                ) {
-                    if (pairCount >= pairCapacity) {
-                        val oldCapacity = pairCapacity
-                        val newCapacity = if (pairCount != 0) 2 * pairCount else Settings.minParticleBufferCapacity
-                        pairBuffer = BufferUtils.reallocateBuffer({ Pair() }, pairBuffer, oldCapacity, newCapacity)
-                        pairCapacity = newCapacity
+                if (groupA.m_firstIndex <= a && a < groupA.m_lastIndex && groupB.m_firstIndex <= b
+                        && b < groupB.m_lastIndex) {
+                    if (m_pairCount >= m_pairCapacity) {
+                        val oldCapacity = m_pairCapacity
+                        val newCapacity = if (m_pairCount != 0) 2 * m_pairCount else Settings.minParticleBufferCapacity
+                        m_pairBuffer = BufferUtils.reallocateBuffer({ Pair() }, m_pairBuffer, oldCapacity, newCapacity)
+                        m_pairCapacity = newCapacity
                     }
-                    val pair = pairBuffer[pairCount]
+                    val pair = m_pairBuffer[m_pairCount]
                     pair.indexA = a
                     pair.indexB = b
                     pair.flags = contact.flags
-                    pair.strength = MathUtils.min(groupA.strength, groupB.strength)
-                    pair.distance = MathUtils.distance(positionBuffer.data!![a], positionBuffer.data!![b])
-                    pairCount++
+                    pair.strength = MathUtils.min(groupA.m_strength, groupB.m_strength)
+                    pair.distance = MathUtils.distance(m_positionBuffer.data!![a], m_positionBuffer.data!![b])
+                    m_pairCount++
                 }
             }
         }
-        if (particleFlags and triadFlags != 0) {
-            val diagram = VoronoiDiagram(groupB.lastIndex - groupA.firstIndex)
-            for (i in groupA.firstIndex until groupB.lastIndex) {
-                if (flagsBuffer.data!![i] and ParticleType.zombieParticle == 0) {
-                    diagram.addGenerator(positionBuffer.data!![i], i)
+        if (particleFlags and k_triadFlags != 0) {
+            val diagram = VoronoiDiagram(groupB.m_lastIndex - groupA.m_firstIndex)
+            for (i in groupA.m_firstIndex until groupB.m_lastIndex) {
+                if (m_flagsBuffer.data!![i] and ParticleType.b2_zombieParticle == 0) {
+                    diagram.addGenerator(m_positionBuffer.data!![i], i)
                 }
             }
             diagram.generate(particleStride / 2)
@@ -430,16 +413,16 @@ class ParticleSystem(internal var world: World) {
             diagram.getNodes(callback)
         }
 
-        for (i in groupB.firstIndex until groupB.lastIndex) {
-            particleGroupBuffer[i] = groupA
+        for (i in groupB.m_firstIndex until groupB.m_lastIndex) {
+            particleGroupBuffer!![i] = groupA
         }
-        val groupFlags = groupA.groupFlags or groupB.groupFlags
-        groupA.groupFlags = groupFlags
-        groupA.lastIndex = groupB.lastIndex
-        groupB.firstIndex = groupB.lastIndex
+        val groupFlags = groupA.m_groupFlags or groupB.m_groupFlags
+        groupA.m_groupFlags = groupFlags
+        groupA.m_lastIndex = groupB.m_lastIndex
+        groupB.m_firstIndex = groupB.m_lastIndex
         destroyParticleGroup(groupB)
 
-        if (groupFlags and ParticleGroupType.solidParticleGroup != 0) {
+        if (groupFlags and ParticleGroupType.b2_solidParticleGroup != 0) {
             computeDepthForGroup(groupA)
         }
     }
@@ -449,138 +432,136 @@ class ParticleSystem(internal var world: World) {
         assert(particleGroupCount > 0)
         assert(group != null)
 
-        if (world.particleDestructionListener != null) {
-            world.particleDestructionListener!!.sayGoodbye(group!!)
+        if (m_world.particleDestructionListener != null) {
+            m_world.particleDestructionListener!!.sayGoodbye(group!!)
         }
 
-        for (i in group!!.firstIndex until group.lastIndex) {
-            particleGroupBuffer[i] = null
+        for (i in group!!.m_firstIndex until group.m_lastIndex) {
+            particleGroupBuffer!![i] = null
         }
 
-        if (group.prev != null) {
-            group.prev!!.next = group.next
+        if (group.m_prev != null) {
+            group.m_prev!!.m_next = group.m_next
         }
-        if (group.next != null) {
-            group.next!!.prev = group.prev
+        if (group.m_next != null) {
+            group.m_next!!.m_prev = group.m_prev
         }
-        if (group == groupList) {
-            groupList = group.next
+        if (group == m_groupList) {
+            m_groupList = group.m_next
         }
 
         --particleGroupCount
     }
 
     fun computeDepthForGroup(group: ParticleGroup) {
-        for (i in group.firstIndex until group.lastIndex) {
-            accumulationBuffer[i] = 0f
+        for (i in group.m_firstIndex until group.m_lastIndex) {
+            m_accumulationBuffer!![i] = 0f
         }
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
             val a = contact.indexA
             val b = contact.indexB
-            if (a >= group.firstIndex && a < group.lastIndex && b >= group.firstIndex
-                && b < group.lastIndex
-            ) {
+            if (a >= group.m_firstIndex && a < group.m_lastIndex && b >= group.m_firstIndex
+                    && b < group.m_lastIndex) {
                 val w = contact.weight
-                accumulationBuffer[a] += w
-                accumulationBuffer[b] += w
+                m_accumulationBuffer!![a] += w
+                m_accumulationBuffer!![b] += w
             }
         }
-        depthBuffer = requestParticleBuffer(depthBuffer)
-        for (i in group.firstIndex until group.lastIndex) {
-            val w = accumulationBuffer[i]
-            depthBuffer!![i] = if (w < 0.8f) 0f else Float.MAX_VALUE
+        m_depthBuffer = requestParticleBuffer(m_depthBuffer)
+        for (i in group.m_firstIndex until group.m_lastIndex) {
+            val w = m_accumulationBuffer!![i]
+            m_depthBuffer!![i] = if (w < 0.8f) 0f else Float.MAX_VALUE
         }
         val interationCount = group.particleCount
         for (t in 0 until interationCount) {
             var updated = false
-            for (k in 0 until contactCount) {
-                val contact = contactBuffer[k]
+            for (k in 0 until m_contactCount) {
+                val contact = m_contactBuffer[k]
                 val a = contact.indexA
                 val b = contact.indexB
-                if (a >= group.firstIndex && a < group.lastIndex && b >= group.firstIndex
-                    && b < group.lastIndex
-                ) {
+                if (a >= group.m_firstIndex && a < group.m_lastIndex && b >= group.m_firstIndex
+                        && b < group.m_lastIndex) {
                     val r = 1 - contact.weight
-                    val ap0 = depthBuffer!![a]
-                    val bp0 = depthBuffer!![b]
+                    val ap0 = m_depthBuffer!![a]
+                    val bp0 = m_depthBuffer!![b]
                     val ap1 = bp0 + r
                     val bp1 = ap0 + r
                     if (ap0 > ap1) {
-                        depthBuffer!![a] = ap1
+                        m_depthBuffer!![a] = ap1
                         updated = true
                     }
                     if (bp0 > bp1) {
-                        depthBuffer!![b] = bp1
+                        m_depthBuffer!![b] = bp1
                         updated = true
                     }
                 }
             }
-            if (!updated) break
+            if (!updated) {
+                break
+            }
         }
-        for (i in group.firstIndex until group.lastIndex) {
-            val p = depthBuffer!![i]
+        for (i in group.m_firstIndex until group.m_lastIndex) {
+            val p = m_depthBuffer!![i]
             if (p < Float.MAX_VALUE) {
-                depthBuffer!![i] *= particleDiameter
+                m_depthBuffer!![i] *= m_particleDiameter
             } else {
-                depthBuffer!![i] = 0f
+                m_depthBuffer!![i] = 0f
             }
         }
     }
 
     fun addContact(a: Int, b: Int) {
         assert(a != b)
-        val pa = positionBuffer.data!![a]
-        val pb = positionBuffer.data!![b]
+        val pa = m_positionBuffer.data!![a]
+        val pb = m_positionBuffer.data!![b]
         val dx = pb.x - pa.x
         val dy = pb.y - pa.y
         val d2 = dx * dx + dy * dy
         //    assert(d2 != 0);
-        if (d2 < squaredDiameter) {
-            if (contactCount >= contactCapacity) {
-                val oldCapacity = contactCapacity
-                val newCapacity = if (contactCount != 0) 2 * contactCount else Settings.minParticleBufferCapacity
-                contactBuffer = BufferUtils.reallocateBuffer(
-                    { ParticleContact() }, contactBuffer, oldCapacity,
-                    newCapacity
-                )
-                contactCapacity = newCapacity
+        if (d2 < m_squaredDiameter) {
+            if (m_contactCount >= m_contactCapacity) {
+                val oldCapacity = m_contactCapacity
+                val newCapacity = if (m_contactCount != 0) 2 * m_contactCount else Settings.minParticleBufferCapacity
+                m_contactBuffer = BufferUtils.reallocateBuffer({ ParticleContact() }, m_contactBuffer, oldCapacity,
+                        newCapacity)
+                m_contactCapacity = newCapacity
             }
             val invD = if (d2 != 0f) MathUtils.sqrt(1 / d2) else Float.MAX_VALUE
-            val contact = contactBuffer[contactCount]
+            val contact = m_contactBuffer[m_contactCount]
             contact.indexA = a
             contact.indexB = b
-            contact.flags = flagsBuffer.data!![a] or flagsBuffer.data!![b]
-            contact.weight = 1 - d2 * invD * inverseDiameter
+            contact.flags = m_flagsBuffer.data!![a] or m_flagsBuffer.data!![b]
+            contact.weight = 1 - d2 * invD * m_inverseDiameter
             contact.normal.x = invD * dx
             contact.normal.y = invD * dy
-            contactCount++
+            m_contactCount++
         }
     }
 
     fun updateContacts(exceptZombie: Boolean) {
-        for (p in 0 until proxyCount) {
-            val proxy = proxyBuffer[p]
+        for (p in 0 until m_proxyCount) {
+            val proxy = m_proxyBuffer[p]
             val i = proxy.index
-            val pos = positionBuffer.data!![i]
-            proxy.tag = computeTag(inverseDiameter * pos.x, inverseDiameter * pos.y)
+            val pos = m_positionBuffer.data!![i]
+            proxy.tag = computeTag(m_inverseDiameter * pos.x, m_inverseDiameter * pos.y)
         }
-        Arrays_sort(proxyBuffer, 0, proxyCount)
-        contactCount = 0
+        Arrays_sort(m_proxyBuffer, 0, m_proxyCount)
+        m_contactCount = 0
         var c_index = 0
-        for (i in 0 until proxyCount) {
-            val a = proxyBuffer[i]
+        for (i in 0 until m_proxyCount) {
+            val a = m_proxyBuffer[i]
             val rightTag = computeRelativeTag(a.tag, 1, 0)
-            for (j in i + 1 until proxyCount) {
-                val b = proxyBuffer[j]
+            for (j in i + 1 until m_proxyCount) {
+                val b = m_proxyBuffer[j]
                 if (rightTag < b.tag) {
                     break
                 }
                 addContact(a.index, b.index)
             }
             val bottomLeftTag = computeRelativeTag(a.tag, -1, 1)
-            while (c_index < proxyCount) {
-                val c = proxyBuffer[c_index]
+            while (c_index < m_proxyCount) {
+                val c = m_proxyBuffer[c_index]
                 if (bottomLeftTag <= c.tag) {
                     break
                 }
@@ -588,8 +569,8 @@ class ParticleSystem(internal var world: World) {
             }
             val bottomRightTag = computeRelativeTag(a.tag, 1, 1)
 
-            for (b_index in c_index until proxyCount) {
-                val b = proxyBuffer[b_index]
+            for (b_index in c_index until m_proxyCount) {
+                val b = m_proxyBuffer[b_index]
                 if (bottomRightTag < b.tag) {
                     break
                 }
@@ -597,19 +578,19 @@ class ParticleSystem(internal var world: World) {
             }
         }
         if (exceptZombie) {
-            var j = contactCount
+            var j = m_contactCount
             var i = 0
             while (i < j) {
-                if (contactBuffer[i].flags and ParticleType.zombieParticle != 0) {
+                if (m_contactBuffer[i].flags and ParticleType.b2_zombieParticle != 0) {
                     --j
-                    val temp = contactBuffer[j]
-                    contactBuffer[j] = contactBuffer[i]
-                    contactBuffer[i] = temp
+                    val temp = m_contactBuffer[j]
+                    m_contactBuffer[j] = m_contactBuffer[i]
+                    m_contactBuffer[i] = temp
                     --i
                 }
                 i++
             }
-            contactCount = j
+            m_contactCount = j
         }
     }
 
@@ -620,18 +601,18 @@ class ParticleSystem(internal var world: World) {
         aabb.upperBound.x = -Float.MAX_VALUE
         aabb.upperBound.y = -Float.MAX_VALUE
         for (i in 0 until particleCount) {
-            val p = positionBuffer.data!![i]
+            val p = m_positionBuffer.data!![i]
             Vec2.minToOut(aabb.lowerBound, p, aabb.lowerBound)
             Vec2.maxToOut(aabb.upperBound, p, aabb.upperBound)
         }
-        aabb.lowerBound.x -= particleDiameter
-        aabb.lowerBound.y -= particleDiameter
-        aabb.upperBound.x += particleDiameter
-        aabb.upperBound.y += particleDiameter
-        bodyContactCount = 0
+        aabb.lowerBound.x -= m_particleDiameter
+        aabb.lowerBound.y -= m_particleDiameter
+        aabb.upperBound.x += m_particleDiameter
+        aabb.upperBound.y += m_particleDiameter
+        m_bodyContactCount = 0
 
         ubccallback.system = this
-        world.queryAABB(ubccallback, aabb)
+        m_world.queryAABB(ubccallback, aabb)
     }
 
     fun solveCollision(step: TimeStep) {
@@ -643,8 +624,8 @@ class ParticleSystem(internal var world: World) {
         upperBound.x = -Float.MAX_VALUE
         upperBound.y = -Float.MAX_VALUE
         for (i in 0 until particleCount) {
-            val v = velocityBuffer.data!![i]
-            val p1 = positionBuffer.data!![i]
+            val v = m_velocityBuffer.data!![i]
+            val p1 = m_positionBuffer.data!![i]
             val p1x = p1.x
             val p1y = p1.y
             val p2x = p1x + step.dt * v.x
@@ -660,31 +641,35 @@ class ParticleSystem(internal var world: World) {
         }
         sccallback.step = step
         sccallback.system = this
-        world.queryAABB(sccallback, aabb)
+        m_world.queryAABB(sccallback, aabb)
     }
 
     fun solve(step: TimeStep) {
-        ++timestamp
-        if (particleCount == 0) return
-        allParticleFlags = 0
-        for (i in 0 until particleCount) {
-            allParticleFlags = allParticleFlags or flagsBuffer.data!![i]
+        ++m_timestamp
+        if (particleCount == 0) {
+            return
         }
-        if (allParticleFlags and ParticleType.zombieParticle != 0) {
+        m_allParticleFlags = 0
+        for (i in 0 until particleCount) {
+            m_allParticleFlags = m_allParticleFlags or m_flagsBuffer.data!![i]
+        }
+        if (m_allParticleFlags and ParticleType.b2_zombieParticle != 0) {
             solveZombie()
         }
-        if (particleCount == 0) return
-        allGroupFlags = 0
-        var group = groupList
-        while (group != null) {
-            allGroupFlags = allGroupFlags or group.groupFlags
-            group = group.next
+        if (particleCount == 0) {
+            return
         }
-        val gravityx = step.dt * particleGravityScale * world.gravity.x
-        val gravityy = step.dt * particleGravityScale * world.gravity.y
+        m_allGroupFlags = 0
+        var group = m_groupList
+        while (group != null) {
+            m_allGroupFlags = m_allGroupFlags or group.m_groupFlags
+            group = group.getNext()
+        }
+        val gravityx = step.dt * particleGravityScale * m_world.gravity.x
+        val gravityy = step.dt * particleGravityScale * m_world.gravity.y
         val criticalVelocytySquared = getCriticalVelocitySquared(step)
         for (i in 0 until particleCount) {
-            val v = velocityBuffer.data!![i]
+            val v = m_velocityBuffer.data!![i]
             v.x += gravityx
             v.y += gravityy
             val v2 = v.x * v.x + v.y * v.y
@@ -695,39 +680,39 @@ class ParticleSystem(internal var world: World) {
             }
         }
         solveCollision(step)
-        if (allGroupFlags and ParticleGroupType.rigidParticleGroup != 0) {
+        if (m_allGroupFlags and ParticleGroupType.b2_rigidParticleGroup != 0) {
             solveRigid(step)
         }
-        if (allParticleFlags and ParticleType.wallParticle != 0) {
+        if (m_allParticleFlags and ParticleType.b2_wallParticle != 0) {
             solveWall(step)
         }
         for (i in 0 until particleCount) {
-            val pos = positionBuffer.data!![i]
-            val vel = velocityBuffer.data!![i]
+            val pos = m_positionBuffer.data!![i]
+            val vel = m_velocityBuffer.data!![i]
             pos.x += step.dt * vel.x
             pos.y += step.dt * vel.y
         }
         updateBodyContacts()
         updateContacts(false)
-        if (allParticleFlags and ParticleType.viscousParticle != 0) {
+        if (m_allParticleFlags and ParticleType.b2_viscousParticle != 0) {
             solveViscous(step)
         }
-        if (allParticleFlags and ParticleType.powderParticle != 0) {
+        if (m_allParticleFlags and ParticleType.b2_powderParticle != 0) {
             solvePowder(step)
         }
-        if (allParticleFlags and ParticleType.tensileParticle != 0) {
+        if (m_allParticleFlags and ParticleType.b2_tensileParticle != 0) {
             solveTensile(step)
         }
-        if (allParticleFlags and ParticleType.elasticParticle != 0) {
+        if (m_allParticleFlags and ParticleType.b2_elasticParticle != 0) {
             solveElastic(step)
         }
-        if (allParticleFlags and ParticleType.springParticle != 0) {
+        if (m_allParticleFlags and ParticleType.b2_springParticle != 0) {
             solveSpring(step)
         }
-        if (allGroupFlags and ParticleGroupType.solidParticleGroup != 0) {
+        if (m_allGroupFlags and ParticleGroupType.b2_solidParticleGroup != 0) {
             solveSolid(step)
         }
-        if (allParticleFlags and ParticleType.colorMixingParticle != 0) {
+        if (m_allParticleFlags and ParticleType.b2_colorMixingParticle != 0) {
             solveColorMixing(step)
         }
         solvePressure(step)
@@ -738,72 +723,69 @@ class ParticleSystem(internal var world: World) {
         // calculates the sum of contact-weights for each particle
         // that means dimensionless density
         for (i in 0 until particleCount) {
-            accumulationBuffer[i] = 0f
+            m_accumulationBuffer[i] = 0f
         }
-        for (k in 0 until bodyContactCount) {
-            val contact = bodyContactBuffer[k]
+        for (k in 0 until m_bodyContactCount) {
+            val contact = m_bodyContactBuffer[k]
             val a = contact.index
             val w = contact.weight
-            accumulationBuffer[a] += w
+            m_accumulationBuffer[a] += w
         }
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
             val a = contact.indexA
             val b = contact.indexB
             val w = contact.weight
-            accumulationBuffer[a] += w
-            accumulationBuffer[b] += w
+            m_accumulationBuffer[a] += w
+            m_accumulationBuffer[b] += w
         }
         // ignores powder particles
-        if (allParticleFlags and noPressureFlags != 0) {
+        if (m_allParticleFlags and k_noPressureFlags != 0) {
             for (i in 0 until particleCount) {
-                if (flagsBuffer.data!![i] and noPressureFlags != 0) {
-                    accumulationBuffer[i] = 0f
+                if (m_flagsBuffer.data!![i] and k_noPressureFlags != 0) {
+                    m_accumulationBuffer[i] = 0f
                 }
             }
         }
         // calculates pressure as a linear function of density
-        val pressurePerWeight = pressureStrength * getCriticalPressure(step)
+        val pressurePerWeight = m_pressureStrength * getCriticalPressure(step)
         for (i in 0 until particleCount) {
-            val w = accumulationBuffer[i]
-            val h = pressurePerWeight * MathUtils.max(
-                0.0f,
-                MathUtils.min(w, Settings.maxParticleWeight) - Settings.minParticleWeight
-            )
-            accumulationBuffer[i] = h
+            val w = m_accumulationBuffer!![i]
+            val h = pressurePerWeight * MathUtils.max(0.0f, MathUtils.min(w, Settings.maxParticleWeight) - Settings.minParticleWeight)
+            m_accumulationBuffer[i] = h
         }
         // applies pressure between each particles in contact
-        val velocityPerPressure = step.dt / (density * particleDiameter)
-        for (k in 0 until bodyContactCount) {
-            val contact = bodyContactBuffer[k]
+        val velocityPerPressure = step.dt / (m_density * m_particleDiameter)
+        for (k in 0 until m_bodyContactCount) {
+            val contact = m_bodyContactBuffer[k]
             val a = contact.index
             val b = contact.body
             val w = contact.weight
             val m = contact.mass
             val n = contact.normal
-            val p = positionBuffer.data!![a]
-            val h = accumulationBuffer[a] + pressurePerWeight * w
+            val p = m_positionBuffer.data!![a]
+            val h = m_accumulationBuffer!![a] + pressurePerWeight * w
             val f = tempVec
             val coef = velocityPerPressure * w * m * h
             f.x = coef * n.x
             f.y = coef * n.y
-            val velData = velocityBuffer.data!![a]
+            val velData = m_velocityBuffer.data!![a]
             val particleInvMass = particleInvMass
             velData.x -= particleInvMass * f.x
             velData.y -= particleInvMass * f.y
             b!!.applyLinearImpulse(f, p, true)
         }
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
             val a = contact.indexA
             val b = contact.indexB
             val w = contact.weight
             val n = contact.normal
-            val h = accumulationBuffer[a] + accumulationBuffer[b]
+            val h = m_accumulationBuffer!![a] + m_accumulationBuffer!![b]
             val fx = velocityPerPressure * w * h * n.x
             val fy = velocityPerPressure * w * h * n.y
-            val velDataA = velocityBuffer.data!![a]
-            val velDataB = velocityBuffer.data!![b]
+            val velDataA = m_velocityBuffer.data!![a]
+            val velDataB = m_velocityBuffer.data!![b]
             velDataA.x -= fx
             velDataA.y -= fy
             velDataB.x += fx
@@ -814,20 +796,20 @@ class ParticleSystem(internal var world: World) {
     internal fun solveDamping(step: TimeStep) {
         // reduces normal velocity of each contact
         val damping = particleDamping
-        for (k in 0 until bodyContactCount) {
-            val contact = bodyContactBuffer[k]
+        for (k in 0 until m_bodyContactCount) {
+            val contact = m_bodyContactBuffer[k]
             val a = contact.index
             val b = contact.body
             val w = contact.weight
             val m = contact.mass
             val n = contact.normal
-            val p = positionBuffer.data!![a]
+            val p = m_positionBuffer.data!![a]
             val tempX = p.x - b!!.sweep.c.x
-            val tempY = p.y - b.sweep.c.y
-            val velA = velocityBuffer.data!![a]
+            val tempY = p.y - b!!.sweep.c.y
+            val velA = m_velocityBuffer.data!![a]
             // getLinearVelocityFromWorldPointToOut, with -= velA
-            val vx = -b._angularVelocity * tempY + b._linearVelocity.x - velA.x
-            val vy = b._angularVelocity * tempX + b._linearVelocity.y - velA.y
+            val vx = -b!!._angularVelocity * tempY + b!!._linearVelocity.x - velA.x
+            val vy = b!!._angularVelocity * tempX + b!!._linearVelocity.y - velA.y
             // done
             val vn = vx * n.x + vy * n.y
             if (vn < 0) {
@@ -839,17 +821,17 @@ class ParticleSystem(internal var world: World) {
                 velA.y += invMass * f.y
                 f.x = -f.x
                 f.y = -f.y
-                b.applyLinearImpulse(f, p, true)
+                b!!.applyLinearImpulse(f, p, true)
             }
         }
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
             val a = contact.indexA
             val b = contact.indexB
             val w = contact.weight
             val n = contact.normal
-            val velA = velocityBuffer.data!![a]
-            val velB = velocityBuffer.data!![b]
+            val velA = m_velocityBuffer.data!![a]
+            val velB = m_velocityBuffer.data!![b]
             val vx = velB.x - velA.x
             val vy = velB.y - velA.y
             val vn = vx * n.x + vy * n.y
@@ -866,8 +848,8 @@ class ParticleSystem(internal var world: World) {
 
     fun solveWall(step: TimeStep) {
         for (i in 0 until particleCount) {
-            if (flagsBuffer.data!![i] and ParticleType.wallParticle != 0) {
-                val r = velocityBuffer.data!![i]
+            if (m_flagsBuffer.data!![i] and ParticleType.b2_wallParticle != 0) {
+                val r = m_velocityBuffer.data!![i]
                 r.x = 0.0f
                 r.y = 0.0f
             }
@@ -875,50 +857,47 @@ class ParticleSystem(internal var world: World) {
     }
 
     internal fun solveRigid(step: TimeStep) {
-        var group = groupList
+        var group = m_groupList
         while (group != null) {
-            if (group.groupFlags and ParticleGroupType.rigidParticleGroup != 0) {
+            if (group.m_groupFlags and ParticleGroupType.b2_rigidParticleGroup != 0) {
                 group.updateStatistics()
                 val temp = tempVec
                 val cross = tempVec2
                 val rotation = tempRot
-                rotation.setRadians(step.dt * group._angularVelocity)
-                Rot.mulToOutUnsafe(rotation, group._center, cross)
-                temp.set(group._linearVelocity).mulLocal(step.dt).addLocal(group._center).subLocal(cross)
+                rotation.setRadians(step.dt * group.m_angularVelocity)
+                Rot.mulToOutUnsafe(rotation, group.m_center, cross)
+                temp.set(group.m_linearVelocity).mulLocal(step.dt).addLocal(group.m_center).subLocal(cross)
                 tempXf.p.set(temp)
                 tempXf.q.set(rotation)
-                Transform.mulToOut(tempXf, group.transform, group.transform)
+                Transform.mulToOut(tempXf, group.m_transform, group.m_transform)
                 val velocityTransform = tempXf2
-                velocityTransform.p.x = step.invDt * tempXf.p.x
-                velocityTransform.p.y = step.invDt * tempXf.p.y
-                velocityTransform.q.s = step.invDt * tempXf.q.s
-                velocityTransform.q.c = step.invDt * (tempXf.q.c - 1)
-                for (i in group.firstIndex until group.lastIndex) {
-                    Transform.mulToOutUnsafe(
-                        velocityTransform,
-                        positionBuffer.data!![i],
-                        velocityBuffer.data!![i]
-                    )
+                velocityTransform.p.x = step.inv_dt * tempXf.p.x
+                velocityTransform.p.y = step.inv_dt * tempXf.p.y
+                velocityTransform.q.s = step.inv_dt * tempXf.q.s
+                velocityTransform.q.c = step.inv_dt * (tempXf.q.c - 1)
+                for (i in group.m_firstIndex until group.m_lastIndex) {
+                    Transform.mulToOutUnsafe(velocityTransform, m_positionBuffer.data!![i],
+                            m_velocityBuffer.data!![i])
                 }
             }
-            group = group.next
+            group = group.getNext()
         }
     }
 
     internal fun solveElastic(step: TimeStep) {
-        val elasticStrength = step.invDt * elasticStrength
-        for (k in 0 until triadCount) {
-            val triad = triadBuffer[k]
-            if (triad.flags and ParticleType.elasticParticle != 0) {
+        val elasticStrength = step.inv_dt * m_elasticStrength
+        for (k in 0 until m_triadCount) {
+            val triad = m_triadBuffer[k]
+            if (triad.flags and ParticleType.b2_elasticParticle != 0) {
                 val a = triad.indexA
                 val b = triad.indexB
                 val c = triad.indexC
                 val oa = triad.pa
                 val ob = triad.pb
                 val oc = triad.pc
-                val pa = positionBuffer.data!![a]
-                val pb = positionBuffer.data!![b]
-                val pc = positionBuffer.data!![c]
+                val pa = m_positionBuffer.data!![a]
+                val pb = m_positionBuffer.data!![b]
+                val pc = m_positionBuffer.data!![c]
                 val px = 1f / 3 * (pa.x + pb.x + pc.x)
                 val py = 1f / 3 * (pa.y + pb.y + pc.y)
                 var rs = Vec2.cross(oa, pa) + Vec2.cross(ob, pb) + Vec2.cross(oc, pc)
@@ -934,9 +913,9 @@ class ParticleSystem(internal var world: World) {
                 val roby = rs * ob.x + rc * ob.y
                 val rocx = rc * oc.x - rs * oc.y
                 val rocy = rs * oc.x + rc * oc.y
-                val va = velocityBuffer.data!![a]
-                val vb = velocityBuffer.data!![b]
-                val vc = velocityBuffer.data!![c]
+                val va = m_velocityBuffer.data!![a]
+                val vb = m_velocityBuffer.data!![b]
+                val vc = m_velocityBuffer.data!![c]
                 va.x += strength * (roax - (pa.x - px))
                 va.y += strength * (roay - (pa.y - py))
                 vb.x += strength * (robx - (pb.x - px))
@@ -948,14 +927,14 @@ class ParticleSystem(internal var world: World) {
     }
 
     internal fun solveSpring(step: TimeStep) {
-        val springStrength = step.invDt * springStrength
-        for (k in 0 until pairCount) {
-            val pair = pairBuffer[k]
-            if (pair.flags and ParticleType.springParticle != 0) {
+        val springStrength = step.inv_dt * m_springStrength
+        for (k in 0 until m_pairCount) {
+            val pair = m_pairBuffer[k]
+            if (pair.flags and ParticleType.b2_springParticle != 0) {
                 val a = pair.indexA
                 val b = pair.indexB
-                val pa = positionBuffer.data!![a]
-                val pb = positionBuffer.data!![b]
+                val pa = m_positionBuffer.data!![a]
+                val pb = m_positionBuffer.data!![b]
                 val dx = pb.x - pa.x
                 val dy = pb.y - pa.y
                 val r0 = pair.distance
@@ -964,8 +943,8 @@ class ParticleSystem(internal var world: World) {
                 val strength = springStrength * pair.strength
                 val fx = strength * (r0 - r1) / r1 * dx
                 val fy = strength * (r0 - r1) / r1 * dy
-                val va = velocityBuffer.data!![a]
-                val vb = velocityBuffer.data!![b]
+                val va = m_velocityBuffer.data!![a]
+                val vb = m_velocityBuffer.data!![b]
                 va.x -= fx
                 va.y -= fy
                 vb.x += fx
@@ -975,22 +954,22 @@ class ParticleSystem(internal var world: World) {
     }
 
     internal fun solveTensile(step: TimeStep) {
-        accumulation2Buffer = requestParticleBuffer({ Vec2() }, accumulation2Buffer)
+        m_accumulation2Buffer = requestParticleBuffer({ Vec2() }, m_accumulation2Buffer)
         for (i in 0 until particleCount) {
-            accumulationBuffer[i] = 0f
-            accumulation2Buffer[i].setZero()
+            m_accumulationBuffer[i] = 0f
+            m_accumulation2Buffer!![i].setZero()
         }
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
-            if (contact.flags and ParticleType.tensileParticle != 0) {
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
+            if (contact.flags and ParticleType.b2_tensileParticle != 0) {
                 val a = contact.indexA
                 val b = contact.indexB
                 val w = contact.weight
                 val n = contact.normal
-                accumulationBuffer[a] += w
-                accumulationBuffer[b] += w
-                val a2A = accumulation2Buffer[a]
-                val a2B = accumulation2Buffer[b]
+                m_accumulationBuffer[a] += w
+                m_accumulationBuffer[b] += w
+                val a2A = m_accumulation2Buffer!![a]
+                val a2B = m_accumulation2Buffer!![b]
                 val inter = (1 - w) * w
                 a2A.x -= inter * n.x
                 a2A.y -= inter * n.y
@@ -998,25 +977,25 @@ class ParticleSystem(internal var world: World) {
                 a2B.y += inter * n.y
             }
         }
-        val strengthA = surfaceTensionStrengthA * getCriticalVelocity(step)
-        val strengthB = surfaceTensionStrengthB * getCriticalVelocity(step)
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
-            if (contact.flags and ParticleType.tensileParticle != 0) {
+        val strengthA = m_surfaceTensionStrengthA * getCriticalVelocity(step)
+        val strengthB = m_surfaceTensionStrengthB * getCriticalVelocity(step)
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
+            if (contact.flags and ParticleType.b2_tensileParticle != 0) {
                 val a = contact.indexA
                 val b = contact.indexB
                 val w = contact.weight
                 val n = contact.normal
-                val a2A = accumulation2Buffer[a]
-                val a2B = accumulation2Buffer[b]
-                val h = accumulationBuffer[a] + accumulationBuffer[b]
+                val a2A = m_accumulation2Buffer!![a]
+                val a2B = m_accumulation2Buffer!![b]
+                val h = m_accumulationBuffer!![a] + m_accumulationBuffer!![b]
                 val sx = a2B.x - a2A.x
                 val sy = a2B.y - a2A.y
                 val fn = (strengthA * (h - 2) + strengthB * (sx * n.x + sy * n.y)) * w
                 val fx = fn * n.x
                 val fy = fn * n.y
-                val va = velocityBuffer.data!![a]
-                val vb = velocityBuffer.data!![b]
+                val va = m_velocityBuffer.data!![a]
+                val vb = m_velocityBuffer.data!![b]
                 va.x -= fx
                 va.y -= fy
                 vb.x += fx
@@ -1026,20 +1005,20 @@ class ParticleSystem(internal var world: World) {
     }
 
     internal fun solveViscous(step: TimeStep) {
-        val viscousStrength = viscousStrength
-        for (k in 0 until bodyContactCount) {
-            val contact = bodyContactBuffer[k]
+        val viscousStrength = m_viscousStrength
+        for (k in 0 until m_bodyContactCount) {
+            val contact = m_bodyContactBuffer[k]
             val a = contact.index
-            if (flagsBuffer.data!![a] and ParticleType.viscousParticle != 0) {
+            if (m_flagsBuffer.data!![a] and ParticleType.b2_viscousParticle != 0) {
                 val b = contact.body
                 val w = contact.weight
                 val m = contact.mass
-                val p = positionBuffer.data!![a]
-                val va = velocityBuffer.data!![a]
+                val p = m_positionBuffer.data!![a]
+                val va = m_velocityBuffer.data!![a]
                 val tempX = p.x - b!!.sweep.c.x
-                val tempY = p.y - b.sweep.c.y
-                val vx = -b._angularVelocity * tempY + b._linearVelocity.x - va.x
-                val vy = b._angularVelocity * tempX + b._linearVelocity.y - va.y
+                val tempY = p.y - b!!.sweep.c.y
+                val vx = -b!!._angularVelocity * tempY + b!!._linearVelocity.x - va.x
+                val vy = b!!._angularVelocity * tempX + b!!._linearVelocity.y - va.y
                 val f = tempVec
                 val pInvMass = particleInvMass
                 f.x = viscousStrength * m * w * vx
@@ -1048,17 +1027,17 @@ class ParticleSystem(internal var world: World) {
                 va.y += pInvMass * f.y
                 f.x = -f.x
                 f.y = -f.y
-                b.applyLinearImpulse(f, p, true)
+                b!!.applyLinearImpulse(f, p, true)
             }
         }
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
-            if (contact.flags and ParticleType.viscousParticle != 0) {
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
+            if (contact.flags and ParticleType.b2_viscousParticle != 0) {
                 val a = contact.indexA
                 val b = contact.indexB
                 val w = contact.weight
-                val va = velocityBuffer.data!![a]
-                val vb = velocityBuffer.data!![b]
+                val va = m_velocityBuffer.data!![a]
+                val vb = m_velocityBuffer.data!![b]
                 val vx = vb.x - va.x
                 val vy = vb.y - va.y
                 val fx = viscousStrength * w * vx
@@ -1072,20 +1051,20 @@ class ParticleSystem(internal var world: World) {
     }
 
     internal fun solvePowder(step: TimeStep) {
-        val powderStrength = powderStrength * getCriticalVelocity(step)
+        val powderStrength = m_powderStrength * getCriticalVelocity(step)
         val minWeight = 1.0f - Settings.particleStride
-        for (k in 0 until bodyContactCount) {
-            val contact = bodyContactBuffer[k]
+        for (k in 0 until m_bodyContactCount) {
+            val contact = m_bodyContactBuffer[k]
             val a = contact.index
-            if (flagsBuffer.data!![a] and ParticleType.powderParticle != 0) {
+            if (m_flagsBuffer.data!![a] and ParticleType.b2_powderParticle != 0) {
                 val w = contact.weight
                 if (w > minWeight) {
                     val b = contact.body
                     val m = contact.mass
-                    val p = positionBuffer.data!![a]
+                    val p = m_positionBuffer.data!![a]
                     val n = contact.normal
                     val f = tempVec
-                    val va = velocityBuffer.data!![a]
+                    val va = m_velocityBuffer.data!![a]
                     val inter = powderStrength * m * (w - minWeight)
                     val pInvMass = particleInvMass
                     f.x = inter * n.x
@@ -1096,16 +1075,16 @@ class ParticleSystem(internal var world: World) {
                 }
             }
         }
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
-            if (contact.flags and ParticleType.powderParticle != 0) {
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
+            if (contact.flags and ParticleType.b2_powderParticle != 0) {
                 val w = contact.weight
                 if (w > minWeight) {
                     val a = contact.indexA
                     val b = contact.indexB
                     val n = contact.normal
-                    val va = velocityBuffer.data!![a]
-                    val vb = velocityBuffer.data!![b]
+                    val va = m_velocityBuffer.data!![a]
+                    val vb = m_velocityBuffer.data!![b]
                     val inter = powderStrength * (w - minWeight)
                     val fx = inter * n.x
                     val fy = inter * n.y
@@ -1120,18 +1099,18 @@ class ParticleSystem(internal var world: World) {
 
     internal fun solveSolid(step: TimeStep) {
         // applies extra repulsive force from solid particle groups
-        depthBuffer = requestParticleBuffer(depthBuffer)
-        val ejectionStrength = step.invDt * ejectionStrength
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
+        m_depthBuffer = requestParticleBuffer(m_depthBuffer)
+        val ejectionStrength = step.inv_dt * m_ejectionStrength
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
             val a = contact.indexA
             val b = contact.indexB
-            if (particleGroupBuffer[a] != particleGroupBuffer[b]) {
+            if (particleGroupBuffer!![a] != particleGroupBuffer!![b]) {
                 val w = contact.weight
                 val n = contact.normal
-                val h = depthBuffer!![a] + depthBuffer!![b]
-                val va = velocityBuffer.data!![a]
-                val vb = velocityBuffer.data!![b]
+                val h = m_depthBuffer!![a] + m_depthBuffer!![b]
+                val va = m_velocityBuffer.data!![a]
+                val vb = m_velocityBuffer.data!![b]
                 val inter = ejectionStrength * h * w
                 val fx = inter * n.x
                 val fy = inter * n.y
@@ -1145,15 +1124,15 @@ class ParticleSystem(internal var world: World) {
 
     internal fun solveColorMixing(step: TimeStep) {
         // mixes color between contacting particles
-        colorBuffer.data = requestParticleBuffer({ ParticleColor() }, colorBuffer.data)
-        val colorMixing256 = (256 * colorMixingStrength).toInt()
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
+        m_colorBuffer.data = requestParticleBuffer({ ParticleColor() }, m_colorBuffer.data)
+        val colorMixing256 = (256 * m_colorMixingStrength).toInt()
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
             val a = contact.indexA
             val b = contact.indexB
-            if (flagsBuffer.data!![a] and flagsBuffer.data!![b] and ParticleType.colorMixingParticle != 0) {
-                val colorA = colorBuffer.data!![a]
-                val colorB = colorBuffer.data!![b]
+            if (m_flagsBuffer.data!![a] and m_flagsBuffer.data!![b] and ParticleType.b2_colorMixingParticle != 0) {
+                val colorA = m_colorBuffer.data!![a]!!
+                val colorB = m_colorBuffer.data!![b]!!
                 val dr = (colorMixing256 * ((colorB.r.toInt() and 0xFF) - (colorA.r.toInt() and 0xFF))) ushr 8
                 val dg = (colorMixing256 * ((colorB.g.toInt() and 0xFF) - (colorA.g.toInt() and 0xFF))) ushr 8
                 val db = (colorMixing256 * ((colorB.b.toInt() and 0xFF) - (colorA.b.toInt() and 0xFF))) ushr 8
@@ -1175,28 +1154,28 @@ class ParticleSystem(internal var world: World) {
         var newCount = 0
         val newIndices = IntArray(particleCount)
         for (i in 0 until particleCount) {
-            val flags = flagsBuffer.data!![i]
-            if (flags and ParticleType.zombieParticle != 0) {
-                val destructionListener = world.particleDestructionListener
-                if (flags and ParticleType.destructionListener != 0 && destructionListener != null) {
+            val flags = m_flagsBuffer.data!![i]
+            if (flags and ParticleType.b2_zombieParticle != 0) {
+                val destructionListener = m_world.particleDestructionListener
+                if (flags and ParticleType.b2_destructionListener != 0 && destructionListener != null) {
                     destructionListener.sayGoodbye(i)
                 }
                 newIndices[i] = Settings.invalidParticleIndex
             } else {
                 newIndices[i] = newCount
                 if (i != newCount) {
-                    flagsBuffer.data!![newCount] = flagsBuffer.data!![i]
-                    positionBuffer.data!![newCount].set(positionBuffer.data!![i])
-                    velocityBuffer.data!![newCount].set(velocityBuffer.data!![i])
-                    particleGroupBuffer.set(newCount, particleGroupBuffer[i]!!)
-                    if (depthBuffer != null) {
-                        depthBuffer!![newCount] = depthBuffer!![i]
+                    m_flagsBuffer!!.data!![newCount] = m_flagsBuffer.data!![i]
+                    m_positionBuffer.data!![newCount].set(m_positionBuffer.data!![i])
+                    m_velocityBuffer.data!![newCount].set(m_velocityBuffer.data!![i])
+                    particleGroupBuffer!!.set(newCount, particleGroupBuffer!![i]!!)
+                    if (m_depthBuffer != null) {
+                        m_depthBuffer!![newCount] = m_depthBuffer!![i]
                     }
-                    if (colorBuffer.data != null) {
-                        colorBuffer.data!![newCount].set(colorBuffer.data!![i])
+                    if (m_colorBuffer.data != null) {
+                        m_colorBuffer.data!![newCount].set(m_colorBuffer.data!![i])
                     }
-                    if (userDataBuffer.data != null) {
-                        userDataBuffer!!.data!![newCount] = userDataBuffer.data!![i]
+                    if (m_userDataBuffer.data != null) {
+                        m_userDataBuffer!!.data!![newCount] = m_userDataBuffer.data!![i]
                     }
                 }
                 newCount++
@@ -1204,8 +1183,8 @@ class ParticleSystem(internal var world: World) {
         }
 
         // update proxies
-        for (k in 0 until proxyCount) {
-            val proxy = proxyBuffer[k]
+        for (k in 0 until m_proxyCount) {
+            val proxy = m_proxyBuffer[k]
             proxy.index = newIndices[proxy.index]
         }
 
@@ -1213,25 +1192,25 @@ class ParticleSystem(internal var world: World) {
         // m_proxyBuffer, m_proxyBuffer + m_proxyCount,
         // Test.IsProxyInvalid);
         // m_proxyCount = (int) (lastProxy - m_proxyBuffer);
-        var j = proxyCount
+        var j = m_proxyCount
         run {
             var i = 0
             while (i < j) {
-                if (Test.IsProxyInvalid(proxyBuffer[i])) {
+                if (Test.IsProxyInvalid(m_proxyBuffer[i])) {
                     --j
-                    val temp = proxyBuffer[j]
-                    proxyBuffer[j] = proxyBuffer[i]
-                    proxyBuffer[i] = temp
+                    val temp = m_proxyBuffer[j]
+                    m_proxyBuffer[j] = m_proxyBuffer[i]
+                    m_proxyBuffer[i] = temp
                     --i
                 }
                 i++
             }
         }
-        proxyCount = j
+        m_proxyCount = j
 
         // update contacts
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
             contact.indexA = newIndices[contact.indexA]
             contact.indexB = newIndices[contact.indexB]
         }
@@ -1239,74 +1218,74 @@ class ParticleSystem(internal var world: World) {
         // m_contactBuffer, m_contactBuffer + m_contactCount,
         // Test.IsContactInvalid);
         // m_contactCount = (int) (lastContact - m_contactBuffer);
-        j = contactCount
+        j = m_contactCount
         run {
             var i = 0
             while (i < j) {
-                if (Test.IsContactInvalid(contactBuffer[i])) {
+                if (Test.IsContactInvalid(m_contactBuffer[i])) {
                     --j
-                    val temp = contactBuffer[j]
-                    contactBuffer[j] = contactBuffer[i]
-                    contactBuffer[i] = temp
+                    val temp = m_contactBuffer[j]
+                    m_contactBuffer[j] = m_contactBuffer[i]
+                    m_contactBuffer[i] = temp
                     --i
                 }
                 i++
             }
         }
-        contactCount = j
+        m_contactCount = j
 
         // update particle-body contacts
-        for (k in 0 until bodyContactCount) {
-            val contact = bodyContactBuffer[k]
+        for (k in 0 until m_bodyContactCount) {
+            val contact = m_bodyContactBuffer[k]
             contact.index = newIndices[contact.index]
         }
         // ParticleBodyContact lastBodyContact = std.remove_if(
         // m_bodyContactBuffer, m_bodyContactBuffer + m_bodyContactCount,
         // Test.IsBodyContactInvalid);
         // m_bodyContactCount = (int) (lastBodyContact - m_bodyContactBuffer);
-        j = bodyContactCount
+        j = m_bodyContactCount
         run {
             var i = 0
             while (i < j) {
-                if (Test.IsBodyContactInvalid(bodyContactBuffer[i])) {
+                if (Test.IsBodyContactInvalid(m_bodyContactBuffer[i])) {
                     --j
-                    val temp = bodyContactBuffer[j]
-                    bodyContactBuffer[j] = bodyContactBuffer[i]
-                    bodyContactBuffer[i] = temp
+                    val temp = m_bodyContactBuffer[j]
+                    m_bodyContactBuffer[j] = m_bodyContactBuffer[i]
+                    m_bodyContactBuffer[i] = temp
                     --i
                 }
                 i++
             }
         }
-        bodyContactCount = j
+        m_bodyContactCount = j
 
         // update pairs
-        for (k in 0 until pairCount) {
-            val pair = pairBuffer[k]
+        for (k in 0 until m_pairCount) {
+            val pair = m_pairBuffer[k]
             pair.indexA = newIndices[pair.indexA]
             pair.indexB = newIndices[pair.indexB]
         }
         // Pair lastPair = std.remove_if(m_pairBuffer, m_pairBuffer + m_pairCount, Test.IsPairInvalid);
         // m_pairCount = (int) (lastPair - m_pairBuffer);
-        j = pairCount
+        j = m_pairCount
         run {
             var i = 0
             while (i < j) {
-                if (Test.IsPairInvalid(pairBuffer[i])) {
+                if (Test.IsPairInvalid(m_pairBuffer[i])) {
                     --j
-                    val temp = pairBuffer[j]
-                    pairBuffer[j] = pairBuffer[i]
-                    pairBuffer[i] = temp
+                    val temp = m_pairBuffer[j]
+                    m_pairBuffer[j] = m_pairBuffer[i]
+                    m_pairBuffer[i] = temp
                     --i
                 }
                 i++
             }
         }
-        pairCount = j
+        m_pairCount = j
 
         // update triads
-        for (k in 0 until triadCount) {
-            val triad = triadBuffer[k]
+        for (k in 0 until m_triadCount) {
+            val triad = m_triadBuffer[k]
             triad.indexA = newIndices[triad.indexA]
             triad.indexB = newIndices[triad.indexB]
             triad.indexC = newIndices[triad.indexC]
@@ -1314,30 +1293,30 @@ class ParticleSystem(internal var world: World) {
         // Triad lastTriad =
         // std.remove_if(m_triadBuffer, m_triadBuffer + m_triadCount, Test.isTriadInvalid);
         // m_triadCount = (int) (lastTriad - m_triadBuffer);
-        j = triadCount
+        j = m_triadCount
         run {
             var i = 0
             while (i < j) {
-                if (Test.IsTriadInvalid(triadBuffer[i])) {
+                if (Test.IsTriadInvalid(m_triadBuffer[i])) {
                     --j
-                    val temp = triadBuffer[j]
-                    triadBuffer[j] = triadBuffer[i]
-                    triadBuffer[i] = temp
+                    val temp = m_triadBuffer[j]
+                    m_triadBuffer[j] = m_triadBuffer[i]
+                    m_triadBuffer[i] = temp
                     --i
                 }
                 i++
             }
         }
-        triadCount = j
+        m_triadCount = j
 
         // update groups
         run {
-            var group = groupList
+            var group = m_groupList
             while (group != null) {
                 var firstIndex = newCount
                 var lastIndex = 0
                 var modified = false
-                for (i in group!!.firstIndex until group!!.lastIndex) {
+                for (i in group!!.m_firstIndex until group!!.m_lastIndex) {
                     j = newIndices[i]
                     if (j >= 0) {
                         firstIndex = MathUtils.min(firstIndex, j)
@@ -1347,21 +1326,21 @@ class ParticleSystem(internal var world: World) {
                     }
                 }
                 if (firstIndex < lastIndex) {
-                    group!!.firstIndex = firstIndex
-                    group!!.lastIndex = lastIndex
+                    group!!.m_firstIndex = firstIndex
+                    group!!.m_lastIndex = lastIndex
                     if (modified) {
-                        if (group!!.groupFlags and ParticleGroupType.rigidParticleGroup != 0) {
-                            group!!.toBeSplit = true
+                        if (group!!.m_groupFlags and ParticleGroupType.b2_rigidParticleGroup != 0) {
+                            group!!.m_toBeSplit = true
                         }
                     }
                 } else {
-                    group!!.firstIndex = 0
-                    group!!.lastIndex = 0
-                    if (group!!.destroyAutomatically) {
-                        group!!.toBeDestroyed = true
+                    group!!.m_firstIndex = 0
+                    group!!.m_lastIndex = 0
+                    if (group!!.m_destroyAutomatically) {
+                        group!!.m_toBeDestroyed = true
                     }
                 }
-                group = group!!.next
+                group = group!!.getNext()
             }
         }
 
@@ -1370,12 +1349,12 @@ class ParticleSystem(internal var world: World) {
         // m_world.m_stackAllocator.Free(newIndices);
 
         // destroy bodies with no particles
-        var group = groupList
+        var group = m_groupList
         while (group != null) {
-            val next = group!!.next
-            if (group!!.toBeDestroyed) {
+            val next = group!!.getNext()
+            if (group!!.m_toBeDestroyed) {
                 destroyParticleGroup(group)
-            } else if (group!!.toBeSplit) {
+            } else if (group!!.m_toBeSplit) {
                 // TODO: split the group
             }
             group = next
@@ -1387,80 +1366,88 @@ class ParticleSystem(internal var world: World) {
         internal var mid: Int = 0
         internal var end: Int = 0
 
-        internal fun getIndex(i: Int) = when {
-            i < start -> i
-            i < mid -> i + end - mid
-            i < end -> i + start - mid
-            else -> i
+        internal fun getIndex(i: Int): Int {
+            return if (i < start) {
+                i
+            } else if (i < mid) {
+                i + end - mid
+            } else if (i < end) {
+                i + start - mid
+            } else {
+                i
+            }
         }
     }
 
+
     internal fun RotateBuffer(start: Int, mid: Int, end: Int) {
         // move the particles assigned to the given group toward the end of array
-        if (start == mid || mid == end) return
+        if (start == mid || mid == end) {
+            return
+        }
         newIndices.start = start
         newIndices.mid = mid
         newIndices.end = end
 
-        BufferUtils.rotate(flagsBuffer.data!!, start, mid, end)
-        BufferUtils.rotate(positionBuffer.data!!, start, mid, end)
-        BufferUtils.rotate(velocityBuffer.data!!, start, mid, end)
-        BufferUtils.rotate(particleGroupBuffer as Array<ParticleGroup>, start, mid, end)
-        if (depthBuffer != null) {
-            BufferUtils.rotate(depthBuffer!!, start, mid, end)
+        BufferUtils.rotate(m_flagsBuffer.data!!, start, mid, end)
+        BufferUtils.rotate<Vec2>(m_positionBuffer.data!!, start, mid, end)
+        BufferUtils.rotate<Vec2>(m_velocityBuffer.data!!, start, mid, end)
+        BufferUtils.rotate<ParticleGroup>(particleGroupBuffer!! as Array<ParticleGroup>, start, mid, end)
+        if (m_depthBuffer != null) {
+            BufferUtils.rotate(m_depthBuffer!!, start, mid, end)
         }
-        if (colorBuffer.data != null) {
-            BufferUtils.rotate(colorBuffer.data!!, start, mid, end)
+        if (m_colorBuffer.data != null) {
+            BufferUtils.rotate<ParticleColor>(m_colorBuffer.data!!, start, mid, end)
         }
-        if (userDataBuffer.data != null) {
-            BufferUtils.rotate(userDataBuffer.data!!, start, mid, end)
+        if (m_userDataBuffer.data != null) {
+            BufferUtils.rotate<Any>(m_userDataBuffer.data!!, start, mid, end)
         }
 
         // update proxies
-        for (k in 0 until proxyCount) {
-            val proxy = proxyBuffer[k]
+        for (k in 0 until m_proxyCount) {
+            val proxy = m_proxyBuffer[k]
             proxy.index = newIndices.getIndex(proxy.index)
         }
 
         // update contacts
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
             contact.indexA = newIndices.getIndex(contact.indexA)
             contact.indexB = newIndices.getIndex(contact.indexB)
         }
 
         // update particle-body contacts
-        for (k in 0 until bodyContactCount) {
-            val contact = bodyContactBuffer[k]
+        for (k in 0 until m_bodyContactCount) {
+            val contact = m_bodyContactBuffer[k]
             contact.index = newIndices.getIndex(contact.index)
         }
 
         // update pairs
-        for (k in 0 until pairCount) {
-            val pair = pairBuffer[k]
+        for (k in 0 until m_pairCount) {
+            val pair = m_pairBuffer[k]
             pair.indexA = newIndices.getIndex(pair.indexA)
             pair.indexB = newIndices.getIndex(pair.indexB)
         }
 
         // update triads
-        for (k in 0 until triadCount) {
-            val triad = triadBuffer[k]
+        for (k in 0 until m_triadCount) {
+            val triad = m_triadBuffer[k]
             triad.indexA = newIndices.getIndex(triad.indexA)
             triad.indexB = newIndices.getIndex(triad.indexB)
             triad.indexC = newIndices.getIndex(triad.indexC)
         }
 
         // update groups
-        var group = groupList
+        var group = m_groupList
         while (group != null) {
-            group.firstIndex = newIndices.getIndex(group.firstIndex)
-            group.lastIndex = newIndices.getIndex(group.lastIndex - 1) + 1
-            group = group.next
+            group.m_firstIndex = newIndices.getIndex(group.m_firstIndex)
+            group.m_lastIndex = newIndices.getIndex(group.m_lastIndex - 1) + 1
+            group = group.getNext()
         }
     }
 
     internal fun getCriticalVelocity(step: TimeStep): Float {
-        return particleDiameter * step.invDt
+        return m_particleDiameter * step.inv_dt
     }
 
     internal fun getCriticalVelocitySquared(step: TimeStep): Float {
@@ -1469,7 +1456,7 @@ class ParticleSystem(internal var world: World) {
     }
 
     internal fun getCriticalPressure(step: TimeStep): Float {
-        return density * getCriticalVelocitySquared(step)
+        return m_density * getCriticalVelocitySquared(step)
     }
 
     internal fun setParticleBuffer(buffer: ParticleBufferInt, newData: IntArray?, newCapacity: Int) {
@@ -1491,47 +1478,45 @@ class ParticleSystem(internal var world: World) {
     }
 
     fun setParticleFlagsBuffer(buffer: IntArray, capacity: Int) {
-        setParticleBuffer(flagsBuffer, buffer, capacity)
+        setParticleBuffer(m_flagsBuffer, buffer, capacity)
     }
 
     fun setParticlePositionBuffer(buffer: Array<Vec2>, capacity: Int) {
-        setParticleBuffer(positionBuffer, buffer, capacity)
+        setParticleBuffer(m_positionBuffer, buffer, capacity)
     }
 
     fun setParticleVelocityBuffer(buffer: Array<Vec2>, capacity: Int) {
-        setParticleBuffer(velocityBuffer, buffer, capacity)
+        setParticleBuffer(m_velocityBuffer, buffer, capacity)
     }
 
     fun setParticleColorBuffer(buffer: Array<ParticleColor>, capacity: Int) {
-        setParticleBuffer(colorBuffer, buffer, capacity)
+        setParticleBuffer(m_colorBuffer, buffer, capacity)
     }
 
     fun getParticleGroupList(): Array<ParticleGroup?>? {
-        return particleGroupBuffer
+        return particleGroupBuffer!!
     }
 
     fun setParticleUserDataBuffer(buffer: Array<Any>, capacity: Int) {
-        setParticleBuffer(userDataBuffer, buffer, capacity)
+        setParticleBuffer(m_userDataBuffer, buffer, capacity)
     }
 
     fun queryAABB(callback: ParticleQueryCallback, aabb: AABB) {
-        if (proxyCount == 0) return
+        if (m_proxyCount == 0) {
+            return
+        }
 
         val lowerBoundX = aabb.lowerBound.x
         val lowerBoundY = aabb.lowerBound.y
         val upperBoundX = aabb.upperBound.x
         val upperBoundY = aabb.upperBound.y
-        val firstProxy = lowerBound(
-            proxyBuffer, proxyCount,
-            computeTag(inverseDiameter * lowerBoundX, inverseDiameter * lowerBoundY)
-        )
-        val lastProxy = upperBound(
-            proxyBuffer, proxyCount,
-            computeTag(inverseDiameter * upperBoundX, inverseDiameter * upperBoundY)
-        )
+        val firstProxy = lowerBound(m_proxyBuffer, m_proxyCount,
+                computeTag(m_inverseDiameter * lowerBoundX, m_inverseDiameter * lowerBoundY))
+        val lastProxy = upperBound(m_proxyBuffer, m_proxyCount,
+                computeTag(m_inverseDiameter * upperBoundX, m_inverseDiameter * upperBoundY))
         for (proxy in firstProxy until lastProxy) {
-            val i = proxyBuffer[proxy].index
-            val p = positionBuffer.data!![i]
+            val i = m_proxyBuffer[proxy].index
+            val p = m_positionBuffer.data!![i]
             if (lowerBoundX < p.x && p.x < upperBoundX && lowerBoundY < p.y && p.y < upperBoundY) {
                 if (!callback.reportParticle(i)) {
                     break
@@ -1540,24 +1525,23 @@ class ParticleSystem(internal var world: World) {
         }
     }
 
+    /**
+     * @param callback
+     * @param point1
+     * @param point2
+     */
     fun raycast(callback: ParticleRaycastCallback, point1: Vec2, point2: Vec2) {
-        if (proxyCount == 0) return
+        if (m_proxyCount == 0) {
+            return
+        }
         val firstProxy = lowerBound(
-            proxyBuffer,
-            proxyCount,
-            computeTag(
-                inverseDiameter * MathUtils.min(point1.x, point2.x) - 1,
-                inverseDiameter * MathUtils.min(point1.y, point2.y) - 1
-            )
-        )
+                m_proxyBuffer,
+                m_proxyCount,
+                computeTag(m_inverseDiameter * MathUtils.min(point1.x, point2.x) - 1, m_inverseDiameter * MathUtils.min(point1.y, point2.y) - 1))
         val lastProxy = upperBound(
-            proxyBuffer,
-            proxyCount,
-            computeTag(
-                inverseDiameter * MathUtils.max(point1.x, point2.x) + 1,
-                inverseDiameter * MathUtils.max(point1.y, point2.y) + 1
-            )
-        )
+                m_proxyBuffer,
+                m_proxyCount,
+                computeTag(m_inverseDiameter * MathUtils.max(point1.x, point2.x) + 1, m_inverseDiameter * MathUtils.max(point1.y, point2.y) + 1))
         var fraction = 1f
         // solving the following equation:
         // ((1-t)*point1+t*point2-position)^2=diameter^2
@@ -1567,13 +1551,13 @@ class ParticleSystem(internal var world: World) {
         var v2 = vx * vx + vy * vy
         if (v2 == 0f) v2 = Float.MAX_VALUE
         for (proxy in firstProxy until lastProxy) {
-            val i = proxyBuffer[proxy].index
-            val posI = positionBuffer.data!![i]
+            val i = m_proxyBuffer[proxy].index
+            val posI = m_positionBuffer.data!![i]
             val px = point1.x - posI.x
             val py = point1.y - posI.y
             val pv = px * vx + py * vy
             val p2 = px * px + py * py
-            val determinant = pv * pv - v2 * (p2 - squaredDiameter)
+            val determinant = pv * pv - v2 * (p2 - m_squaredDiameter)
             if (determinant >= 0) {
                 val sqrtDeterminant = MathUtils.sqrt(determinant)
                 // find a solution between 0 and fraction
@@ -1605,13 +1589,13 @@ class ParticleSystem(internal var world: World) {
 
     fun computeParticleCollisionEnergy(): Float {
         var sum_v2 = 0f
-        for (k in 0 until contactCount) {
-            val contact = contactBuffer[k]
+        for (k in 0 until m_contactCount) {
+            val contact = m_contactBuffer[k]
             val a = contact.indexA
             val b = contact.indexB
             val n = contact.normal
-            val va = velocityBuffer.data!![a]
-            val vb = velocityBuffer.data!![b]
+            val va = m_velocityBuffer.data!![a]
+            val vb = m_velocityBuffer.data!![b]
             val vx = vb.x - va.x
             val vy = vb.y - va.y
             val vn = vx * n.x + vy * n.y
@@ -1625,7 +1609,7 @@ class ParticleSystem(internal var world: World) {
     internal fun <T : Any> requestParticleBuffer(newInstance: () -> T, buffer: Array<T>?): Array<T> {
         var buffer = buffer
         if (buffer == null) {
-            buffer = Array<Any>(internalAllocatedCapacity) { newInstance() } as Array<T>
+            buffer = Array<Any>(m_internalAllocatedCapacity) { newInstance() } as Array<T>
         }
         return buffer
     }
@@ -1633,7 +1617,7 @@ class ParticleSystem(internal var world: World) {
     internal fun requestParticleBuffer(buffer: FloatArray?): FloatArray {
         var buffer = buffer
         if (buffer == null) {
-            buffer = FloatArray(internalAllocatedCapacity)
+            buffer = FloatArray(m_internalAllocatedCapacity)
         }
         return buffer
     }
@@ -1653,16 +1637,16 @@ class ParticleSystem(internal var world: World) {
         internal var index: Int = 0
         internal var tag: Long = 0
 
-        override fun compareTo(other: Proxy): Int {
-            return if (tag - other.tag < 0) -1 else if (other.tag == tag) 0 else 1
+        override fun compareTo(o: Proxy): Int {
+            return if (tag - o.tag < 0) -1 else if (o.tag == tag) 0 else 1
         }
 
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other == null) return false
-            if (this::class != other::class) return false
-            val oth = other as Proxy?
-            return tag == oth!!.tag
+        override fun equals(obj: Any?): Boolean {
+            if (this === obj) return true
+            if (obj == null) return false
+            if (this::class != obj::class) return false
+            val other = obj as Proxy?
+            return if (tag != other!!.tag) false else true
         }
     }
 
@@ -1671,8 +1655,8 @@ class ParticleSystem(internal var world: World) {
         internal var indexA: Int = 0
         internal var indexB: Int = 0
         internal var flags: Int = 0
-        internal var strength: Float = 0f
-        internal var distance: Float = 0f
+        internal var strength: Float = 0.toFloat()
+        internal var distance: Float = 0.toFloat()
     }
 
     /** Connection between three particles  */
@@ -1681,14 +1665,14 @@ class ParticleSystem(internal var world: World) {
         internal var indexB: Int = 0
         internal var indexC: Int = 0
         internal var flags: Int = 0
-        internal var strength: Float = 0f
+        internal var strength: Float = 0.toFloat()
         internal val pa = Vec2()
         internal val pb = Vec2()
         internal val pc = Vec2()
-        internal var ka: Float = 0f
-        internal var kb: Float = 0f
-        internal var kc: Float = 0f
-        internal var s: Float = 0f
+        internal var ka: Float = 0.toFloat()
+        internal var kb: Float = 0.toFloat()
+        internal var kc: Float = 0.toFloat()
+        internal var s: Float = 0.toFloat()
     }
 
     // Callback used with VoronoiDiagram.
@@ -1698,38 +1682,35 @@ class ParticleSystem(internal var world: World) {
         var def: ParticleGroupDef? = null // pointer
         var firstIndex: Int = 0
         override fun callback(a: Int, b: Int, c: Int) {
-            val pa = system!!.positionBuffer.data!![a]
-            val pb = system!!.positionBuffer.data!![b]
-            val pc = system!!.positionBuffer.data!![c]
+            val pa = system!!.m_positionBuffer.data!![a]
+            val pb = system!!.m_positionBuffer.data!![b]
+            val pc = system!!.m_positionBuffer.data!![c]
             val dabx = pa.x - pb.x
             val daby = pa.y - pb.y
             val dbcx = pb.x - pc.x
             val dbcy = pb.y - pc.y
             val dcax = pc.x - pa.x
             val dcay = pc.y - pa.y
-            val maxDistanceSquared = Settings.maxTriadDistanceSquared * system!!.squaredDiameter
+            val maxDistanceSquared = Settings.maxTriadDistanceSquared * system!!.m_squaredDiameter
             if (dabx * dabx + daby * daby < maxDistanceSquared
-                && dbcx * dbcx + dbcy * dbcy < maxDistanceSquared
-                && dcax * dcax + dcay * dcay < maxDistanceSquared
-            ) {
-                if (system!!.triadCount >= system!!.triadCapacity) {
-                    val oldCapacity = system!!.triadCapacity
-                    val newCapacity = if (system!!.triadCount != 0)
-                        2 * system!!.triadCount
+                    && dbcx * dbcx + dbcy * dbcy < maxDistanceSquared
+                    && dcax * dcax + dcay * dcay < maxDistanceSquared) {
+                if (system!!.m_triadCount >= system!!.m_triadCapacity) {
+                    val oldCapacity = system!!.m_triadCapacity
+                    val newCapacity = if (system!!.m_triadCount != 0)
+                        2 * system!!.m_triadCount
                     else
                         Settings.minParticleBufferCapacity
-                    system!!.triadBuffer = BufferUtils.reallocateBuffer(
-                        { Triad() }, system!!.triadBuffer, oldCapacity,
-                        newCapacity
-                    )
-                    system!!.triadCapacity = newCapacity
+                    system!!.m_triadBuffer = BufferUtils.reallocateBuffer({ Triad() }, system!!.m_triadBuffer, oldCapacity,
+                            newCapacity)
+                    system!!.m_triadCapacity = newCapacity
                 }
-                val triad = system!!.triadBuffer[system!!.triadCount]
+                val triad = system!!.m_triadBuffer[system!!.m_triadCount]
                 triad.indexA = a
                 triad.indexB = b
                 triad.indexC = c
-                triad.flags = (system!!.flagsBuffer.data!![a] or system!!.flagsBuffer.data!![b]
-                    or system!!.flagsBuffer.data!![c])
+                triad.flags = (system!!.m_flagsBuffer.data!![a] or system!!.m_flagsBuffer.data!![b]
+                        or system!!.m_flagsBuffer.data!![c])
                 triad.strength = def!!.strength
                 val midPointx = 1.toFloat() / 3 * (pa.x + pb.x + pc.x)
                 val midPointy = 1.toFloat() / 3 * (pa.y + pb.y + pc.y)
@@ -1743,7 +1724,7 @@ class ParticleSystem(internal var world: World) {
                 triad.kb = -(dabx * dbcx + daby * dbcy)
                 triad.kc = -(dbcx * dcax + dbcy * dcay)
                 triad.s = Vec2.cross(pa, pb) + Vec2.cross(pb, pc) + Vec2.cross(pc, pa)
-                system!!.triadCount++
+                system!!.m_triadCount++
             }
         }
     }
@@ -1756,45 +1737,42 @@ class ParticleSystem(internal var world: World) {
         var groupB: ParticleGroup? = null
         override fun callback(a: Int, b: Int, c: Int) {
             // Create a triad if it will contain particles from both groups.
-            val countA = ((if (a < groupB!!.firstIndex) 1 else 0) + (if (b < groupB!!.firstIndex) 1 else 0)
-                + if (c < groupB!!.firstIndex) 1 else 0)
+            val countA = ((if (a < groupB!!.m_firstIndex) 1 else 0) + (if (b < groupB!!.m_firstIndex) 1 else 0)
+                    + if (c < groupB!!.m_firstIndex) 1 else 0)
             if (countA > 0 && countA < 3) {
-                val af = system!!.flagsBuffer.data!![a]
-                val bf = system!!.flagsBuffer.data!![b]
-                val cf = system!!.flagsBuffer.data!![c]
-                if (af and bf and cf and triadFlags != 0) {
-                    val pa = system!!.positionBuffer.data!![a]
-                    val pb = system!!.positionBuffer.data!![b]
-                    val pc = system!!.positionBuffer.data!![c]
+                val af = system!!.m_flagsBuffer.data!![a]
+                val bf = system!!.m_flagsBuffer.data!![b]
+                val cf = system!!.m_flagsBuffer.data!![c]
+                if (af and bf and cf and k_triadFlags != 0) {
+                    val pa = system!!.m_positionBuffer.data!![a]
+                    val pb = system!!.m_positionBuffer.data!![b]
+                    val pc = system!!.m_positionBuffer.data!![c]
                     val dabx = pa.x - pb.x
                     val daby = pa.y - pb.y
                     val dbcx = pb.x - pc.x
                     val dbcy = pb.y - pc.y
                     val dcax = pc.x - pa.x
                     val dcay = pc.y - pa.y
-                    val maxDistanceSquared = Settings.maxTriadDistanceSquared * system!!.squaredDiameter
+                    val maxDistanceSquared = Settings.maxTriadDistanceSquared * system!!.m_squaredDiameter
                     if (dabx * dabx + daby * daby < maxDistanceSquared
-                        && dbcx * dbcx + dbcy * dbcy < maxDistanceSquared
-                        && dcax * dcax + dcay * dcay < maxDistanceSquared
-                    ) {
-                        if (system!!.triadCount >= system!!.triadCapacity) {
-                            val oldCapacity = system!!.triadCapacity
-                            val newCapacity = if (system!!.triadCount != 0)
-                                2 * system!!.triadCount
+                            && dbcx * dbcx + dbcy * dbcy < maxDistanceSquared
+                            && dcax * dcax + dcay * dcay < maxDistanceSquared) {
+                        if (system!!.m_triadCount >= system!!.m_triadCapacity) {
+                            val oldCapacity = system!!.m_triadCapacity
+                            val newCapacity = if (system!!.m_triadCount != 0)
+                                2 * system!!.m_triadCount
                             else
                                 Settings.minParticleBufferCapacity
-                            system!!.triadBuffer = BufferUtils.reallocateBuffer(
-                                { Triad() }, system!!.triadBuffer, oldCapacity,
-                                newCapacity
-                            )
-                            system!!.triadCapacity = newCapacity
+                            system!!.m_triadBuffer = BufferUtils.reallocateBuffer({ Triad() }, system!!.m_triadBuffer, oldCapacity,
+                                    newCapacity)
+                            system!!.m_triadCapacity = newCapacity
                         }
-                        val triad = system!!.triadBuffer[system!!.triadCount]
+                        val triad = system!!.m_triadBuffer[system!!.m_triadCount]
                         triad.indexA = a
                         triad.indexB = b
                         triad.indexC = c
                         triad.flags = af or bf or cf
-                        triad.strength = MathUtils.min(groupA!!.strength, groupB!!.strength)
+                        triad.strength = MathUtils.min(groupA!!.m_strength, groupB!!.m_strength)
                         val midPointx = 1.toFloat() / 3 * (pa.x + pb.x + pc.x)
                         val midPointy = 1.toFloat() / 3 * (pa.y + pb.y + pc.y)
                         triad.pa.x = pa.x - midPointx
@@ -1807,7 +1785,7 @@ class ParticleSystem(internal var world: World) {
                         triad.kb = -(dabx * dbcx + daby * dbcy)
                         triad.kc = -(dbcx * dcax + dbcy * dcay)
                         triad.s = Vec2.cross(pa, pb) + Vec2.cross(pb, pc) + Vec2.cross(pc, pa)
-                        system!!.triadCount++
+                        system!!.m_triadCount++
                     }
                 }
             }
@@ -1821,10 +1799,8 @@ class ParticleSystem(internal var world: World) {
         var callDestructionListener: Boolean = false
         var destroyed: Int = 0
 
-        fun init(
-            system: ParticleSystem, shape: Shape, xf: Transform,
-            callDestructionListener: Boolean
-        ) {
+        fun init(system: ParticleSystem, shape: Shape, xf: Transform,
+                 callDestructionListener: Boolean) {
             this.system = system
             this.shape = shape
             this.xf = xf
@@ -1834,13 +1810,13 @@ class ParticleSystem(internal var world: World) {
 
         override fun reportParticle(index: Int): Boolean {
             assert(index >= 0 && index < system.particleCount)
-            if (shape.testPoint(xf, system.positionBuffer.data!![index])) {
+            if (shape.testPoint(xf, system.m_positionBuffer.data!![index])) {
                 system.destroyParticle(index, callDestructionListener)
                 destroyed++
             }
             return true
         }
-    }
+    }// TODO Auto-generated constructor stub
 
     internal class UpdateBodyContactsCallback : QueryCallback {
         var system: ParticleSystem? = null
@@ -1851,68 +1827,63 @@ class ParticleSystem(internal var world: World) {
             if (fixture.isSensor) {
                 return true
             }
-            val shape = fixture.shape
-            val b = fixture.body
+            val shape = fixture.getShape()
+            val b = fixture.getBody()
             val bp = b!!.worldCenter
-            val bm = b.mass
+            val bm = b.getMass()
             val bI = b.inertia - bm * b.localCenter.lengthSquared()
             val invBm = if (bm > 0) 1f / bm else 0f
             val invBI = if (bI > 0) 1f / bI else 0f
             val childCount = shape!!.getChildCount()
             for (childIndex in 0 until childCount) {
                 val aabb = fixture.getAABB(childIndex)
-                val aabblowerBoundx = aabb.lowerBound.x - system!!.particleDiameter
-                val aabblowerBoundy = aabb.lowerBound.y - system!!.particleDiameter
-                val aabbupperBoundx = aabb.upperBound.x + system!!.particleDiameter
-                val aabbupperBoundy = aabb.upperBound.y + system!!.particleDiameter
+                val aabblowerBoundx = aabb.lowerBound.x - system!!.m_particleDiameter
+                val aabblowerBoundy = aabb.lowerBound.y - system!!.m_particleDiameter
+                val aabbupperBoundx = aabb.upperBound.x + system!!.m_particleDiameter
+                val aabbupperBoundy = aabb.upperBound.y + system!!.m_particleDiameter
                 val firstProxy = lowerBound(
-                    system!!.proxyBuffer,
-                    system!!.proxyCount,
-                    computeTag(system!!.inverseDiameter * aabblowerBoundx, system!!.inverseDiameter * aabblowerBoundy)
-                )
+                        system!!.m_proxyBuffer,
+                        system!!.m_proxyCount,
+                        computeTag(system!!.m_inverseDiameter * aabblowerBoundx, system!!.m_inverseDiameter * aabblowerBoundy))
                 val lastProxy = upperBound(
-                    system!!.proxyBuffer,
-                    system!!.proxyCount,
-                    computeTag(system!!.inverseDiameter * aabbupperBoundx, system!!.inverseDiameter * aabbupperBoundy)
-                )
+                        system!!.m_proxyBuffer,
+                        system!!.m_proxyCount,
+                        computeTag(system!!.m_inverseDiameter * aabbupperBoundx, system!!.m_inverseDiameter * aabbupperBoundy))
 
                 for (proxy in firstProxy until lastProxy) {
-                    val a = system!!.proxyBuffer[proxy].index
-                    val ap = system!!.positionBuffer.data!![a]
+                    val a = system!!.m_proxyBuffer[proxy].index
+                    val ap = system!!.m_positionBuffer.data!![a]
                     if (aabblowerBoundx <= ap.x && ap.x <= aabbupperBoundx && aabblowerBoundy <= ap.y
-                        && ap.y <= aabbupperBoundy
-                    ) {
+                            && ap.y <= aabbupperBoundy) {
                         val d: Float
                         val n = tempVec
                         d = fixture.computeDistance(ap, childIndex, n)
-                        if (d < system!!.particleDiameter) {
-                            val invAm = if (system!!.flagsBuffer.data!![a] and ParticleType.wallParticle != 0)
+                        if (d < system!!.m_particleDiameter) {
+                            val invAm = if (system!!.m_flagsBuffer.data!![a] and ParticleType.b2_wallParticle != 0)
                                 0f
                             else
-                                system!!.particleInvMass
+                                system!!.particleInvMass!!
                             val rpx = ap.x - bp.x
                             val rpy = ap.y - bp.y
                             val rpn = rpx * n.y - rpy * n.x
-                            if (system!!.bodyContactCount >= system!!.bodyContactCapacity) {
-                                val oldCapacity = system!!.bodyContactCapacity
-                                val newCapacity = if (system!!.bodyContactCount != 0)
-                                    2 * system!!.bodyContactCount
+                            if (system!!.m_bodyContactCount >= system!!.m_bodyContactCapacity) {
+                                val oldCapacity = system!!.m_bodyContactCapacity
+                                val newCapacity = if (system!!.m_bodyContactCount != 0)
+                                    2 * system!!.m_bodyContactCount
                                 else
                                     Settings.minParticleBufferCapacity
-                                system!!.bodyContactBuffer = BufferUtils.reallocateBuffer(
-                                    { ParticleBodyContact() },
-                                    system!!.bodyContactBuffer, oldCapacity, newCapacity
-                                )
-                                system!!.bodyContactCapacity = newCapacity
+                                system!!.m_bodyContactBuffer = BufferUtils.reallocateBuffer({ ParticleBodyContact() },
+                                        system!!.m_bodyContactBuffer, oldCapacity, newCapacity)
+                                system!!.m_bodyContactCapacity = newCapacity
                             }
-                            val contact = system!!.bodyContactBuffer[system!!.bodyContactCount]
+                            val contact = system!!.m_bodyContactBuffer[system!!.m_bodyContactCount]
                             contact.index = a
                             contact.body = b
-                            contact.weight = 1 - d * system!!.inverseDiameter
+                            contact.weight = 1 - d * system!!.m_inverseDiameter
                             contact.normal.x = -n.x
                             contact.normal.y = -n.y
                             contact.mass = 1 / (invAm + invBm + invBI * rpn * rpn)
-                            system!!.bodyContactCount++
+                            system!!.m_bodyContactCount++
                         }
                     }
                 }
@@ -1931,34 +1902,33 @@ class ParticleSystem(internal var world: World) {
         private val tempVec2 = Vec2()
 
         override fun reportFixture(fixture: Fixture): Boolean {
-            if (fixture.isSensor) return true
-            val shape = fixture.shape
-            val body = fixture.body
+            if (fixture.isSensor) {
+                return true
+            }
+            val shape = fixture.getShape()
+            val body = fixture.getBody()
             val childCount = shape!!.getChildCount()
             for (childIndex in 0 until childCount) {
                 val aabb = fixture.getAABB(childIndex)
-                val aabblowerBoundx = aabb.lowerBound.x - system!!.particleDiameter
-                val aabblowerBoundy = aabb.lowerBound.y - system!!.particleDiameter
-                val aabbupperBoundx = aabb.upperBound.x + system!!.particleDiameter
-                val aabbupperBoundy = aabb.upperBound.y + system!!.particleDiameter
+                val aabblowerBoundx = aabb.lowerBound.x - system!!.m_particleDiameter
+                val aabblowerBoundy = aabb.lowerBound.y - system!!.m_particleDiameter
+                val aabbupperBoundx = aabb.upperBound.x + system!!.m_particleDiameter
+                val aabbupperBoundy = aabb.upperBound.y + system!!.m_particleDiameter
                 val firstProxy = lowerBound(
-                    system!!.proxyBuffer,
-                    system!!.proxyCount,
-                    computeTag(system!!.inverseDiameter * aabblowerBoundx, system!!.inverseDiameter * aabblowerBoundy)
-                )
+                        system!!.m_proxyBuffer,
+                        system!!.m_proxyCount,
+                        computeTag(system!!.m_inverseDiameter * aabblowerBoundx, system!!.m_inverseDiameter * aabblowerBoundy))
                 val lastProxy = upperBound(
-                    system!!.proxyBuffer,
-                    system!!.proxyCount,
-                    computeTag(system!!.inverseDiameter * aabbupperBoundx, system!!.inverseDiameter * aabbupperBoundy)
-                )
+                        system!!.m_proxyBuffer,
+                        system!!.m_proxyCount,
+                        computeTag(system!!.m_inverseDiameter * aabbupperBoundx, system!!.m_inverseDiameter * aabbupperBoundy))
 
                 for (proxy in firstProxy until lastProxy) {
-                    val a = system!!.proxyBuffer[proxy].index
-                    val ap = system!!.positionBuffer.data!![a]
+                    val a = system!!.m_proxyBuffer[proxy].index
+                    val ap = system!!.m_positionBuffer.data!![a]
                     if (aabblowerBoundx <= ap.x && ap.x <= aabbupperBoundx && aabblowerBoundy <= ap.y
-                        && ap.y <= aabbupperBoundy
-                    ) {
-                        val av = system!!.velocityBuffer.data!![a]
+                            && ap.y <= aabbupperBoundy) {
+                        val av = system!!.m_velocityBuffer.data!![a]
                         val temp = tempVec
                         Transform.mulTransToOutUnsafe(body!!.xf0, ap, temp)
                         Transform.mulToOutUnsafe(body.xf, temp, input.p1)
@@ -1968,12 +1938,12 @@ class ParticleSystem(internal var world: World) {
                         if (fixture.raycast(output, input, childIndex)) {
                             val p = tempVec
                             p.x = ((1 - output.fraction) * input.p1.x + output.fraction * input.p2.x
-                                + Settings.linearSlop * output.normal.x)
+                                    + Settings.linearSlop * output.normal.x)
                             p.y = ((1 - output.fraction) * input.p1.y + output.fraction * input.p2.y
-                                + Settings.linearSlop * output.normal.y)
+                                    + Settings.linearSlop * output.normal.y)
 
-                            val vx = step!!.invDt * (p.x - ap.x)
-                            val vy = step!!.invDt * (p.y - ap.y)
+                            val vx = step!!.inv_dt * (p.x - ap.x)
+                            val vy = step!!.inv_dt * (p.y - ap.y)
                             av.x = vx
                             av.y = vy
                             val particleMass = system!!.particleMass
@@ -2017,13 +1987,11 @@ class ParticleSystem(internal var world: World) {
 
     companion object {
         /** All particle types that require creating pairs  */
-        private val pairFlags = ParticleType.springParticle
-
+        private val k_pairFlags = ParticleType.b2_springParticle
         /** All particle types that require creating triads  */
-        private val triadFlags = ParticleType.elasticParticle
-
+        private val k_triadFlags = ParticleType.b2_elasticParticle
         /** All particle types that require computing depth  */
-        private val noPressureFlags = ParticleType.powderParticle
+        private val k_noPressureFlags = ParticleType.b2_powderParticle
 
         internal val xTruncBits = 12
         internal val yTruncBits = 12
@@ -2085,26 +2053,18 @@ class ParticleSystem(internal var world: World) {
         }
 
         // reallocate a buffer
-        internal fun <T : Any> reallocateBuffer(
-            buffer: ParticleBuffer<T>, oldCapacity: Int, newCapacity: Int,
-            deferred: Boolean
-        ): Array<T>? {
+        internal fun <T : Any> reallocateBuffer(buffer: ParticleBuffer<T>, oldCapacity: Int, newCapacity: Int,
+                                          deferred: Boolean): Array<T>? {
             assert(newCapacity > oldCapacity)
-            return BufferUtils.reallocateBuffer(
-                buffer.dataClass, buffer.data, buffer.userSuppliedCapacity,
-                oldCapacity, newCapacity, deferred
-            )
+            return BufferUtils.reallocateBuffer(buffer.dataClass, buffer.data, buffer.userSuppliedCapacity,
+                    oldCapacity, newCapacity, deferred)
         }
 
-        internal fun reallocateBuffer(
-            buffer: ParticleBufferInt, oldCapacity: Int, newCapacity: Int,
-            deferred: Boolean
-        ): IntArray? {
+        internal fun reallocateBuffer(buffer: ParticleBufferInt, oldCapacity: Int, newCapacity: Int,
+                                      deferred: Boolean): IntArray? {
             assert(newCapacity > oldCapacity)
-            return BufferUtils.reallocateBuffer(
-                buffer.data, buffer.userSuppliedCapacity, oldCapacity,
-                newCapacity, deferred
-            )
+            return BufferUtils.reallocateBuffer(buffer.data, buffer.userSuppliedCapacity, oldCapacity,
+                    newCapacity, deferred)
         }
     }
 }

@@ -7,32 +7,32 @@ package org.jbox2d.particle
  */
 object ParticleType {
 
-    val waterParticle = 0
-
+    val b2_waterParticle = 0
     /** removed after next step  */
-    val zombieParticle = 1 shl 1
 
+    val b2_zombieParticle = 1 shl 1
     /** zero velocity  */
-    val wallParticle = 1 shl 2
 
+    val b2_wallParticle = 1 shl 2
     /** with restitution from stretching  */
-    val springParticle = 1 shl 3
 
+    val b2_springParticle = 1 shl 3
     /** with restitution from deformation  */
-    val elasticParticle = 1 shl 4
 
+    val b2_elasticParticle = 1 shl 4
     /** with viscosity  */
-    val viscousParticle = 1 shl 5
 
+    val b2_viscousParticle = 1 shl 5
     /** without isotropic pressure  */
-    val powderParticle = 1 shl 6
 
+    val b2_powderParticle = 1 shl 6
     /** with surface tension  */
-    val tensileParticle = 1 shl 7
 
+    val b2_tensileParticle = 1 shl 7
     /** mixing color between contacting particles  */
-    val colorMixingParticle = 1 shl 8
 
+    val b2_colorMixingParticle = 1 shl 8
     /** call b2DestructionListener on destruction  */
-    val destructionListener = 1 shl 9
+
+    val b2_destructionListener = 1 shl 9
 }

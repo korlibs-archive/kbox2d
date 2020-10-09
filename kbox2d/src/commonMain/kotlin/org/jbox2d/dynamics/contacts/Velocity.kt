@@ -29,5 +29,5 @@ class Velocity {
 
     val v = Vec2()
 
-    var w: Float = 0f
+    var w: Float = 0.toFloat()
 }

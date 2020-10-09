@@ -35,14 +35,12 @@ class PolygonContact(argPool: IWorldPool) : Contact(argPool) {
 
     fun init(fixtureA: Fixture, fixtureB: Fixture) {
         super.init(fixtureA, 0, fixtureB, 0)
-        assert(this.fixtureA!!.type == ShapeType.POLYGON)
-        assert(this.fixtureB!!.type == ShapeType.POLYGON)
+        assert(m_fixtureA!!.type == ShapeType.POLYGON)
+        assert(m_fixtureB!!.type == ShapeType.POLYGON)
     }
 
     override fun evaluate(manifold: Manifold, xfA: Transform, xfB: Transform) {
-        pool.collision.collidePolygons(
-            manifold, fixtureA!!.shape as PolygonShape, xfA,
-            fixtureB!!.shape as PolygonShape, xfB
-        )
+        pool.collision.collidePolygons(manifold, m_fixtureA!!.m_shape as PolygonShape, xfA,
+                m_fixtureB!!.m_shape as PolygonShape, xfB)
     }
 }

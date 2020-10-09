@@ -41,11 +41,17 @@ import org.jbox2d.dynamics.contacts.Contact
 interface IWorldPool {
 
     val polyContactStack: IDynamicStack<Contact>
+
     val circleContactStack: IDynamicStack<Contact>
+
     val polyCircleContactStack: IDynamicStack<Contact>
+
     val edgeCircleContactStack: IDynamicStack<Contact>
+
     val edgePolyContactStack: IDynamicStack<Contact>
+
     val chainCircleContactStack: IDynamicStack<Contact>
+
     val chainPolyContactStack: IDynamicStack<Contact>
 
     val collision: Collision
@@ -55,28 +61,40 @@ interface IWorldPool {
     val distance: Distance
 
     fun popVec2(): Vec2
+
     fun popVec2(num: Int): Array<Vec2>
+
     fun pushVec2(num: Int)
 
     fun popVec3(): Vec3
+
     fun popVec3(num: Int): Array<Vec3>
+
     fun pushVec3(num: Int)
 
     fun popMat22(): Mat22
+
     fun popMat22(num: Int): Array<Mat22>
+
     fun pushMat22(num: Int)
 
     fun popMat33(): Mat33
+
     fun pushMat33(num: Int)
 
     fun popAABB(): AABB
+
     fun popAABB(num: Int): Array<AABB>
+
     fun pushAABB(num: Int)
 
     fun popRot(): Rot
+
     fun pushRot(num: Int)
 
     fun getFloatArray(argLength: Int): FloatArray
+
     fun getIntArray(argLength: Int): IntArray
+
     fun getVec2Array(argLength: Int): Array<Vec2>
 }

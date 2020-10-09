@@ -23,23 +23,30 @@
  */
 package org.jbox2d.dynamics
 
+//updated to rev 100
 /**
  * This is an internal structure.
  */
 class TimeStep {
 
     /** time step  */
-    var dt: Float = 0f
+
+    var dt: Float = 0.toFloat()
 
     /** inverse time step (0 if dt == 0).  */
-    var invDt: Float = 0f
 
-    /** dt * invDt0  */
-    var dtRatio: Float = 0f
+    var inv_dt: Float = 0.toFloat()
+
+    /** dt * inv_dt0  */
+
+    var dtRatio: Float = 0.toFloat()
+
 
     var velocityIterations: Int = 0
 
+
     var positionIterations: Int = 0
+
 
     var warmStarting: Boolean = false
 }

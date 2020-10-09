@@ -31,6 +31,7 @@ import org.jbox2d.common.Vec2
 import org.jbox2d.common.Transform
 import org.jbox2d.internal.*
 
+// updated to rev 100
 /**
  * This is non-static for faster pooling. To get an instance, use the [SingletonPool], don't
  * construct a distance object.
@@ -75,13 +76,15 @@ class Distance(val stats: Stats = Stats()) {
      */
     class SimplexCache {
         /** length or area  */
+
         var metric: Float = 0.toFloat()
+
         var count: Int = 0
-
         /** vertices on shape A  */
-        val indexA = IntArray(3)
 
+        val indexA = IntArray(3)
         /** vertices on shape B  */
+
         val indexB = IntArray(3)
 
         init {
@@ -104,11 +107,11 @@ class Distance(val stats: Stats = Stats()) {
     }
 
     private inner class Simplex {
-        val v1 = SimplexVertex()
-        val v2 = SimplexVertex()
-        val v3 = SimplexVertex()
-        val vertices = arrayOf(v1, v2, v3)
-        var count: Int = 0
+        val m_v1 = SimplexVertex()
+        val m_v2 = SimplexVertex()
+        val m_v3 = SimplexVertex()
+        val vertices = arrayOf(m_v1, m_v2, m_v3)
+        var m_count: Int = 0
 
         private val e12 = Vec2()
 
@@ -123,21 +126,27 @@ class Distance(val stats: Stats = Stats()) {
         // djm pooled, from above
         // return Vec2.cross(m_v2.w - m_v1.w, m_v3.w - m_v1.w);
         val metric: Float
-            get() = when (count) {
-                0 -> {
-                    assert(false)
-                    0.0f
-                }
-                1 -> 0.0f
-                2 -> MathUtils.distance(v1.w, v2.w)
-                3 -> {
-                    case3.set(v2.w).subLocal(v1.w)
-                    case33.set(v3.w).subLocal(v1.w)
-                    Vec2.cross(case3, case33)
-                }
-                else -> {
-                    assert(false)
-                    0.0f
+            get() {
+                when (m_count) {
+                    0 -> {
+                        assert(false)
+                        return 0.0f
+                    }
+
+                    1 -> return 0.0f
+
+                    2 -> return MathUtils.distance(m_v1.w, m_v2.w)
+
+                    3 -> {
+                        case3.set(m_v2.w).subLocal(m_v1.w)
+                        case33.set(m_v3.w).subLocal(m_v1.w)
+                        return Vec2.cross(case3, case33)
+                    }
+
+                    else -> {
+                        assert(false)
+                        return 0.0f
+                    }
                 }
             }
 
@@ -148,16 +157,14 @@ class Distance(val stats: Stats = Stats()) {
         private val w2 = Vec2()
         private val w3 = Vec2()
 
-        fun readCache(
-            cache: SimplexCache, proxyA: DistanceProxy, transformA: Transform,
-            proxyB: DistanceProxy, transformB: Transform
-        ) {
+        fun readCache(cache: SimplexCache, proxyA: DistanceProxy, transformA: Transform,
+                      proxyB: DistanceProxy, transformB: Transform) {
             assert(cache.count <= 3)
 
             // Copy data from cache.
-            count = cache.count
+            m_count = cache.count
 
-            for (i in 0 until count) {
+            for (i in 0 until m_count) {
                 val v = vertices[i]
                 v.indexA = cache.indexA[i]
                 v.indexB = cache.indexB[i]
@@ -171,17 +178,17 @@ class Distance(val stats: Stats = Stats()) {
 
             // Compute the new simplex metric, if it is substantially different than
             // old metric then flush the simplex.
-            if (count > 1) {
+            if (m_count > 1) {
                 val metric1 = cache.metric
                 val metric2 = metric
                 if (metric2 < 0.5f * metric1 || 2.0f * metric1 < metric2 || metric2 < Settings.EPSILON) {
                     // Reset the simplex.
-                    count = 0
+                    m_count = 0
                 }
             }
 
             // If the cache is empty or invalid ...
-            if (count == 0) {
+            if (m_count == 0) {
                 val v = vertices[0]
                 v.indexA = 0
                 v.indexB = 0
@@ -190,40 +197,41 @@ class Distance(val stats: Stats = Stats()) {
                 Transform.mulToOutUnsafe(transformA, wALocal, v.wA)
                 Transform.mulToOutUnsafe(transformB, wBLocal, v.wB)
                 v.w.set(v.wB).subLocal(v.wA)
-                count = 1
+                m_count = 1
             }
         }
 
         fun writeCache(cache: SimplexCache) {
             cache.metric = metric
-            cache.count = count
+            cache.count = m_count
 
-            for (i in 0 until count) {
+            for (i in 0 until m_count) {
                 cache.indexA[i] = vertices[i].indexA
                 cache.indexB[i] = vertices[i].indexB
             }
         }
 
         fun getSearchDirection(out: Vec2) {
-            when (count) {
+            when (m_count) {
                 1 -> {
-                    out.set(v1.w).negateLocal()
+                    out.set(m_v1.w).negateLocal()
                     return
                 }
                 2 -> {
-                    e12.set(v2.w).subLocal(v1.w)
+                    e12.set(m_v2.w).subLocal(m_v1.w)
                     // use out for a temp variable real quick
-                    out.set(v1.w).negateLocal()
+                    out.set(m_v1.w).negateLocal()
                     val sgn = Vec2.cross(e12, out)
 
                     if (sgn > 0f) {
                         // Origin is left of e12.
                         Vec2.crossToOutUnsafe(1f, e12, out)
+                        return
                     } else {
                         // Origin is right of e12.
                         Vec2.crossToOutUnsafe(e12, 1f, out)
+                        return
                     }
-                    return
                 }
                 else -> {
                     assert(false)
@@ -234,22 +242,24 @@ class Distance(val stats: Stats = Stats()) {
         }
 
         /**
-         * Returns pooled objects. Don't keep or modify them
+         * this returns pooled objects. don't keep or modify them
+         *
+         * @return
          */
         fun getClosestPoint(out: Vec2) {
-            when (count) {
+            when (m_count) {
                 0 -> {
                     assert(false)
                     out.setZero()
                     return
                 }
                 1 -> {
-                    out.set(v1.w)
+                    out.set(m_v1.w)
                     return
                 }
                 2 -> {
-                    case22.set(v2.w).mulLocal(v2.a)
-                    case2.set(v1.w).mulLocal(v1.a).addLocal(case22)
+                    case22.set(m_v2.w).mulLocal(m_v2.a)
+                    case2.set(m_v1.w).mulLocal(m_v1.a).addLocal(case22)
                     out.set(case2)
                     return
                 }
@@ -266,30 +276,33 @@ class Distance(val stats: Stats = Stats()) {
         }
 
         fun getWitnessPoints(pA: Vec2, pB: Vec2) {
-            when (count) {
+            when (m_count) {
                 0 -> assert(false)
+
                 1 -> {
-                    pA.set(v1.wA)
-                    pB.set(v1.wB)
+                    pA.set(m_v1.wA)
+                    pB.set(m_v1.wB)
                 }
+
                 2 -> {
-                    case2.set(v1.wA).mulLocal(v1.a)
-                    pA.set(v2.wA).mulLocal(v2.a).addLocal(case2)
+                    case2.set(m_v1.wA).mulLocal(m_v1.a)
+                    pA.set(m_v2.wA).mulLocal(m_v2.a).addLocal(case2)
                     // m_v1.a * m_v1.wA + m_v2.a * m_v2.wA;
                     // *pB = m_v1.a * m_v1.wB + m_v2.a * m_v2.wB;
-                    case2.set(v1.wB).mulLocal(v1.a)
-                    pB.set(v2.wB).mulLocal(v2.a).addLocal(case2)
+                    case2.set(m_v1.wB).mulLocal(m_v1.a)
+                    pB.set(m_v2.wB).mulLocal(m_v2.a).addLocal(case2)
                 }
+
                 3 -> {
-                    pA.set(v1.wA).mulLocal(v1.a)
-                    case3.set(v2.wA).mulLocal(v2.a)
-                    case33.set(v3.wA).mulLocal(v3.a)
+                    pA.set(m_v1.wA).mulLocal(m_v1.a)
+                    case3.set(m_v2.wA).mulLocal(m_v2.a)
+                    case33.set(m_v3.wA).mulLocal(m_v3.a)
                     pA.addLocal(case3).addLocal(case33)
                     pB.set(pA)
                 }
+
                 else -> assert(false)
-            }
-            // *pA = m_v1.a * m_v1.wA + m_v2.a * m_v2.wA + m_v3.a * m_v3.wA;
+            }// *pA = m_v1.a * m_v1.wA + m_v2.a * m_v2.wA + m_v3.a * m_v3.wA;
             // *pB = *pA;
         }
 
@@ -321,16 +334,16 @@ class Distance(val stats: Stats = Stats()) {
             // Solution
             // a1 = d12_1 / d12
             // a2 = d12_2 / d12
-            val w1 = v1.w
-            val w2 = v2.w
+            val w1 = m_v1.w
+            val w2 = m_v2.w
             e12.set(w2).subLocal(w1)
 
             // w1 region
             val d12_2 = -Vec2.dot(w1, e12)
             if (d12_2 <= 0.0f) {
                 // a2 <= 0, so we clamp it to 0
-                v1.a = 1.0f
-                count = 1
+                m_v1.a = 1.0f
+                m_count = 1
                 return
             }
 
@@ -338,31 +351,31 @@ class Distance(val stats: Stats = Stats()) {
             val d12_1 = Vec2.dot(w2, e12)
             if (d12_1 <= 0.0f) {
                 // a1 <= 0, so we clamp it to 0
-                v2.a = 1.0f
-                count = 1
-                v1.set(v2)
+                m_v2.a = 1.0f
+                m_count = 1
+                m_v1.set(m_v2)
                 return
             }
 
             // Must be in e12 region.
             val inv_d12 = 1.0f / (d12_1 + d12_2)
-            v1.a = d12_1 * inv_d12
-            v2.a = d12_2 * inv_d12
-            count = 2
+            m_v1.a = d12_1 * inv_d12
+            m_v2.a = d12_2 * inv_d12
+            m_count = 2
         }
 
         /**
-         * Solve a line segment using barycentric coordinates.
-         * Possible regions:
-         * - points[2]
-         * - edge points[0]-points[2]
-         * - edge points[1]-points[2]
+         * Solve a line segment using barycentric coordinates.<br></br>
+         * Possible regions:<br></br>
+         * - points[2]<br></br>
+         * - edge points[0]-points[2]<br></br>
+         * - edge points[1]-points[2]<br></br>
          * - inside the triangle
          */
         fun solve3() {
-            w1.set(v1.w)
-            w2.set(v2.w)
-            w3.set(v3.w)
+            w1.set(m_v1.w)
+            w2.set(m_v2.w)
+            w3.set(m_v3.w)
 
             // Edge12
             // [1 1 ][a1] = [1]
@@ -403,174 +416,196 @@ class Distance(val stats: Stats = Stats()) {
 
             // w1 region
             if (d12_2 <= 0.0f && d13_2 <= 0.0f) {
-                v1.a = 1.0f
-                count = 1
+                m_v1.a = 1.0f
+                m_count = 1
                 return
             }
 
             // e12
             if (d12_1 > 0.0f && d12_2 > 0.0f && d123_3 <= 0.0f) {
                 val inv_d12 = 1.0f / (d12_1 + d12_2)
-                v1.a = d12_1 * inv_d12
-                v2.a = d12_2 * inv_d12
-                count = 2
+                m_v1.a = d12_1 * inv_d12
+                m_v2.a = d12_2 * inv_d12
+                m_count = 2
                 return
             }
 
             // e13
             if (d13_1 > 0.0f && d13_2 > 0.0f && d123_2 <= 0.0f) {
                 val inv_d13 = 1.0f / (d13_1 + d13_2)
-                v1.a = d13_1 * inv_d13
-                v3.a = d13_2 * inv_d13
-                count = 2
-                v2.set(v3)
+                m_v1.a = d13_1 * inv_d13
+                m_v3.a = d13_2 * inv_d13
+                m_count = 2
+                m_v2.set(m_v3)
                 return
             }
 
             // w2 region
             if (d12_1 <= 0.0f && d23_2 <= 0.0f) {
-                v2.a = 1.0f
-                count = 1
-                v1.set(v2)
+                m_v2.a = 1.0f
+                m_count = 1
+                m_v1.set(m_v2)
                 return
             }
 
             // w3 region
             if (d13_1 <= 0.0f && d23_1 <= 0.0f) {
-                v3.a = 1.0f
-                count = 1
-                v1.set(v3)
+                m_v3.a = 1.0f
+                m_count = 1
+                m_v1.set(m_v3)
                 return
             }
 
             // e23
             if (d23_1 > 0.0f && d23_2 > 0.0f && d123_1 <= 0.0f) {
                 val inv_d23 = 1.0f / (d23_1 + d23_2)
-                v2.a = d23_1 * inv_d23
-                v3.a = d23_2 * inv_d23
-                count = 2
-                v1.set(v3)
+                m_v2.a = d23_1 * inv_d23
+                m_v3.a = d23_2 * inv_d23
+                m_count = 2
+                m_v1.set(m_v3)
                 return
             }
 
             // Must be in triangle123
             val inv_d123 = 1.0f / (d123_1 + d123_2 + d123_3)
-            v1.a = d123_1 * inv_d123
-            v2.a = d123_2 * inv_d123
-            v3.a = d123_3 * inv_d123
-            count = 3
+            m_v1.a = d123_1 * inv_d123
+            m_v2.a = d123_2 * inv_d123
+            m_v3.a = d123_3 * inv_d123
+            m_count = 3
         }
     }
 
     /**
-     * A distance proxy is used by the GJK algorithm. It encapsulates any shape.
-     * TODO: see if we can just do assignments with m_vertices, instead of copying stuff over
+     * A distance proxy is used by the GJK algorithm. It encapsulates any shape. TODO: see if we can
+     * just do assignments with m_vertices, instead of copying stuff over
      *
      * @author daniel
      */
     class DistanceProxy {
 
-        val vertices: Array<Vec2> = Array(Settings.maxPolygonVertices) { Vec2() }
+        val m_vertices: Array<Vec2> = Array(Settings.maxPolygonVertices) { Vec2() }
+        /**
+         * Get the vertex count.
+         *
+         * @return
+         */
 
         var vertexCount: Int = 0
 
-        var radius: Float = 0f
+        var m_radius: Float = 0f
 
-        val buffer: Array<Vec2> = Array(2) { Vec2() }
+        val m_buffer: Array<Vec2> = Array(2) { Vec2() }
 
         /**
          * Initialize the proxy using the given shape. The shape must remain in scope while the proxy is
          * in use.
          */
         fun set(shape: Shape, index: Int) {
-            when (shape.type) {
+            when (shape.getType()) {
                 ShapeType.CIRCLE -> {
                     val circle = shape as CircleShape
-                    vertices[0].set(circle.p)
+                    m_vertices[0].set(circle.p)
                     vertexCount = 1
-                    radius = circle.radius
+                    m_radius = circle.radius
                 }
                 ShapeType.POLYGON -> {
                     val poly = shape as PolygonShape
-                    vertexCount = poly.vertexCount
-                    radius = poly.radius
+                    vertexCount = poly.count
+                    m_radius = poly.radius
                     for (i in 0 until vertexCount) {
-                        vertices[i].set(poly.vertices[i])
+                        m_vertices[i].set(poly.vertices[i])
                     }
                 }
                 ShapeType.CHAIN -> {
                     val chain = shape as ChainShape
                     assert(0 <= index && index < chain.count)
 
-                    buffer[0] = chain.vertices!![index]
+                    m_buffer[0] = chain.vertices!![index]
                     if (index + 1 < chain.count) {
-                        buffer[1] = chain.vertices!![index + 1]
+                        m_buffer[1] = chain.vertices!![index + 1]
                     } else {
-                        buffer[1] = chain.vertices!![0]
+                        m_buffer[1] = chain.vertices!![0]
                     }
 
-                    vertices[0].set(buffer[0])
-                    vertices[1].set(buffer[1])
+                    m_vertices[0].set(m_buffer[0])
+                    m_vertices[1].set(m_buffer[1])
                     vertexCount = 2
-                    radius = chain.radius
+                    m_radius = chain.radius
                 }
                 ShapeType.EDGE -> {
                     val edge = shape as EdgeShape
-                    vertices[0].set(edge.vertex1)
-                    vertices[1].set(edge.vertex2)
+                    m_vertices[0].set(edge.vertex1)
+                    m_vertices[1].set(edge.vertex2)
                     vertexCount = 2
-                    radius = edge.radius
+                    m_radius = edge.radius
                 }
+                else -> assert(false)
             }
         }
 
         /**
-         * Get the supporting vertex index in the given direction [d].
+         * Get the supporting vertex index in the given direction.
+         *
+         * @param d
+         * @return
          */
         fun getSupport(d: Vec2): Int {
             var bestIndex = 0
-            var bestValue = Vec2.dot(vertices[0], d)
+            var bestValue = Vec2.dot(m_vertices[0], d)
             for (i in 1 until vertexCount) {
-                val value = Vec2.dot(vertices[i], d)
+                val value = Vec2.dot(m_vertices[i], d)
                 if (value > bestValue) {
                     bestIndex = i
                     bestValue = value
                 }
             }
+
             return bestIndex
         }
 
         /**
-         * Get the supporting vertex in the given direction [d].
+         * Get the supporting vertex in the given direction.
+         *
+         * @param d
+         * @return
          */
         fun getSupportVertex(d: Vec2): Vec2 {
             var bestIndex = 0
-            var bestValue = Vec2.dot(vertices[0], d)
+            var bestValue = Vec2.dot(m_vertices[0], d)
             for (i in 1 until vertexCount) {
-                val value = Vec2.dot(vertices[i], d)
+                val value = Vec2.dot(m_vertices[i], d)
                 if (value > bestValue) {
                     bestIndex = i
                     bestValue = value
                 }
             }
-            return vertices[bestIndex]
+
+            return m_vertices[bestIndex]
         }
 
         /**
-         * Get a vertex by [index]. Used by Distance.
+         * Get a vertex by index. Used by Distance.
+         *
+         * @param index
+         * @return
          */
         fun getVertex(index: Int): Vec2 {
-            assert(index in 0 until vertexCount)
-            return vertices[index]
+            assert(0 <= index && index < vertexCount)
+            return m_vertices[index]
         }
     }
 
     /**
-     * Compute the closest points between two shapes. Supports any combination of CircleShape and
+     * Compute the closest points between two shapes. Supports any combination of: CircleShape and
      * PolygonShape. The simplex cache is input/output. On the first call set SimplexCache.count to
      * zero.
+     *
+     * @param output
+     * @param cache
+     * @param input
      */
-    fun distance(output: DistanceOutput, cache: SimplexCache, input: DistanceInput) {
+    fun distance(output: DistanceOutput, cache: SimplexCache,
+                 input: DistanceInput) {
         stats.GJK_CALLS++
 
         val proxyA = input.proxyA
@@ -599,21 +634,24 @@ class Distance(val stats: Stats = Stats()) {
         while (iter < MAX_ITERS) {
 
             // Copy simplex so we can identify duplicates.
-            saveCount = simplex.count
+            saveCount = simplex.m_count
             for (i in 0 until saveCount) {
                 saveA[i] = vertices[i].indexA
                 saveB[i] = vertices[i].indexB
             }
 
-            when (simplex.count) {
-                1 -> Unit
+            when (simplex.m_count) {
+                1 -> {
+                }
                 2 -> simplex.solve2()
                 3 -> simplex.solve3()
                 else -> assert(false)
             }
 
             // If we have 3 points, then the origin is in the corresponding triangle.
-            if (simplex.count == 3) break
+            if (simplex.m_count == 3) {
+                break
+            }
 
             // Compute closest point.
             simplex.getClosestPoint(closestPoint)
@@ -639,15 +677,15 @@ class Distance(val stats: Stats = Stats()) {
                 break
             }
             /*
-            SimplexVertex* vertex = vertices + simplex.m_count; vertex.indexA =
-            proxyA.GetSupport(MulT(transformA.R, -d)); vertex.wA = Mul(transformA,
-            proxyA.GetVertex(vertex.indexA)); Vec2 wBLocal; vertex.indexB =
-            proxyB.GetSupport(MulT(transformB.R, d)); vertex.wB = Mul(transformB,
-            proxyB.GetVertex(vertex.indexB)); vertex.w = vertex.wB - vertex.wA;
-            */
+       * SimplexVertex* vertex = vertices + simplex.m_count; vertex.indexA =
+       * proxyA.GetSupport(MulT(transformA.R, -d)); vertex.wA = Mul(transformA,
+       * proxyA.GetVertex(vertex.indexA)); Vec2 wBLocal; vertex.indexB =
+       * proxyB.GetSupport(MulT(transformB.R, d)); vertex.wB = Mul(transformB,
+       * proxyB.GetVertex(vertex.indexB)); vertex.w = vertex.wB - vertex.wA;
+       */
 
             // Compute a tentative new simplex vertex using support points.
-            val vertex = vertices[simplex.count]
+            val vertex = vertices[simplex.m_count]
 
             Rot.mulTransUnsafe(transformA.q, d.negateLocal(), temp)
             vertex.indexA = proxyA.getSupport(temp)
@@ -672,10 +710,12 @@ class Distance(val stats: Stats = Stats()) {
             }
 
             // If we found a duplicate support point we must exit to avoid cycling.
-            if (duplicate) break
+            if (duplicate) {
+                break
+            }
 
             // New vertex is ok and needed.
-            ++simplex.count
+            ++simplex.m_count
         }
 
         stats.GJK_MAX_ITERS = MathUtils.max(stats.GJK_MAX_ITERS, iter)
@@ -690,8 +730,8 @@ class Distance(val stats: Stats = Stats()) {
 
         // Apply radii if requested.
         if (input.useRadii) {
-            val rA = proxyA.radius
-            val rB = proxyB.radius
+            val rA = proxyA.m_radius
+            val rB = proxyB.m_radius
 
             if (output.distance > rA + rB && output.distance > Settings.EPSILON) {
                 // Shapes are still no overlapped.
@@ -715,12 +755,16 @@ class Distance(val stats: Stats = Stats()) {
     }
 
     companion object {
+
         val MAX_ITERS = 20
+
     }
 
     class Stats {
         var GJK_CALLS = 0
+
         var GJK_ITERS = 0
+
         var GJK_MAX_ITERS = 20
     }
 }

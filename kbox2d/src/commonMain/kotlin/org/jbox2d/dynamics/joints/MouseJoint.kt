@@ -41,65 +41,68 @@ import org.jbox2d.pooling.IWorldPool
  *
  * @author Daniel
  */
-class MouseJoint(argWorld: IWorldPool, def: MouseJointDef) : Joint(argWorld, def) {
+class MouseJoint constructor(argWorld: IWorldPool, def: MouseJointDef) : Joint(argWorld, def) {
+    private val m_localAnchorB = Vec2()
+    var target = Vec2()
+        set(target) {
+            if (bodyB!!.isAwake == false) {
+                bodyB!!.isAwake = true
+            }
+            this.target.set(target)
+        }
+    // / set/get the frequency in Hertz.
+
+    var frequency: Float = 0.toFloat()
+    // / set/get the damping ratio (dimensionless).
+
+    var dampingRatio: Float = 0.toFloat()
+    private var m_beta: Float = 0.toFloat()
+
+    // Solver shared
+    private val m_impulse = Vec2()
+    // / set/get the maximum force in Newtons.
+
+    var maxForce: Float = 0.toFloat()
+    private var m_gamma: Float = 0.toFloat()
+
+    // Solver temp
+    private var m_indexB: Int = 0
+    private val m_rB = Vec2()
+    private val m_localCenterB = Vec2()
+    private var m_invMassB: Float = 0.toFloat()
+    private var m_invIB: Float = 0.toFloat()
+    private val m_mass = Mat22()
+    private val m_C = Vec2()
 
     init {
         assert(def.target.isValid)
         assert(def.maxForce >= 0)
         assert(def.frequencyHz >= 0)
         assert(def.dampingRatio >= 0)
-    }
 
-    private val localAnchorB = Vec2()
-    var target = Vec2()
-        set(target) {
-            if (!bodyB!!.isAwake) {
-                bodyB!!.isAwake = true
-            }
-            this.target.set(target)
-        }
-
-    /** Frequency in Hertz. */
-    var frequency: Float = def.frequencyHz
-
-    /** Damping ratio (dimensionless) */
-    var dampingRatio: Float = def.dampingRatio
-
-    private var beta: Float = 0f
-
-    // Solver shared
-    private val impulse = Vec2()
-
-    /* Maximum force in Newtons. */
-    var maxForce: Float = def.maxForce
-
-    private var gamma: Float = 0f
-
-    // Solver temp
-    private var indexB: Int = 0
-    private val rB = Vec2()
-    private val localCenterB = Vec2()
-    private var invMassB: Float = 0f
-    private var invIB: Float = 0f
-    private val mass = Mat22()
-    private val C = Vec2()
-
-    init {
         target.set(def.target)
-        Transform.mulTransToOutUnsafe(bodyB!!.xf, target, localAnchorB)
-        impulse.setZero()
+        Transform.mulTransToOutUnsafe(bodyB!!.xf, target, m_localAnchorB)
+
+        maxForce = def.maxForce
+        m_impulse.setZero()
+
+        frequency = def.frequencyHz
+        dampingRatio = def.dampingRatio
+
+        m_beta = 0f
+        m_gamma = 0f
     }
 
-    override fun getAnchorA(out: Vec2) {
-        out.set(target)
+    override fun getAnchorA(argOut: Vec2) {
+        argOut.set(target)
     }
 
-    override fun getAnchorB(out: Vec2) {
-        bodyB!!.getWorldPointToOut(localAnchorB, out)
+    override fun getAnchorB(argOut: Vec2) {
+        bodyB!!.getWorldPointToOut(m_localAnchorB, argOut)
     }
 
-    override fun getReactionForce(invDt: Float, out: Vec2) {
-        out.set(impulse).mulLocal(invDt)
+    override fun getReactionForce(invDt: Float, argOut: Vec2) {
+        argOut.set(m_impulse).mulLocal(invDt)
     }
 
     override fun getReactionTorque(invDt: Float): Float {
@@ -107,21 +110,21 @@ class MouseJoint(argWorld: IWorldPool, def: MouseJointDef) : Joint(argWorld, def
     }
 
     override fun initVelocityConstraints(data: SolverData) {
-        indexB = bodyB!!.islandIndex
-        localCenterB.set(bodyB!!.sweep.localCenter)
-        invMassB = bodyB!!.invMass
-        invIB = bodyB!!.invI
+        m_indexB = bodyB!!.islandIndex
+        m_localCenterB.set(bodyB!!.sweep.localCenter)
+        m_invMassB = bodyB!!.m_invMass
+        m_invIB = bodyB!!.m_invI
 
-        val cB = data.positions!![indexB].c
-        val aB = data.positions!![indexB].a
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+        val cB = data.positions!![m_indexB].c
+        val aB = data.positions!![m_indexB].a
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
         val qB = pool.popRot()
 
         qB.setRadians(aB)
 
-        val mass = bodyB!!.mass
+        val mass = bodyB!!.m_mass
 
         // Frequency
         val omega = 2.0f * MathUtils.PI * frequency
@@ -137,82 +140,88 @@ class MouseJoint(argWorld: IWorldPool, def: MouseJointDef) : Joint(argWorld, def
         // beta has units of inverse time.
         val h = data.step!!.dt
         assert(d + h * k > Settings.EPSILON)
-        gamma = h * (d + h * k)
-        if (gamma != 0.0f) {
-            gamma = 1.0f / gamma
+        m_gamma = h * (d + h * k)
+        if (m_gamma != 0.0f) {
+            m_gamma = 1.0f / m_gamma
         }
-        beta = h * k * gamma
+        m_beta = h * k * m_gamma
 
         val temp = pool.popVec2()
 
         // Compute the effective mass matrix.
-        Rot.mulToOutUnsafe(qB, temp.set(localAnchorB).subLocal(localCenterB), rB)
+        Rot.mulToOutUnsafe(qB, temp.set(m_localAnchorB).subLocal(m_localCenterB), m_rB)
 
         // K = [(1/m1 + 1/m2) * eye(2) - skew(r1) * invI1 * skew(r1) - skew(r2) * invI2 * skew(r2)]
         // = [1/m1+1/m2 0 ] + invI1 * [r1.y*r1.y -r1.x*r1.y] + invI2 * [r1.y*r1.y -r1.x*r1.y]
         // [ 0 1/m1+1/m2] [-r1.x*r1.y r1.x*r1.x] [-r1.x*r1.y r1.x*r1.x]
         val K = pool.popMat22()
-        K.ex.x = invMassB + invIB * rB.y * rB.y + gamma
-        K.ex.y = -invIB * rB.x * rB.y
+        K.ex.x = m_invMassB + m_invIB * m_rB.y * m_rB.y + m_gamma
+        K.ex.y = -m_invIB * m_rB.x * m_rB.y
         K.ey.x = K.ex.y
-        K.ey.y = invMassB + invIB * rB.x * rB.x + gamma
+        K.ey.y = m_invMassB + m_invIB * m_rB.x * m_rB.x + m_gamma
 
-        K.invertToOut(this.mass)
+        K.invertToOut(m_mass)
 
-        C.set(cB).addLocal(rB).subLocal(target)
-        C.mulLocal(beta)
+        m_C.set(cB).addLocal(m_rB).subLocal(target)
+        m_C.mulLocal(m_beta)
 
         // Cheat with some damping
         wB *= 0.98f
 
         if (data.step!!.warmStarting) {
-            impulse.mulLocal(data.step!!.dtRatio)
-            vB.x += invMassB * impulse.x
-            vB.y += invMassB * impulse.y
-            wB += invIB * Vec2.cross(rB, impulse)
+            m_impulse.mulLocal(data.step!!.dtRatio)
+            vB.x += m_invMassB * m_impulse.x
+            vB.y += m_invMassB * m_impulse.y
+            wB += m_invIB * Vec2.cross(m_rB, m_impulse)
         } else {
-            impulse.setZero()
+            m_impulse.setZero()
         }
 
-        data.velocities!![indexB].w = wB
+        //    data.velocities[m_indexB].v.set(vB);
+        data.velocities!![m_indexB].w = wB
 
         pool.pushVec2(1)
         pool.pushMat22(1)
         pool.pushRot(1)
     }
 
-    override fun solvePositionConstraints(data: SolverData) = true
+    override fun solvePositionConstraints(data: SolverData): Boolean {
+        return true
+    }
 
     override fun solveVelocityConstraints(data: SolverData) {
-        val vB = data.velocities!![indexB].v
-        var wB = data.velocities!![indexB].w
+
+        val vB = data.velocities!![m_indexB].v
+        var wB = data.velocities!![m_indexB].w
 
         // Cdot = v + cross(w, r)
         val Cdot = pool.popVec2()
-        Vec2.crossToOutUnsafe(wB, rB, Cdot)
+        Vec2.crossToOutUnsafe(wB, m_rB, Cdot)
         Cdot.addLocal(vB)
 
         val impulse = pool.popVec2()
         val temp = pool.popVec2()
 
-        temp.set(this.impulse).mulLocal(gamma).addLocal(C).addLocal(Cdot).negateLocal()
-        Mat22.mulToOutUnsafe(mass, temp, impulse)
+        temp.set(m_impulse).mulLocal(m_gamma).addLocal(m_C).addLocal(Cdot).negateLocal()
+        Mat22.mulToOutUnsafe(m_mass, temp, impulse)
 
         val oldImpulse = temp
-        oldImpulse.set(this.impulse)
-        this.impulse.addLocal(impulse)
+        oldImpulse.set(m_impulse)
+        m_impulse.addLocal(impulse)
         val maxImpulse = data.step!!.dt * maxForce
-        if (this.impulse.lengthSquared() > maxImpulse * maxImpulse) {
-            this.impulse.mulLocal(maxImpulse / this.impulse.length())
+        if (m_impulse.lengthSquared() > maxImpulse * maxImpulse) {
+            m_impulse.mulLocal(maxImpulse / m_impulse.length())
         }
-        impulse.set(this.impulse).subLocal(oldImpulse)
+        impulse.set(m_impulse).subLocal(oldImpulse)
 
-        vB.x += invMassB * impulse.x
-        vB.y += invMassB * impulse.y
-        wB += invIB * Vec2.cross(rB, impulse)
+        vB.x += m_invMassB * impulse.x
+        vB.y += m_invMassB * impulse.y
+        wB += m_invIB * Vec2.cross(m_rB, impulse)
 
-        data.velocities!![indexB].w = wB
+        //    data.velocities[m_indexB].v.set(vB);
+        data.velocities!![m_indexB].w = wB
 
         pool.pushVec2(3)
     }
+
 }

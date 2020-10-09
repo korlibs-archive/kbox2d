@@ -42,36 +42,43 @@ class PulleyJointDef : JointDef(JointType.PULLEY) {
     /**
      * The first ground anchor in world coordinates. This point never moves.
      */
+
     var groundAnchorA: Vec2 = Vec2(-1.0f, 1.0f)
 
     /**
      * The second ground anchor in world coordinates. This point never moves.
      */
+
     var groundAnchorB: Vec2 = Vec2(1.0f, 1.0f)
 
     /**
      * The local anchor point relative to bodyA's origin.
      */
+
     var localAnchorA: Vec2 = Vec2(-1.0f, 0.0f)
 
     /**
      * The local anchor point relative to bodyB's origin.
      */
+
     var localAnchorB: Vec2 = Vec2(1.0f, 0.0f)
 
     /**
      * The a reference length for the segment attached to bodyA.
      */
+
     var lengthA: Float = 0f
 
     /**
      * The a reference length for the segment attached to bodyB.
      */
+
     var lengthB: Float = 0f
 
     /**
      * The pulley ratio, used to simulate a block-and-tackle.
      */
+
     var ratio: Float = 1f
 
     init {

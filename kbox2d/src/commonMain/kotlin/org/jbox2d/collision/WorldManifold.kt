@@ -35,30 +35,32 @@ import org.jbox2d.common.Vec2
  * @author daniel
  */
 class WorldManifold {
-
     /**
      * World vector pointing from A to B
      */
+
     val normal: Vec2 = Vec2()
 
     /**
      * World contact point (point of intersection)
      */
+
     val points: Array<Vec2> = Array(Settings.maxManifoldPoints) { Vec2() }
 
     /**
      * A negative value indicates overlap, in meters.
      */
+
     val separations: FloatArray = FloatArray(Settings.maxManifoldPoints)
 
     private val pool3 = Vec2()
     private val pool4 = Vec2()
 
-    fun initialize(
-        manifold: Manifold, xfA: Transform, radiusA: Float,
-        xfB: Transform, radiusB: Float
-    ) {
-        if (manifold.pointCount == 0) return
+    fun initialize(manifold: Manifold, xfA: Transform, radiusA: Float,
+                   xfB: Transform, radiusB: Float) {
+        if (manifold.pointCount == 0) {
+            return
+        }
 
         when (manifold.type) {
             Manifold.ManifoldType.CIRCLES -> {
@@ -114,8 +116,7 @@ class WorldManifold {
                     // cB.set(normal).mulLocal(radiusB).subLocal(clipPoint).negateLocal();
                     // points[i].set(cA).addLocal(cB).mulLocal(0.5f);
 
-                    val scalar =
-                        radiusA - ((clipPoint.x - planePoint.x) * normal.x + (clipPoint.y - planePoint.y) * normal.y)
+                    val scalar = radiusA - ((clipPoint.x - planePoint.x) * normal.x + (clipPoint.y - planePoint.y) * normal.y)
 
                     val cAx = normal.x * scalar + clipPoint.x
                     val cAy = normal.y * scalar + clipPoint.y
@@ -164,8 +165,7 @@ class WorldManifold {
                     // clipPoint.y = xfA.p.y + xfA.q.ex.y * manifold.points[i].localPoint.x + xfA.q.ey.y *
                     // manifold.points[i].localPoint.y;
 
-                    val scalar =
-                        radiusB - ((clipPoint.x - planePoint.x) * normal.x + (clipPoint.y - planePoint.y) * normal.y)
+                    val scalar = radiusB - ((clipPoint.x - planePoint.x) * normal.x + (clipPoint.y - planePoint.y) * normal.y)
 
                     val cBx = normal.x * scalar + clipPoint.x
                     val cBy = normal.y * scalar + clipPoint.y

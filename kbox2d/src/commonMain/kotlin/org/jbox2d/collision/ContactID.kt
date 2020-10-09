@@ -50,14 +50,17 @@ package org.jbox2d.collision
  */
 class ContactID : Comparable<ContactID> {
 
+
     var indexA: Byte = 0
+
     var indexB: Byte = 0
 
     var typeA: Byte = 0
+
     var typeB: Byte = 0
 
     val key: Int
-        get() = (indexA.toInt() shl 24) or (indexB.toInt() shl 16) or (typeA.toInt() shl 8) or typeB.toInt()
+        get() = indexA.toInt() shl 24 or (indexB.toInt() shl 16) or (typeA.toInt() shl 8) or typeB.toInt()
 
     enum class Type {
         VERTEX, FACE
@@ -67,7 +70,7 @@ class ContactID : Comparable<ContactID> {
         return key == cid.key
     }
 
-    constructor()
+    constructor() {}
 
     constructor(c: ContactID) {
         set(c)
@@ -89,7 +92,9 @@ class ContactID : Comparable<ContactID> {
         typeB = tempA
     }
 
-    /** zeros out the data */
+    /**
+     * zeros out the data
+     */
     fun zero() {
         indexA = 0
         indexB = 0
@@ -97,7 +102,7 @@ class ContactID : Comparable<ContactID> {
         typeB = 0
     }
 
-    override fun compareTo(other: ContactID): Int {
-        return key - other.key
+    override fun compareTo(o: ContactID): Int {
+        return key - o.key
     }
 }
