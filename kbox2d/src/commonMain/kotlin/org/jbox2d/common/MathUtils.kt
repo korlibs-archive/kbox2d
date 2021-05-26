@@ -81,16 +81,11 @@ class MathUtils : PlatformMathUtils() {
 
 
         val sinLUT = FloatArray(Settings.SINCOS_LUT_LENGTH) {
-            kotlin.math.sin((it * Settings.SINCOS_LUT_PRECISION).toDouble()).toFloat()
+            kotlin.math.sin((it * Settings.SINCOS_LUT_PRECISION))
         }
 
-        fun sin(x: Float): Float {
-            return if (Settings.SINCOS_LUT_ENABLED) {
-                sinLUT(x)
-            } else {
-                kotlin.math.sin(x.toDouble()).toFloat()
-            }
-        }
+        //fun sin(x: Float): Float = if (Settings.SINCOS_LUT_ENABLED) sinLUT(x) else kotlin.math.sin(x)
+        inline fun sin(x: Float): Float = kotlin.math.sin(x)
 
 
         fun sinLUT(x: Float): Float {
@@ -124,22 +119,12 @@ class MathUtils : PlatformMathUtils() {
         }
 
 
-        fun cos(x: Float): Float {
-            return if (Settings.SINCOS_LUT_ENABLED) {
-                sinLUT(HALF_PI - x)
-            } else {
-                kotlin.math.cos(x.toDouble()).toFloat()
-            }
-        }
+        //fun cos(x: Float): Float = if (Settings.SINCOS_LUT_ENABLED) sinLUT(HALF_PI - x) else kotlin.math.cos(x)
+        inline fun cos(x: Float): Float = kotlin.math.cos(x)
 
 
-        fun abs(x: Float): Float {
-            return if (Settings.FAST_ABS) {
-                if (x > 0) x else -x
-            } else {
-                kotlin.math.abs(x)
-            }
-        }
+        //fun abs(x: Float): Float = if (Settings.FAST_ABS) (if (x > 0) x else -x) else kotlin.math.abs(x)
+        inline fun abs(x: Float): Float = kotlin.math.abs(x)
 
 
         fun fastAbs(x: Float): Float {
@@ -153,7 +138,8 @@ class MathUtils : PlatformMathUtils() {
         }
 
 
-        fun floor(x: Float): Int = if (Settings.FAST_FLOOR) fastFloor(x) else floor(x.toDouble()).toInt()
+        //fun floor(x: Float): Int = if (Settings.FAST_FLOOR) fastFloor(x) else kotlin.math.floor(x).toInt()
+        inline fun floor(x: Float): Int = kotlin.math.floor(x).toInt()
 
 
         fun fastFloor(x: Float): Int {
@@ -162,7 +148,8 @@ class MathUtils : PlatformMathUtils() {
         }
 
 
-        fun ceil(x: Float): Int = if (Settings.FAST_CEIL) fastCeil(x) else ceil(x.toDouble()).toInt()
+        //fun ceil(x: Float): Int = if (Settings.FAST_CEIL) fastCeil(x) else kotlin.math.ceil(x).toInt()
+        inline fun ceil(x: Float): Int = kotlin.math.ceil(x).toInt()
 
 
         fun fastCeil(x: Float): Int {
@@ -171,7 +158,8 @@ class MathUtils : PlatformMathUtils() {
         }
 
 
-        fun round(x: Float): Int = if (Settings.FAST_ROUND) floor(x + .5f) else round(x.toDouble()).toInt()
+        //fun round(x: Float): Int = if (Settings.FAST_ROUND) floor(x + .5f) else kotlin.math.round(x).toInt()
+        inline fun round(x: Float): Int = kotlin.math.round(x).toInt()
 
         /**
          * Rounds up the value to the nearest higher power^2 value.
@@ -239,27 +227,15 @@ class MathUtils : PlatformMathUtils() {
         }
 
 
-        fun isPowerOfTwo(x: Int): Boolean {
-            return x > 0 && x and x - 1 == 0
-        }
+        fun isPowerOfTwo(x: Int): Boolean = x > 0 && x and x - 1 == 0
 
 
-        fun pow(a: Float, b: Float): Float {
-            return if (Settings.FAST_POW) {
-                PlatformMathUtils.fastPow(a, b)
-            } else {
-                a.toDouble().pow(b.toDouble()).toFloat()
-            }
-        }
+        //fun pow(a: Float, b: Float): Float = if (Settings.FAST_POW) PlatformMathUtils.fastPow(a, b) else a.pow(b)
+        inline fun pow(a: Float, b: Float): Float = a.pow(b)
 
 
-        fun atan2(y: Float, x: Float): Float {
-            return if (Settings.FAST_ATAN2) {
-                fastAtan2(y, x)
-            } else {
-                kotlin.math.atan2(y.toDouble(), x.toDouble()).toFloat()
-            }
-        }
+        //fun atan2(y: Float, x: Float): Float = if (Settings.FAST_ATAN2) fastAtan2(y, x) else kotlin.math.atan2(y, x)
+        inline fun atan2(y: Float, x: Float): Float = kotlin.math.atan2(y, x)
 
 
         fun fastAtan2(y: Float, x: Float): Float {
@@ -306,9 +282,7 @@ class MathUtils : PlatformMathUtils() {
         }
 
 
-        fun sqrt(x: Float): Float {
-            return kotlin.math.sqrt(x.toDouble()).toFloat()
-        }
+        inline fun sqrt(x: Float): Float = kotlin.math.sqrt(x)
 
 
         fun distanceSquared(v1: Vec2, v2: Vec2): Float {
